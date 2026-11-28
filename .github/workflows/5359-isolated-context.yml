@@ -1,9 +1,12 @@
-name: ECO integrated staging canonical reference census
+name: ECO staging canonical reference initialization and rendered proof
 on:
   push:
     branches: [test/eco-staging-reference-census]
 permissions:
   contents: read
+concurrency:
+  group: komerce-g6-canonical-real-transaction
+  cancel-in-progress: false
 jobs:
   census:
     runs-on: ubuntu-24.04
@@ -28,14 +31,14 @@ jobs:
           node-version: '20'
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npx playwright install --with-deps chromium
-      - name: Read-only PostgreSQL and authorized economic API comparison
+      - name: Initialize only canonical reference skeleton, no financial facts; verify PostgreSQL and Chromium
         run: |
           mkdir -p test-results/eco-reference
           node <<'JS'
           const fs=require('fs'),assert=require('node:assert/strict'),db=require('./db');
           const {confirmTarget}=require('./scripts/recette/target-guard');
           const {chromium}=require('playwright');
-          const base=process.env.STAGING_BASE_URL,report={verdict:'NOT_PROVEN',rows:[]};let browser;
+          const base=process.env.STAGING_BASE_URL,report={verdict:'NOT_PROVEN',rows:[],initialized:[]};let browser;
           (async()=>{
             const version=await(await fetch(base+'/health/version')).json();assert.equal(version.commit,process.env.EXPECTED_SHA);
             const h=await(await fetch(base+'/health')).json();assert.equal(h.komerce_env,'staging');
@@ -54,24 +57,60 @@ jobs:
             }finally{q.release()}
             browser=await chromium.launch();
             const ctx=await browser.newContext({viewport:{width:1440,height:900},serviceWorkers:'block'});
-            await ctx.route('**/*',route=>{const req=route.request(),u=new URL(req.url());return u.origin===base&&(['GET','HEAD','OPTIONS'].includes(req.method())||(u.pathname==='/api/auth/login'&&req.method()==='POST'))?route.continue():route.abort()});
+            await ctx.route('**/*',route=>{const req=route.request(),u=new URL(req.url());return u.origin===base&&(['GET','HEAD','OPTIONS'].includes(req.method())||((u.pathname==='/api/auth/login'||/^\/api\/admin\/workspaces\/pricing\/(?:market\/(?:KM|CM|CG)\/)?cost-centers\/initialize$/.test(u.pathname))&&req.method()==='POST'))?route.continue():route.abort()});
             const page=await ctx.newPage();await page.goto(base+'/login.html?next='+encodeURIComponent('/admin/pilotage'),{waitUntil:'domcontentloaded'});
             await page.locator('#email').fill(process.env.E2E_ADMIN_EMAIL);await page.locator('#password').fill(process.env.E2E_ADMIN_PASSWORD);
             const login=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/login'&&r.request().method()==='POST');await page.locator('#btn-submit').click();assert.equal((await login).status(),200);
             await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:20000});
             const me=await(await page.request.get(base+'/api/auth/me')).json();assert.equal(me.user?.role||me.role,'admin');
             const month=new Date().toISOString().slice(0,7)+'-01';
-            for(const row of report.pg.filter(x=>x.is_active)){
-              const suffix=row.code==='GROUP'?'':'/market/'+row.code;
-              const res=await page.request.get(base+'/api/admin/workspaces/pricing'+suffix+'/cost-centers?periodStart='+month);
-              const b=await res.json().catch(()=>({}));report.rows.push({scope:row.code,http:res.status(),pgCenters:row.centers,apiCenters:Array.isArray(b.centers)?b.centers.length:null,referenceCapability:b.costCapabilities?.reference??null,match:Array.isArray(b.centers)&&b.centers.length===row.centers});
+            const expected={KM:3,CM:3,CG:3,GROUP:2};
+            const endpoint=scope=>'/api/admin/workspaces/pricing'+(scope==='GROUP'?'':'/market/'+scope)+'/cost-centers';
+            async function census(scope){
+              const {rows:[row]}=await db.query(`SELECT COUNT(DISTINCT c.id)::int AS centers,COUNT(DISTINCT f.id)::int AS families,COUNT(DISTINCT p.id)::int AS posts
+              FROM economic_cost_centers c LEFT JOIN economic_cost_families f ON f.center_id=c.id LEFT JOIN economic_cost_posts p ON p.center_id=c.id
+              WHERE c.market_id IS NOT DISTINCT FROM (SELECT id FROM markets WHERE code=$1)`,[scope]);
+              return row;
+            }
+            for(const scope of ['KM','CM','CG','GROUP']){
+              const original=report.pg.find(x=>x.code===scope);assert.ok(original?.is_active);
+              const b=await(await page.request.get(base+endpoint(scope)+'?periodStart='+month)).json();
+              assert.equal(b.costCapabilities?.reference,true);
+              assert.equal(b.centers.length,original.centers);
+              const current=await(await fetch(base+'/health/version')).json();assert.equal(current.commit,version.commit);
+              let result;
+              if(scope==='GROUP'){
+                // Operational initialization through existing authorized canonical API. Not a UI certification.
+                const res=await page.evaluate(async path=>{const r=await fetch(path,{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:'{}'});return {status:r.status,body:await r.json()}},endpoint(scope)+'/initialize');
+                assert.equal(res.status,200);result=res.body;
+              }else{
+                await page.goto(base+'/admin/workspaces/pricing?market='+scope,{waitUntil:'domcontentloaded'});
+                const tabs=page.locator('.kmc-v7v6-tabs');await tabs.waitFor({state:'visible',timeout:30000});
+                const init=page.getByRole('button',{name:'Initialiser les centres et familles',exact:true});await init.waitFor({state:'visible',timeout:20000});
+                const pending=page.waitForResponse(r=>new URL(r.url()).pathname===endpoint(scope)+'/initialize'&&r.request().method()==='POST');
+                await init.click();const res=await pending;assert.equal(res.status(),200);result=await res.json();
+                await page.locator('.kmc-v7-center-card').first().waitFor({state:'visible',timeout:30000});
+                assert.equal(await page.locator('.kmc-v7-center-card').count(),expected[scope]);
+                for(const width of [1280,1440,1920]){
+                  await page.setViewportSize({width,height:900});
+                  const cards=page.locator('.kmc-v7-center-card');
+                  assert.equal(await cards.count(),expected[scope]);
+                  await page.screenshot({path:'test-results/eco-reference/'+scope+'-'+width+'.png'});
+                }
+              }
+              const pg=await census(scope),a=await(await page.request.get(base+endpoint(scope)+'?periodStart='+month)).json();
+              assert.equal(pg.centers,expected[scope]);assert.equal(a.centers.length,pg.centers);
+              assert.equal(pg.families,scope==='GROUP'?7:9);assert.equal(a.families.length,pg.families);
+              assert.equal(pg.posts,original.posts);assert.equal(a.posts.length,original.posts);
+              report.initialized.push({scope,via:scope==='GROUP'?'AUTHORIZED_API_CONFIGURATION':'CHROMIUM',created:result,pg,apiCenters:a.centers.length});
+              console.log(JSON.stringify({scope,created:result,pg}));
             }
             const end=await(await fetch(base+'/health/version')).json();assert.equal(end.commit,version.commit);
-            report.verdict='READ_ONLY_CENSUS_COMPLETE_NOT_CERTIFICATION';
+            report.verdict='REFERENCE_INITIALIZATION_PROVEN_NOT_FULL_CERTIFICATION';
           })().catch(e=>{report.failure=e.code||e.name;process.exitCode=1}).finally(async()=>{if(browser)await browser.close();await db.pool.end();fs.writeFileSync('test-results/eco-reference/report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report))});
           JS
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: eco-reference-census
-          path: test-results/eco-reference/report.json
+          path: test-results/eco-reference/
