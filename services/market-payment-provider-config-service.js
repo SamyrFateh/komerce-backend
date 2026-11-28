@@ -8,7 +8,7 @@
  * @outputs       market_payment_providers configuration
  * @depends       services/mobile-money/registry.js, services/market-payment-collection-gate.js
  * @used-by       services/market-provisioning-service.js
- * @db-read       markets, market_central_collection_modes
+ * @db-read       markets, market_central_collection_modes, market_operating_assignments, market_cash_control_policies
  * @db-write      market_payment_providers, market_central_collection_modes
  * @db-txn        caller-owned
  * @doctrine      payment_provider_config_owned_by_payments, provisioning_only_writer
@@ -18,7 +18,7 @@
 'use strict';
 
 const { listAdapters } = require('./mobile-money/registry');
-const { CENTRAL_MODES } = require('./market-payment-collection-gate');
+const { CENTRAL_MODES, CASH_COLLECTION_ALLOWED_SQL } = require('./market-payment-collection-gate');
 const ALLOWED_PROVIDERS = Object.freeze(listAdapters().map(adapter => adapter.name));
 
 function paymentOptions() {
@@ -49,6 +49,23 @@ async function listCentralCollectionModes(executor, marketId) {
     [marketId]
   );
   return rows;
+}
+
+// Public checkout projection exposes booleans, never merchant credentials or
+// decision evidence. An unavailable provider is not a selectable payment mode.
+async function checkoutPaymentModes(executor,marketId,mobileAvailable) {
+  const db=requireExecutor(executor);
+  const {rows:[market]}=await db.query(
+    `SELECT ${CASH_COLLECTION_ALLOWED_SQL} AS cash_enabled FROM markets WHERE id=$1::uuid AND lifecycle_status='ACTIVE' AND is_active`,[marketId]);
+  if(!market)return {cash_relais:false,stripe_eur:false,paypal_eur:false,mobile_money:false};
+  const authorizations=await listCentralCollectionModes(db,marketId);
+  const options=paymentOptions();
+  return {
+    cash_relais:market.cash_enabled===true,
+    stripe_eur:authorizations.some(x=>x.payment_mode==='stripe_eur')&&options.central.some(x=>x.mode==='stripe_eur'&&x.configured),
+    paypal_eur:authorizations.some(x=>x.payment_mode==='paypal_eur')&&options.central.some(x=>x.mode==='paypal_eur'&&x.configured),
+    mobile_money:mobileAvailable===true
+  };
 }
 
 // The existing payments table remains the only authorization. A central
@@ -153,4 +170,4 @@ async function configureProvisioningProvider(executor, {
   return rows[0];
 }
 
-module.exports = { ALLOWED_PROVIDERS, paymentOptions, assertMobileMarketEligibility, listCentralCollectionModes, configureCentralCollectionModes, configureProvisioningProvider };
+module.exports = { checkoutPaymentModes, ALLOWED_PROVIDERS, paymentOptions, assertMobileMarketEligibility, listCentralCollectionModes, configureCentralCollectionModes, configureProvisioningProvider };

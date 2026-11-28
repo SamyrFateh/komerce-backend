@@ -50,3 +50,15 @@ test('canonical provider writer refuses a different country even with the same c
   await expect(configureProvisioningProvider(db,{marketId:'m1',provider:'orange_money',currency:'XAF'})).rejects.toMatchObject({code:'MARKET_PAYMENT_PROVIDER_INELIGIBLE',status:409});
   expect(db.query).toHaveBeenCalledTimes(1);
 });
+
+test('public checkout modes reflect the actual relay market policy, central grants and runtime config',async()=>{
+  const {checkoutPaymentModes,paymentOptions}=require('../../services/market-payment-provider-config-service');
+  const configured=paymentOptions().central.find(x=>x.mode==='stripe_eur').configured;
+  const db={query:jest.fn().mockResolvedValueOnce({rows:[{cash_enabled:false}]}).mockResolvedValueOnce({rows:[{payment_mode:'stripe_eur',evidence_ref:'PRIVATE'}]})};
+  await expect(checkoutPaymentModes(db,'m1',true)).resolves.toEqual({cash_relais:false,stripe_eur:configured,paypal_eur:false,mobile_money:true});
+  expect(db.query.mock.calls[0][0]).toContain("lifecycle_status='ACTIVE'");
+  expect(db.query.mock.calls[0][1]).toEqual(['m1']);
+  db.query.mockReset().mockResolvedValueOnce({rows:[]});
+  await expect(checkoutPaymentModes(db,'m1',true)).resolves.toEqual({cash_relais:false,stripe_eur:false,paypal_eur:false,mobile_money:false});
+  expect(db.query).toHaveBeenCalledTimes(1);
+});
