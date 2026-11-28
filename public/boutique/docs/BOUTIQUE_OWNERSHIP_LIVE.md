@@ -18,7 +18,7 @@ Ce fichier répond à une seule question : **quand je touche X, qu'est-ce que j'
 | **Carte produit** `.k-card*` | products.css (24), critical-home.css (15), categories.css (9), boutique-desktop.css (4), discovery-rail.css (1), layout.css (1) | 6 | 🔴 |
 | **Grille produits** `.k-grid*` | products.css (16), critical-home.css (7), layout.css (6), interactions.css (3), cart.css (2), responsive-desktop-matrix.css (2) | 6 | 🔴 |
 | **Header** `.k-header*` | layout.css (23), mobile-shell-convergence.css (7), hero.css (1), tokens.css (1) | 4 | 🔴 |
-| **Hero** `.k-hero*` | hero.css (9), hero-ultra-mobile.css (3), critical-home.css (2), mobile-catalog-convergence.css (2), cart.css (1) | 5 | 🔴 |
+| **Hero** `.k-hero*` | hero.css (10), tokens.css (5), hero-ultra-mobile.css (3), critical-home.css (2), mobile-catalog-convergence.css (2), cart.css (1) | 6 | 🔴 |
 | **Chips catégories** `.k-chip*` | categories.css (70), critical-home.css (42), layout.css (2), category-cutout-navigation-desktop.css (1), category-cutout-navigation.css (1), interactions.css (1) | 6 | 🔴 |
 | **Bottom-nav mobile** `.k-bnav*` | layout.css (4), interactions.css (2), mobile-shell-convergence.css (1) | 3 | 🔴 |
 

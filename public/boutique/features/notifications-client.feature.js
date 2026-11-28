@@ -37,7 +37,7 @@ module.exports = {
   files: {
     boutique: ['../js/b-notifications.js', '../js/b-on-demand.js'],
     css: ['../css/notifications.css', '../css/on-demand.css'],
-    tests: ['../tests/unit/b-notifications.test.js'],
+    tests: ['../tests/unit/b-notifications.test.js', '../tests/unit/b-on-demand.test.js'],
   },
   docs: ['../../../docs/doctrine/DOCTRINE_NOTIFICATIONS_CLIENT_KOMERCE.md'],
   contract: {
