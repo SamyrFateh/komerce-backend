@@ -1,6 +1,6 @@
 {
   "versions": {
-    "base.css": 266,
+    "base.css": 268,
     "components.css": 680,
     "desktop.css": 157,
     "checkout-desktop-v2.css": 1,
@@ -10,15 +10,15 @@
   },
   "hashes": {
     "critical-home.css": "98f936730561",
-    "base.css": "4aca53e6538b",
+    "base.css": "5d5ffa7dd179",
     "components.css": "159397f479c6",
     "desktop.css": "815a37220866",
     "checkout-desktop-v2.css": "448a3576e613",
     "discovery-desktop-v2.css": "87e4796036eb",
     "service-detail.css": "7e835bd532f1"
   },
-  "updatedAt": "2026-11-21T06:28:40.384Z",
+  "updatedAt": "2026-11-28T13:20:16.678Z",
   "changedBundles": [
-    "components.css"
+    "base.css"
   ]
 }
