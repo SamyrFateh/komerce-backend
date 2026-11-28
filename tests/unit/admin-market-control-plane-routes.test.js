@@ -75,3 +75,8 @@ describe('historical market reprovision route', () => {
     expect(source).toMatch(/reprovisionMarket/);
   });
 });
+
+test('timezone completion is central, transactional and invokes the canonical writer orchestration',()=>{
+  expect(source).toContain("router.post('/:marketCode/preparation/timezone', ...centralAdmin");
+  expect(source).toContain('withTransaction(client=>completeMarketTimezone(client,');
+});

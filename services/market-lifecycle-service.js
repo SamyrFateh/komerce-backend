@@ -183,6 +183,24 @@ async function loadProvisioningMarket(executor, { marketCode }) {
   return market;
 }
 
+// A missing timezone may be completed on the original market, without
+// touching its assignment, members, financial configuration or other metadata.
+async function completeProvisioningTimezone(executor, {marketCode,businessTimezone}) {
+  const db=requireExecutor(executor);
+  const code=normalizeMarketCode(marketCode);
+  if(!code)throw lifecycleError('MARKET_CODE_INVALID','Code marché invalide.',400);
+  const timezone=validateBusinessTimezone(businessTimezone,{required:true});
+  const {rows:[before]}=await db.query(
+    'SELECT id,code,is_active,lifecycle_status,business_timezone FROM markets WHERE code=$1 FOR UPDATE',[code]);
+  if(!before)throw lifecycleError('MARKET_NOT_FOUND','Marché introuvable.',404);
+  if(before.lifecycle_status!=='PROVISIONING'||before.is_active)throw lifecycleError('MARKET_TIMEZONE_PREPARATION_ONLY','Complément du fuseau réservé à la préparation.',409);
+  if(before.business_timezone===timezone)return {before,after:before,changed:false};
+  if(before.business_timezone!=null)throw lifecycleError('MARKET_TIMEZONE_ALREADY_SET','Fuseau déjà arrêté : modification soumise à un arbitrage distinct.',409);
+  const {rows:[after]}=await db.query(
+    'UPDATE markets SET business_timezone=$2 WHERE id=$1::uuid RETURNING id,code,is_active,lifecycle_status,business_timezone',[before.id,timezone]);
+  return {before,after,changed:true};
+}
+
 // The market feature is the sole runtime writer of its editorial metadata.
 // This is never a financial, payment or market-authorization write.
 const { PUBLIC_TEXT_KEYS } = require('./public-market-storefront');
@@ -235,4 +253,4 @@ async function updateMarketStorefront(executor, { marketCode, storefrontTexts })
 }
 
 module.exports = {
-  validateBusinessTimezone, validateProvisioningCurrency, ALLOWED_TRANSITIONS, createProvisioningMarket, loadProvisioningMarket, normalizeCurrency, transitionMarketLifecycle, validateStorefrontTexts, updateMarketStorefront };
+  completeProvisioningTimezone, validateBusinessTimezone, validateProvisioningCurrency, ALLOWED_TRANSITIONS, createProvisioningMarket, loadProvisioningMarket, normalizeCurrency, transitionMarketLifecycle, validateStorefrontTexts, updateMarketStorefront };

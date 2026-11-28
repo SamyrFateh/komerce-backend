@@ -240,7 +240,7 @@
     if (!wizard) return;
     const steps = ['Identité','Responsable et droits','Relais (facultatif)','Paiements','Vérification'];
     const section = el(doc, 'section', 'kmc-access-panel kmc-markets-onboarding');
-    section.appendChild(el(doc, 'h3', '', 'Initialiser un marché'));
+    section.appendChild(el(doc, 'h3', '', wizard.existingMarket ? 'Initialiser le marché existant · '+wizard.existingMarket : 'Initialiser un marché'));
     section.appendChild(el(doc, 'p', 'kmc-access-muted', 'Étape ' + (wizard.step+1) + ' sur ' + steps.length + ' · ' + steps[wizard.step] + '. La boutique restera fermée.'));
     const form = el(doc, 'form', 'kmc-markets-mgmt-form');
     function input(name, label, type, choices, required = true) {
@@ -254,7 +254,8 @@
     if (wizard.step === 0) {
       const code = input('code','Code pays (ISO à 2 lettres)','text');
       code.maxLength = 2; code.pattern = '[A-Za-z]{2}';
-      input('name','Nom du marché','text');
+      const name = input('name','Nom du marché','text');
+      if(wizard.existingMarket){code.readOnly=true;name.readOnly=true;}
       const currencies = wizard.authority.currency_options || [];
       const currency = input('currency','Devise (moteur de change canonique)',null,[{value:'',label:'Choisir…'}].concat(currencies.map(c=>({value:c.code,label:c.code}))));
       const unit = input('minor_unit','Décimales de la devise','number');
@@ -265,9 +266,11 @@
         wizard.values.minor_unit = unit.value;
       }
       currency.addEventListener('change',syncUnit);
-      syncUnit();
+      if(wizard.existingMarket){currency.disabled=true;unit.value=wizard.values.minor_unit;}
+      else syncUnit();
       const timezone = input('business_timezone','Fuseau horaire IANA du marché','text');
       timezone.placeholder = 'Ex. Africa/Libreville';
+      if(wizard.existingMarket && wizard.fixedTimezone)timezone.readOnly=true;
       form.appendChild(el(doc,'p','kmc-access-muted','La conversion EUR est contrôlée par le serveur. Langue initiale : français.'));
     } else if (wizard.step === 1) {
       input('central_referent_user_id','Référent central',null,referentChoices(wizard.authority));
@@ -405,6 +408,28 @@
           state.gaps.items.forEach(gap => list.appendChild(el(doc, 'li', '', gap.message || gap.code)));
           cell.appendChild(list);
         }
+        const current = state.gaps.market;
+        if(market.lifecycle_status==='PROVISIONING' && current){
+          if(state.gaps.assignmentStatus===null || state.gaps.assignmentStatus==='ENDED'){
+            const initialise=el(doc,'button','kmc-access-button is-primary','Initialiser ce marché existant');
+            initialise.type='button';
+            initialise.addEventListener('click',()=>options.onHistoricalWizard(current));
+            cell.appendChild(initialise);
+          }else if(state.gaps.assignmentStatus==='ACTIVE'){
+            cell.appendChild(el(doc,'p','kmc-access-muted','Préparation existante conservée : équipe, relais, paiements et référentiels ne sont pas recréés. Le responsable poursuit dans son dashboard canonique.'));
+            if(current.business_timezone===null){
+              const form=el(doc,'form','kmc-markets-mgmt-form');
+              const timezone=field(doc,form,'business_timezone','Compléter le fuseau horaire IANA','text');
+              timezone.required=true;timezone.placeholder='Ex. Africa/Libreville';
+              const save=el(doc,'button','kmc-access-button','Enregistrer le fuseau');
+              save.type='submit';form.appendChild(save);
+              form.addEventListener('submit',event=>{event.preventDefault();return options.onCompleteTimezone(current,timezone.value);});
+              cell.appendChild(form);
+            }
+          }else{
+            cell.appendChild(el(doc,'p','kmc-access-muted','Mandat non actif : traiter son statut avant de poursuivre, sans recréer une équipe.'));
+          }
+        }
         renderDeliveryProof(doc, cell, state, market, options);
         detail.appendChild(cell);
         body.appendChild(detail);
@@ -435,6 +460,27 @@
       } catch (error) { state.feedback = error.message; state.feedbackTone = 'critical'; }
       paint();
     };
+    ctx.onHistoricalWizard = async market => {
+      if(state.wizard)return;
+      try{
+        const authority=await request(fetchImpl,'/api/admin/markets/central-authority');
+        state.wizard={step:0,existingMarket:market.code,fixedTimezone:market.business_timezone||null,
+          values:{code:market.code,name:market.name,currency:market.currency,minor_unit:String(market.minor_unit),business_timezone:market.business_timezone||''},
+          authority,error:'',busy:false};
+        state.feedback='';
+      }catch(error){state.feedback=error.message;state.feedbackTone='critical';}
+      paint();
+    };
+    ctx.onCompleteTimezone=async(market,timezone)=>{
+      try{
+        await request(fetchImpl,'/api/admin/markets/'+encodeURIComponent(market.code)+'/preparation/timezone',{method:'POST',body:{business_timezone:String(timezone||'').trim()}});
+        await load();
+        await ctx.onGaps(market);
+        state.feedback='Fuseau du marché '+market.code+' enregistré, configuration existante conservée.';
+        state.feedbackTone='positive';
+      }catch(error){state.feedback=error.message;state.feedbackTone='critical';}
+      paint();
+    };
     ctx.onWizardBack = () => {
       if (!state.wizard || state.wizard.busy) return;
       state.wizard.step--; state.wizard.error = ''; paint();
@@ -457,7 +503,8 @@
       catch (error) { wizard.error = error.message; paint(); return; }
       wizard.busy = true; paint();
       try {
-        const result = await request(fetchImpl,'/api/admin/markets',{method:'POST',body:payload});
+        const endpoint=wizard.existingMarket?'/api/admin/markets/'+encodeURIComponent(wizard.existingMarket)+'/reprovision':'/api/admin/markets';
+        const result = await request(fetchImpl,endpoint,{method:'POST',body:payload});
         state.wizard = null;
         state.feedback = 'Marché ' + result.market.code + ' initialisé. Boutique fermée.';
         state.feedbackTone = 'positive';
@@ -473,7 +520,8 @@
     ctx.onGaps = async market => {
       try {
         const control = await request(fetchImpl, `/api/admin/markets/${encodeURIComponent(market.code)}/control-plane`);
-        state.gaps = { code: market.code, items: control.gaps || [], deliveryProof: control.deliveryProof || null };
+        state.gaps = { code: market.code, items: control.gaps || [], deliveryProof: control.deliveryProof || null,
+          market:control.market||null,assignmentStatus:control.assignment?.status??null };
         state.carriers = Array.isArray(control.carriers) ? control.carriers : [];
         state.feedback = '';
       } catch (error) {

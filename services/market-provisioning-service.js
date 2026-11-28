@@ -25,7 +25,7 @@
  */
 'use strict';
 
-const { createProvisioningMarket, loadProvisioningMarket, transitionMarketLifecycle, validateProvisioningCurrency, validateBusinessTimezone } = require('./market-lifecycle-service');
+const { createProvisioningMarket, loadProvisioningMarket, transitionMarketLifecycle, validateProvisioningCurrency, validateBusinessTimezone, completeProvisioningTimezone } = require('./market-lifecycle-service');
 const delegation = require('./market-delegation-service');
 const { targetCapabilitiesForScope } = require('./market-operator-provisioning');
 const { inviteTeamMember } = require('./market-delegation-team-service');
@@ -308,6 +308,7 @@ async function provisionMarket(executor, {
 async function reprovisionMarket(executor, {
   actorUserId,
   marketCode,
+  businessTimezone = null,
   centralReferentUserId,
   financialLimits = {},
   lead = {},
@@ -317,11 +318,25 @@ async function reprovisionMarket(executor, {
   initialRelais = null,
   correlationId = null,
 }) {
-  const market = await loadProvisioningMarket(executor, { marketCode });
+  let market = await loadProvisioningMarket(executor, { marketCode });
+  const named = lead.last_name != null || lead.first_name != null;
+  if(named)validateProvisioningCurrency(market.currency,market.minor_unit);
+  if(businessTimezone != null || (named && !market.business_timezone)){
+    const edit = await completeMarketTimezone(executor,{marketCode,businessTimezone,actorUserId,correlationId});
+    market = {...market,business_timezone:edit.market.business_timezone};
+  }
   return configureProvisioningMarket(executor, {
     market, actorUserId, centralReferentUserId, financialLimits, lead,
     paymentProvider, centralCollectionModes, cashPolicy, initialRelais, correlationId,
   });
+}
+
+async function completeMarketTimezone(executor,{marketCode,businessTimezone,actorUserId,correlationId=null}) {
+  const edit=await completeProvisioningTimezone(executor,{marketCode,businessTimezone});
+  if(edit.changed)await delegation.audit(executor,{actorUserId,marketId:edit.before.id,
+    action:'MARKET_BUSINESS_TIMEZONE_COMPLETED',before:{business_timezone:edit.before.business_timezone},
+    after:{business_timezone:edit.after.business_timezone},correlationId});
+  return {changed:edit.changed,market:edit.after};
 }
 
 async function setMarketLifecycle(executor, {
@@ -408,4 +423,4 @@ async function setAssignmentLifecycle(executor, {
   return { changed: true, assignment_id: assignment.id, status: target, previous_status: assignment.status };
 }
 
-module.exports = { normalizeProfessionalLead, ensureProfessionalLead, assertCentralReferent, configureProvisioningMarket, provisionMarket, reprovisionMarket, setMarketLifecycle, setAssignmentLifecycle };
+module.exports = { normalizeProfessionalLead, ensureProfessionalLead, assertCentralReferent, configureProvisioningMarket, provisionMarket, reprovisionMarket, completeMarketTimezone, setMarketLifecycle, setAssignmentLifecycle };

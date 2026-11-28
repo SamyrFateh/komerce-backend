@@ -125,6 +125,7 @@ module.exports = {
       'POST /api/admin/markets', // admin central — provisionne, n’active pas
       'POST /api/admin/markets/:marketCode/lifecycle', // admin central — ACTIVE gated par readiness
       'PUT /api/admin/markets/:marketCode/storefront', // admin central — éditorial, writer canonique
+      'POST /api/admin/markets/:marketCode/preparation/timezone', // compléter uniquement le fuseau manquant
       'POST /api/admin/markets/:marketCode/reprovision', // admin central — recompose un Market ID historique PROVISIONING
       'GET /api/admin/markets', // admin central
       'GET /api/admin/markets/central-authority', // admin central
@@ -138,6 +139,7 @@ module.exports = {
       'readinessFromGaps()',
       'provisionMarket()',
       'reprovisionMarket()',
+      'completeMarketTimezone()',
       'setMarketLifecycle()',
       'central()',
       'overview()',

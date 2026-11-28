@@ -123,7 +123,7 @@ function requireExecutor(executor) {
 async function listMarkets(executor) {
   const db = requireExecutor(executor);
   const { rows } = await db.query(
-    `SELECT m.code, m.name, m.currency, m.is_active, m.lifecycle_status,
+    `SELECT m.code, m.name, m.currency, m.minor_unit, m.business_timezone, m.is_active, m.lifecycle_status,
             a.status AS assignment_status,
             (SELECT COUNT(*)::int FROM assignment_memberships am
               WHERE am.assignment_id = a.id AND am.status = 'ACTIVE') AS active_members

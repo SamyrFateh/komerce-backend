@@ -201,3 +201,40 @@ test('central collection needs separate evidence per selected method', () => {
   expect(() => mgmt.initialPayload({...base,stripe_eur:'true'})).toThrow(/décision/);
   expect(mgmt.initialPayload({...base,stripe_eur:'true',stripe_eur_evidence:'DECISION-12'}).central_collection_modes).toEqual([{payment_mode:'stripe_eur',evidence_ref:'DECISION-12'}]);
 });
+
+test('resume an initialized market by completing its missing timezone without reprovisioning',async()=>{
+  const market={code:'GA',name:'Gabon',currency:'XAF',minor_unit:0,lifecycle_status:'PROVISIONING',business_timezone:null};
+  const fetchImpl=jest.fn((url,options)=>{
+    if(url.endsWith('/preparation/timezone'))return response({changed:true,market:{...market,business_timezone:'Africa/Libreville'}});
+    if(url.endsWith('/control-plane'))return response({market,assignment:{status:'ACTIVE'},gaps:[{code:'NO_BUSINESS_TIMEZONE',message:'Fuseau requis'}]});
+    return response({markets:[market]});
+  });
+  const doc=fakeDoc(),host=doc.createElement('section');
+  await mgmt.mount(host,{document:doc,fetch:fetchImpl});
+  await walk(host).find(n=>n.textContent==='Voir les écarts').listeners.click();
+  const form=walk(host).find(n=>n.tag==='form'&&n.fields?.business_timezone);
+  expect(form).toBeTruthy();
+  expect(walk(host).some(n=>n.textContent==='Initialiser ce marché existant')).toBe(false);
+  form.fields.business_timezone.value='Africa/Libreville';
+  await form.listeners.submit({preventDefault(){}});
+  const mutations=fetchImpl.mock.calls.filter(([url,options])=>options.method==='POST');
+  expect(mutations).toHaveLength(1);
+  expect(mutations[0][0]).toBe('/api/admin/markets/GA/preparation/timezone');
+  expect(JSON.parse(mutations[0][1].body)).toEqual({business_timezone:'Africa/Libreville'});
+});
+test('historical market resumes its original identity in the wizard without creating a second market',async()=>{
+  const market={code:'GA',name:'Gabon',currency:'XAF',minor_unit:0,lifecycle_status:'PROVISIONING',business_timezone:null};
+  const fetchImpl=jest.fn(url=>url.endsWith('/control-plane')?response({market,assignment:null,gaps:[]}):
+    url.endsWith('/central-authority')?response({currency_options:[{code:'XAF',minor_unit:0}]}):response({markets:[market]}));
+  const doc=fakeDoc(),host=doc.createElement('section');
+  await mgmt.mount(host,{document:doc,fetch:fetchImpl});
+  await walk(host).find(n=>n.textContent==='Voir les écarts').listeners.click();
+  await walk(host).find(n=>n.textContent==='Initialiser ce marché existant').listeners.click();
+  const form=walk(host).find(n=>n.tag==='form'&&n.fields?.code);
+  expect(form.fields.code.value).toBe('GA');
+  expect(form.fields.code.readOnly).toBe(true);
+  expect(form.fields.name.value).toBe('Gabon');
+  expect(form.fields.currency.disabled).toBe(true);
+  expect(form.fields.minor_unit.value).toBe('0');
+  expect(fetchImpl.mock.calls.every(([,options])=>options.method==='GET')).toBe(true);
+});

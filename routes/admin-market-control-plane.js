@@ -36,7 +36,7 @@ const { paymentOptions } = require('../services/market-payment-provider-config-s
 const { MINOR_UNITS } = require('../services/fx-authority');
 const delegation = require('../services/market-delegation-service');
 const { updateMarketStorefront } = require('../services/market-lifecycle-service');
-const { provisionMarket, reprovisionMarket, setMarketLifecycle, setAssignmentLifecycle } = require('../services/market-provisioning-service');
+const { provisionMarket, reprovisionMarket, completeMarketTimezone, setMarketLifecycle, setAssignmentLifecycle } = require('../services/market-provisioning-service');
 
 // Vue centrale par rôle (Q4 du chantier) : déclarée ici, jamais implicite.
 const centralAdmin = [authenticate, requireRole(['admin'])];
@@ -94,6 +94,7 @@ router.post('/:marketCode/reprovision', ...centralAdmin, async (req, res, next) 
     const result = await withTransaction(client => reprovisionMarket(client, {
       actorUserId: req.user.id,
       marketCode: req.params.marketCode,
+      businessTimezone: body.business_timezone ?? null,
       centralReferentUserId: body.central_referent_user_id,
       financialLimits: body.financial_limits || {},
       lead: body.lead || {},
@@ -107,6 +108,16 @@ router.post('/:marketCode/reprovision', ...centralAdmin, async (req, res, next) 
   } catch (error) {
     if (!sendKnownError(res, error)) next(error);
   }
+});
+
+router.post('/:marketCode/preparation/timezone', ...centralAdmin, async (req,res,next)=>{
+  try {
+    const result=await withTransaction(client=>completeMarketTimezone(client,{
+      marketCode:req.params.marketCode,businessTimezone:req.body?.business_timezone,actorUserId:req.user.id,
+      correlationId:req.headers['x-correlation-id'] ? String(req.headers['x-correlation-id']).slice(0,200) : null,
+    }));
+    res.json(result);
+  }catch(error){if(!sendKnownError(res,error))next(error);}
 });
 
 // Central admin edits only public editorial fields; the canonical market
