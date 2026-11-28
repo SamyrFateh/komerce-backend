@@ -237,6 +237,7 @@
       key: stage.key,
       label: stage.label,
       meta: controlStageMeta(stage.key),
+      available: Array.isArray(byStage[stage.key]),
       alerts: structuralAlerts
         .filter(alert => alert && alert.stage === stage.key)
         .map(alert => ({
@@ -282,32 +283,89 @@
         return { key: phase.key, label: phase.label, helper: 'Non projetée ici · voir Order 360',
           tone: 'neutral', href: undefined, observed: false };
       }
-      const available = phase.stages.every(stage => byKey.has(stage));
-      const count = available ? phase.stages.reduce((sum, stage) => sum + byKey.get(stage).orders.length, 0) : null;
+      const available = phase.stages.every(stage => byKey.get(stage)?.available);
+      const orders = available ? phase.stages.flatMap(stage => byKey.get(stage).orders) : [];
+      const count = available ? orders.length : null;
+      const healthCounts = available ? { GREEN: 0, ORANGE: 0, RED: 0, UNKNOWN: 0 } : null;
+      if (healthCounts) orders.forEach(order => { healthCounts[order.health] += 1; });
       return {
         key: phase.key, label: phase.label,
         helper: count == null ? 'Position indisponible'
           : `${count} commande${count > 1 ? 's' : ''} positionnée${count > 1 ? 's' : ''}`,
-        tone: 'neutral', observed: available,
+        tone: 'neutral', observed: available, count, healthCounts,
         href: available ? stageHref(phase.key) : undefined,
       };
     });
   }
 
-  function renderProcessPhases(doc, payload, user, base, decisionUi) {
-    if (!decisionUi || !decisionUi.FlowStrip) return null;
+  const HEALTH_LABELS = Object.freeze({ GREEN: 'Normal', ORANGE: 'À surveiller', RED: 'Action requise', UNKNOWN: 'Non déterminé' });
+
+  function bindDrillLink(link, href, onFilter) {
+    link.setAttribute('href', href);
+    if (typeof onFilter === 'function') link.addEventListener('click', event => {
+      if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button > 0) return;
+      if (!globalThis.history || typeof globalThis.history.replaceState !== 'function') return;
+      event.preventDefault();
+      globalThis.history.replaceState(globalThis.history.state, '', href);
+      onFilter();
+    });
+  }
+
+  function renderProcessPhases(doc, payload, user, base, decisionUi, onFilter) {
     const phases = projectProcessPhases(payload, user, base);
     if (!phases.length) return null;
     const wrapper = doc.createElement('div');
     wrapper.className = 'kmc-operations-process-overview';
     wrapper.setAttribute('data-process-source', 'control_chain');
-    wrapper.appendChild(text(doc, 'h3', 'kmc-operations-process-title', 'Parcours des commandes'));
     wrapper.appendChild(text(doc, 'p', 'kmc-operations-process-caption',
-      'Cliquez sur une phase pour voir les commandes. Les neuf sous-étapes restent identifiables dans chaque carte.'));
+      'Une position par commande dans la projection chargée (liste serveur limitée, non total exhaustif) · cliquez sur une phase ou un état.'));
     const host = doc.createElement('div');
     host.className = 'kmc-operations-process-steps';
-    decisionUi.FlowStrip.render(host, { stages: phases });
+    const flow = doc.createElement('div');
+    flow.className = 'kmc-flow-strip';
+    flow.setAttribute('data-flow-strip', '');
+    phases.forEach((phase, index) => {
+      const card = doc.createElement('div');
+      card.className = 'kmc-operations-phase-card';
+      card.setAttribute('data-compact-phase', phase.key);
+      const selected = stageFilterKey() === phase.key;
+      if (selected) card.setAttribute('data-selected', 'true');
+      const node = doc.createElement(phase.href ? 'a' : 'div');
+      node.className = 'kmc-flow-stage is-neutral';
+      if (phase.href) bindDrillLink(node, phase.href, onFilter);
+      if (selected && !healthFilterKey()) node.setAttribute('aria-current', 'true');
+      node.appendChild(text(doc, 'span', 'kmc-flow-stage-index', index + 1));
+      const copy = doc.createElement('div');
+      copy.className = 'kmc-flow-stage-copy';
+      copy.appendChild(text(doc, 'strong', 'kmc-flow-stage-label', phase.label));
+      copy.appendChild(text(doc, 'span', 'kmc-flow-stage-helper', phase.helper));
+      node.appendChild(copy);
+      card.appendChild(node);
+      if (phase.healthCounts) {
+        const distribution = doc.createElement('div');
+        distribution.className = 'kmc-compact-phase-health';
+        Object.entries(phase.healthCounts).forEach(([health, count]) => {
+          if (!count) return;
+          const link = text(doc, 'a', 'kmc-control-stage-health-part ' + controlHealthClass(health), count);
+          link.setAttribute('data-phase-health', health);
+          link.setAttribute('aria-label', phase.label + ' · ' + HEALTH_LABELS[health] + ' · ' + count);
+          if (selected && healthFilterKey() === health) link.setAttribute('aria-current', 'true');
+          bindDrillLink(link, stageHref(phase.key, health), onFilter);
+          distribution.appendChild(link);
+        });
+        card.appendChild(distribution);
+      }
+      flow.appendChild(card);
+    });
+    host.appendChild(flow);
     wrapper.appendChild(host);
+    const observed = phases.filter(phase => phase.observed);
+    const all = text(doc, 'a', 'kmc-operations-all-drill', observed.length === 5
+      ? 'Voir toutes les commandes projetées' : 'Voir les phases disponibles');
+    if (observed.length) {
+      bindDrillLink(all, stageHref('ALL'), onFilter);
+      wrapper.appendChild(all);
+    }
     return wrapper;
   }
 
@@ -315,15 +373,17 @@
   // Les commandes et leurs couleurs ne sont jamais recalculées par le navigateur.
   function renderControlChain(doc, host, payload, user, base) {
     const activeKey = stageFilterKey();
+    const activeHealth = healthFilterKey();
     const source = controlChainColumns(payload);
-    const columns = PROCESS_PHASES.filter(phase => phase.stages.length && (!activeKey || phase.key === activeKey))
+    const available = new Set(source.filter(stage => stage.available).map(stage => stage.key));
+    const columns = PROCESS_PHASES.filter(phase => phase.stages.length && phase.stages.every(stage => available.has(stage)) && (!activeKey || phase.key === activeKey))
       .map(phase => {
         const members = source.filter(stage => phase.stages.includes(stage.key));
         return {
           key: phase.key,
           label: phase.label,
           meta: controlStageMeta(phase.anchor),
-          orders: members.flatMap(stage => stage.orders.map(order => ({
+          orders: members.flatMap(stage => stage.orders.filter(order => !activeHealth || order.health === activeHealth).map(order => ({
             ...order,
             stageLabel: order.localOnly && stage.key === 'RELAY' ? 'Préparation / retrait local' : stage.label,
             stageKey: stage.key,
@@ -337,6 +397,7 @@
     host.className = isEmpty ? 'kmc-control-chain is-empty' : 'kmc-control-chain is-active';
     host.setAttribute('data-chain-state', isEmpty ? 'empty' : 'active');
     host.setAttribute('data-phase-count', String(columns.length));
+    host.setAttribute('data-operations-drill', activeKey || 'ALL');
 
     // Le dossier est sous les cinq phases, jamais au-dessus ou en panneau masquant.
     const visibleDrill = base && typeof base.visibleDrillSchema === 'function'
@@ -374,26 +435,10 @@
       heading.className = 'kmc-control-stage-heading';
       const identity = doc.createElement('div');
       identity.className = 'kmc-control-stage-identity';
-      const stageIcon = text(doc, 'span', `kmc-control-stage-icon is-${column.meta.accent}`, column.meta.icon);
-      stageIcon.setAttribute('aria-hidden', 'true');
-      identity.appendChild(stageIcon);
-      identity.appendChild(text(doc, 'span', 'kmc-control-stage-title', column.label));
+       identity.appendChild(text(doc, 'span', 'kmc-control-stage-title', column.label));
       heading.appendChild(identity);
       heading.appendChild(text(doc, 'span', 'kmc-control-stage-count', `${column.orders.length} commande${column.orders.length > 1 ? 's' : ''}`));
 
-      const healthCounts = { GREEN: 0, ORANGE: 0, RED: 0, UNKNOWN: 0 };
-      column.orders.forEach(order => { healthCounts[order.health] += 1; });
-      const distribution = doc.createElement('div');
-      distribution.className = 'kmc-control-stage-health';
-      [['GREEN', 'Normal'], ['ORANGE', 'À surveiller'], ['RED', 'Action requise'], ['UNKNOWN', 'Non déterminé']]
-        .forEach(([health, title]) => {
-          if (!healthCounts[health]) return;
-          const indicator = text(doc, 'span', `kmc-control-stage-health-part ${controlHealthClass(health)}`, String(healthCounts[health]));
-          indicator.title = `${healthCounts[health]} · ${title}`;
-          indicator.setAttribute('aria-label', indicator.title);
-          distribution.appendChild(indicator);
-        });
-      heading.appendChild(distribution);
       stage.appendChild(heading);
 
       const list = doc.createElement('div');
@@ -561,9 +606,11 @@
 
   function renderControlHealthSummary(doc, payload) {
     const summary = controlHealthSummary(payload);
+    const observed = projectProcessPhases(payload).filter(phase => phase.observed).length === 5;
     const host = doc.createElement('div');
     host.className = 'kmc-control-health-summary kmc-dashboard-attention-band';
     host.setAttribute('data-dashboard-role', 'attention');
+    host.setAttribute('aria-label', observed ? 'Santé des commandes projetées' : 'Santé non déterminée : projection incomplète');
 
     [
       ['GREEN', 'positive', 'Normal'],
@@ -577,7 +624,7 @@
       dot.className = 'kmc-control-health-summary-dot';
       dot.setAttribute('aria-hidden', 'true');
       item.appendChild(dot);
-      item.appendChild(text(doc, 'strong', 'kmc-control-health-summary-value', summary[health]));
+      item.appendChild(text(doc, 'strong', 'kmc-control-health-summary-value', observed ? summary[health] : '—'));
       item.appendChild(text(doc, 'span', 'kmc-control-health-summary-label', label));
       host.appendChild(item);
     });
@@ -765,14 +812,28 @@
     } catch (_error) { return null; }
   }
 
-  function stageHref(key) {
+  function healthFilterKey() {
+    try {
+      const health = new URLSearchParams(globalThis.location.search).get('health');
+      return stageFilterKey() && Object.prototype.hasOwnProperty.call(HEALTH_LABELS, health) ? health : null;
+    } catch (_error) { return null; }
+  }
+
+  function allDrillSelected() {
+    try { return new URLSearchParams(globalThis.location.search).get('stage') === 'ALL'; }
+    catch (_error) { return false; }
+  }
+
+  function stageHref(key, health = null) {
     try {
       const loc = globalThis.location;
       const params = new URLSearchParams(loc.search);
       if (key) params.set('stage', key); else params.delete('stage');
+      if (key && key !== 'ALL' && health && Object.prototype.hasOwnProperty.call(HEALTH_LABELS, health)) params.set('health', health);
+      else params.delete('health');
       const query = params.toString();
-      return `${loc.pathname}${query ? `?${query}` : ''}`;
-    } catch (_error) { return key ? `?stage=${encodeURIComponent(key)}` : '?'; }
+      return `${loc.pathname}${query ? `?${query}` : ''}${loc.hash || ''}`;
+    } catch (_error) { return key ? `?stage=${encodeURIComponent(key)}${health ? '&health=' + encodeURIComponent(health) : ''}` : '?'; }
   }
 
   function contextualHref(path, returnTo, label) {
@@ -780,7 +841,9 @@
     if (!nav || typeof nav.withReturnTo !== 'function') return path;
     // Retour = page courante avec sa query (marché, période, filtres) ; chemin fourni en repli seulement.
     const target = typeof nav.currentReturnTarget === 'function' ? nav.currentReturnTarget(returnTo) : returnTo;
-    return nav.withReturnTo(path, target, label);
+    const context = typeof nav.readContext === 'function' ? nav.readContext(globalThis.location?.search) : {};
+    const linked = typeof nav.withContext === 'function' ? nav.withContext(path, context) : path;
+    return nav.withReturnTo(linked, target, label);
   }
 
   // Files d'action commandes (ex-écran « Suivi des commandes ») — ordre serveur conservé.
@@ -855,8 +918,8 @@
     if (controlColumns.length) {
       const chain = cardSection(
         doc,
-        'Chaîne logistique client → relais',
-        'Chaque commande évolue dans le flux ; sa couleur indique uniquement sa situation métier. Cliquez sur une commande pour comprendre la cause.',
+        'Chaîne logistique',
+        'La couleur reflète uniquement la situation métier observée, pas l’avancement cumulé.',
         'operations-control-chain'
       );
       chain.section.className += ' kmc-control-chain-card';
@@ -906,28 +969,42 @@
       });
       chain.section.appendChild(refresh);
       chain.section.setAttribute('data-dashboard-role', 'primary');
-      const process = renderProcessPhases(doc, payload, options.user, base, decisionUi);
-      if (process) chain.section.insertBefore(process, chain.body);
+      const onFilter = () => render(rootNode, payload, options, base, decisionUi);
+      const process = renderProcessPhases(doc, payload, options.user, base, decisionUi, onFilter);
       chain.section.insertBefore(renderControlLegend(doc), chain.body);
+      if (process) chain.section.insertBefore(process, chain.body);
       const activeKey = stageFilterKey();
-      if (activeKey) {
-        const phase = PROCESS_PHASES.find(item => item.key === activeKey);
+      const activeHealth = healthFilterKey();
+      const allSelected = allDrillSelected();
+      if (activeKey || allSelected) {
+        const phase = projectProcessPhases(payload, options.user, base).find(item => item.key === activeKey);
         const chip = doc.createElement('p');
         chip.className = 'kmc-operations-stage-filter';
-        chip.setAttribute('data-stage-filter', activeKey);
-        chip.appendChild(doc.createTextNode(`Filtre : ${phase.label} · `));
+        chip.setAttribute('data-stage-filter', activeKey || 'ALL');
+        const complete = projectProcessPhases(payload).filter(item => item.observed).length === 5;
+        chip.appendChild(doc.createTextNode((phase ? phase.label : complete ? 'Toutes les commandes projetées' : 'Phases disponibles uniquement · projection incomplète') + (activeHealth ? ' · ' + HEALTH_LABELS[activeHealth] : '') + ' · '));
         const clear = doc.createElement('a');
-        clear.href = stageHref(null);
-        clear.textContent = 'Voir toutes les étapes';
+        clear.textContent = 'Fermer le détail';
+        bindDrillLink(clear, stageHref(null), onFilter);
         chip.appendChild(clear);
         chain.section.insertBefore(chip, chain.body);
-      }
-      renderControlChain(doc, chain.body, payload, options.user, base);
-      if (chain.body.getAttribute('data-chain-state') === 'empty') {
-        chain.section.setAttribute('data-chain-state', 'empty');
-        chain.section.appendChild(text(doc, 'p', 'kmc-control-chain-empty-notice', 'Aucune commande dans la chaîne pour le périmètre sélectionné.'));
+        if (phase && !phase.observed) {
+          chain.body.appendChild(text(doc, 'p', 'kmc-control-chain-empty-notice', 'Position indisponible · aucune population certifiée.'));
+        } else {
+          renderControlChain(doc, chain.body, payload, options.user, base);
+          if (chain.body.getAttribute('data-chain-state') === 'empty') {
+            chain.section.setAttribute('data-chain-state', 'empty');
+            chain.section.appendChild(text(doc, 'p', 'kmc-control-chain-empty-notice', allSelected && !complete
+              ? 'Projection incomplète : aucun résultat dans les phases disponibles.'
+              : 'Aucune commande dans la chaîne pour le périmètre sélectionné.'));
+          }
+        }
+      } else {
+        chain.body.hidden = true;
       }
       dashboard.appendChild(chain.section);
+    } else {
+      dashboard.appendChild(text(doc, 'p', 'kmc-control-chain-empty-notice', 'Chaîne opérationnelle non disponible.'));
     }
 
     rootNode.appendChild(dashboard);
@@ -984,6 +1061,7 @@
 
   return Object.freeze({
     stageFilterKey,
+    healthFilterKey,
     stageHref,
     CONTROL_STAGE_META,
     CONTROL_ENVELOPE_LABEL,
