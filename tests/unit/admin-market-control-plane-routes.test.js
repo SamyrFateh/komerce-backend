@@ -38,7 +38,8 @@ describe('admin market control plane — lecture centrale + provisioning', () =>
 
   test('la vue d’autorité centrale est admin, en lecture seule, déclarée avant la route paramétrée', () => {
     expect(source).toMatch(/router\.get\('\/central-authority', \.\.\.centralAdmin/);
-    expect(source).toContain('res.json(await centralAuthority.overview(db))');
+    expect(source).toContain('res.json({ ...(await centralAuthority.overview(db)), payment_options: paymentOptions(), currency_options: Object.entries(MINOR_UNITS)');
+    expect(source).toContain("const { paymentOptions } = require('../services/market-payment-provider-config-service')");
     expect(source.indexOf("'/central-authority'")).toBeLessThan(source.indexOf("'/:marketCode/control-plane'"));
   });
 
@@ -73,4 +74,12 @@ describe('historical market reprovision route', () => {
     expect(source).toMatch(/\.\.\.centralAdmin/);
     expect(source).toMatch(/reprovisionMarket/);
   });
+});
+
+test('timezone completion is central, transactional and invokes the canonical writer orchestration',()=>{
+  expect(source).toContain("router.post('/:marketCode/reprovision', ...centralAdmin");
+  expect(source).not.toContain("router.post('/:marketCode/preparation/timezone'");
+  expect(source).toContain("body.operation !== 'complete_timezone'");
+  expect(source).toContain("Object.keys(body).some(key=>!['operation','business_timezone'].includes(key))");
+  expect(source).toContain('withTransaction(client=>completeMarketTimezone(client,');
 });

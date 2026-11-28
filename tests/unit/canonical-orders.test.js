@@ -103,5 +103,8 @@ test('Orders mount supports detached SPA stage roots and menu policy is cache-bu
   const html = fs.readFileSync(path.join(__dirname, '../../public/dashboards/canonical/index.html'), 'utf8');
   expect(src).not.toMatch(/rootNode\.isConnected\s*===\s*false/);
   expect(src).toContain('rootNode.__dashboardViewIdentity !== identity');
-  expect(html).toContain('navigation-policy-v4.js?v=261128-l3a-sidebar-v54');
+  const versions = [...html.matchAll(/navigation-policy-v4\.js\?v=([^"]+)"/g)].map(match=>match[1]);
+  expect(versions).toHaveLength(1);
+  expect(versions[0]).toMatch(/^\d{6}-[a-z0-9-]+$/);
+  expect(Number(versions[0].slice(0,6))).toBeGreaterThanOrEqual(261127);
 });

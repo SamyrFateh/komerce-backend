@@ -166,7 +166,7 @@
     section.appendChild(el('p', 'kmc-workspace-note', 'Définissez le prix de vente sur ce marché. Le prix global reste inchangé.'));
     const catalog = el('a', 'kmc-autonomy-catalog-link', 'Gérer les produits en vente');
     catalog.href = '/admin/workspaces/catalog?market=' + encodeURIComponent(marketCode);
-    section.appendChild(catalog);
+    if (!workspace.preparation_only) section.appendChild(catalog);
 
     const toolbar = el('div', 'kmc-autonomy-toolbar');
     const search = global.document.createElement('input');
@@ -279,7 +279,7 @@
         actions.appendChild(save);
       }
 
-      if (row.local_price != null) {
+      if (!workspace.preparation_only && row.local_price != null) {
         const preview = el('button', 'kmc-workspace-action is-secondary', 'Vérifier le prix');
         preview.type = 'button';
         preview.addEventListener('click', async () => {
@@ -294,7 +294,7 @@
         actions.appendChild(preview);
       }
 
-      if (canManage && row.local_price != null && row.decision_status !== 'LOCAL_ACTIVE') {
+      if (!workspace.preparation_only && canManage && row.local_price != null && row.decision_status !== 'LOCAL_ACTIVE') {
         const activate = el('button', 'kmc-workspace-action', 'Activer le prix');
         activate.type = 'button';
         activate.addEventListener('click', async () => {

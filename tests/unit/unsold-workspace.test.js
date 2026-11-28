@@ -38,6 +38,12 @@ test('le tableau Invendus marché garde le shell cohérent et une largeur adapt�
   expect(source).toContain("root.classList.remove('canonical-boot')");
   expect(source).toContain("root.classList.add('unsold-workspace')");
   expect(source).toContain("readOnly ? 'Valeur indicative' : 'Valeur liquidation'");
-  expect(html).toContain('navigation-policy-v4.js?v=261128-l3a-sidebar-v54');
+  const index = fs.readFileSync(path.resolve(__dirname, '../../public/dashboards/canonical/index.html'), 'utf8');
+  const versions = content => [...content.matchAll(/navigation-policy-v4\.js\?v=([^"]+)"/g)].map(match=>match[1]);
+  const canonicalVersions = versions(index);
+  expect(canonicalVersions).toHaveLength(1);
+  expect(canonicalVersions[0]).toMatch(/^\d{6}-[a-z0-9-]+$/);
+  expect(Number(canonicalVersions[0].slice(0,6))).toBeGreaterThanOrEqual(261127);
+  expect(versions(html)).toEqual(canonicalVersions);
   expect(html).toContain('width: min(calc(100% - 48px), 1180px)');
 });

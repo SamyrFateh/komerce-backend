@@ -44,19 +44,20 @@ function parseInput(raw) {
   return { postId:raw.postId, marketCode:raw.marketCode, periodStart:raw.periodStart, expectedRevision:raw.expectedRevision,
     currency, amountNative:m[1]+'.'+(m[2]||'').padEnd(4,'0'), reason:text(raw.reason,3,1000,'Motif'), requestKey:text(raw.requestKey,8,200,'Clé de requête') };
 }
-async function reviseBudget(actor, raw) {
+async function reviseBudget(actor, raw, {preparationOnly=false}={}) {
   const input = parseInput(raw);
+  if(preparationOnly && input.marketCode===null)throw fail('market_not_found',404,'Marché explicite requis pour la préparation');
   const central=await costAuthority.classifyActor(actor,input.marketCode);
   const client = await db.getClient();
   try {
     await client.query('BEGIN');
     let marketId = null;
     if (input.marketCode !== null) {
-      const { rows } = await client.query('SELECT id FROM markets WHERE code=$1',[input.marketCode]);
+      const { rows } = await client.query(preparationOnly?"SELECT id FROM markets WHERE code=$1 AND lifecycle_status='PROVISIONING' FOR SHARE":'SELECT id FROM markets WHERE code=$1',[input.marketCode]);
       if (!rows.length) throw fail('market_not_found',404,'Marché introuvable');
       marketId=rows[0].id;
     }
-    await costAuthority.check(client,actor,input.marketCode,marketId,central,'budget',{record:true});
+    await costAuthority.check(client,actor,input.marketCode,marketId,central,'budget',{record:true,...(preparationOnly?{preparationOnly:true}:{})});
     // Serializes concurrent budget changes on the same post; scope is resolved
     // server-side. No lock or read of another market's budget history.
     const { rows: posts } = await client.query(

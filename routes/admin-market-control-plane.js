@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        central admin actor, canonical market code in path
  * @outputs       market list/control view, provisioning/reprovisioning/lifecycle and assignment-status mutations, exit-readiness read, central authority overview
- * @depends       db.js, middleware/auth.js, services/market-control-plane.js, services/market-delivery-proof-service.js, services/central-authority.js
+ * @depends       services/fx-authority.js, services/market-payment-provider-config-service.js, db.js, middleware/auth.js, services/market-control-plane.js, services/market-delivery-proof-service.js, services/central-authority.js
  * @used-by       bootstrap/api-routes.js, central admin workspace
  * @db-read       none
  * @db-write      none
@@ -32,9 +32,11 @@ const controlPlane = require('../services/market-control-plane');
 const deliveryProof = require('../services/market-delivery-proof-service');
 const transportSale = require('../services/market-transport-sale-rate-command');
 const centralAuthority = require('../services/central-authority');
+const { paymentOptions } = require('../services/market-payment-provider-config-service');
+const { MINOR_UNITS } = require('../services/fx-authority');
 const delegation = require('../services/market-delegation-service');
 const { updateMarketStorefront } = require('../services/market-lifecycle-service');
-const { provisionMarket, reprovisionMarket, setMarketLifecycle, setAssignmentLifecycle } = require('../services/market-provisioning-service');
+const { provisionMarket, reprovisionMarket, completeMarketTimezone, setMarketLifecycle, setAssignmentLifecycle } = require('../services/market-provisioning-service');
 
 // Vue centrale par rôle (Q4 du chantier) : déclarée ici, jamais implicite.
 const centralAdmin = [authenticate, requireRole(['admin'])];
@@ -69,11 +71,13 @@ router.post('/', ...centralAdmin, async (req, res, next) => {
       name: body.name,
       currency: body.currency,
       minorUnit: body.minor_unit,
+      businessTimezone: body.business_timezone ?? null,
       storefrontTexts: body.storefront_texts || {},
       centralReferentUserId: body.central_referent_user_id,
       financialLimits: body.financial_limits || {},
       lead: body.lead || {},
       paymentProvider: body.payment_provider || null,
+      centralCollectionModes: body.central_collection_modes ?? null,
       cashPolicy: body.cash_policy || null,
       initialRelais: body.initial_relais || null,
       correlationId: req.headers['x-correlation-id'] ? String(req.headers['x-correlation-id']).slice(0, 200) : null,
@@ -87,13 +91,28 @@ router.post('/', ...centralAdmin, async (req, res, next) => {
 router.post('/:marketCode/reprovision', ...centralAdmin, async (req, res, next) => {
   try {
     const body = req.body || {};
+    // An explicit, closed operation reuses the guarded preparation command.
+    // Default behavior is unchanged for historical reprovision callers.
+    if (Object.prototype.hasOwnProperty.call(body,'operation')) {
+      if (body.operation !== 'complete_timezone' ||
+          Object.keys(body).some(key=>!['operation','business_timezone'].includes(key))) {
+        return res.status(400).json({code:'MARKET_PREPARATION_OPERATION_INVALID',error:'Opération de préparation invalide.'});
+      }
+      const result=await withTransaction(client=>completeMarketTimezone(client,{
+        marketCode:req.params.marketCode,businessTimezone:body.business_timezone,actorUserId:req.user.id,
+        correlationId:req.headers['x-correlation-id'] ? String(req.headers['x-correlation-id']).slice(0,200) : null,
+      }));
+      return res.json(result);
+    }
     const result = await withTransaction(client => reprovisionMarket(client, {
       actorUserId: req.user.id,
       marketCode: req.params.marketCode,
+      businessTimezone: body.business_timezone ?? null,
       centralReferentUserId: body.central_referent_user_id,
       financialLimits: body.financial_limits || {},
       lead: body.lead || {},
       paymentProvider: body.payment_provider || null,
+      centralCollectionModes: body.central_collection_modes ?? null,
       cashPolicy: body.cash_policy || null,
       initialRelais: body.initial_relais || null,
       correlationId: req.headers['x-correlation-id'] ? String(req.headers['x-correlation-id']).slice(0, 200) : null,
@@ -219,7 +238,7 @@ router.get('/', ...centralAdmin, async (req, res, next) => {
 // Autorité centrale (lecture seule) : qui détient une autorisation explicite active, par domaine.
 router.get('/central-authority', ...centralAdmin, async (req, res, next) => {
   try {
-    res.json(await centralAuthority.overview(db));
+    res.json({ ...(await centralAuthority.overview(db)), payment_options: paymentOptions(), currency_options: Object.entries(MINOR_UNITS).map(([code,minor_unit])=>({code,minor_unit})) });
   } catch (error) {
     if (!sendKnownError(res, error)) next(error);
   }

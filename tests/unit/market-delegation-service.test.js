@@ -48,3 +48,78 @@ describe('market-delegation-service — setAssignmentStatus (D2)', () => {
     expect(JSON.stringify(audit.params)).not.toContain('reason');
   });
 });
+
+describe('preparation authority #4370', () => {
+  function dbFor({ status = 'PROVISIONING', member = true, caps = ['team.read','network.create','execution.cash.confirm','catalog.expose'], ceiling = true } = {}) {
+    return { query: jest.fn(async sql => {
+      if (sql.includes('LEFT JOIN market_operating_assignments')) return { rows: [{ market_id:'m1', market_code:'GA', assignment_id:'a1', lifecycle_status:status }] };
+      if (sql.includes('FROM assignment_memberships')) return { rows: member ? [{ id:'mem1', user_id:'u1' }] : [] };
+      if (sql.includes('FROM membership_capabilities')) return { rows: caps.map(capability => ({capability})) };
+      if (sql.includes('FROM assignment_capability_ceiling')) return { rows: ceiling ? [{effect:'ACT'}] : [] };
+      return { rows:[] };
+    }) };
+  }
+  test('allows scoped network preparation with active ceiling', async () => {
+    await expect(delegation.resolveAuthorization(dbFor(),{userId:'u1',marketCode:'GA',requiredCapability:'network.create'}))
+      .resolves.toMatchObject({market_id:'m1',membership_id:'mem1'});
+  });
+  test.each(['execution.cash.confirm','catalog.expose','pricing.activate','finance.act','hub.supervise','operations.read',null])('denies non-preparation authority: %s', async requiredCapability => {
+    await expect(delegation.resolveAuthorization(dbFor(),{userId:'u1',marketCode:'GA',requiredCapability}))
+      .rejects.toMatchObject({code:'MARKET_NOT_FOUND'});
+  });
+  test('explicit UI projection strips commercial capabilities', async () => {
+    await expect(delegation.resolveAuthorization(dbFor(),{userId:'u1',marketCode:'GA',requiredCapability:null,allowProvisioningProjection:true}))
+      .resolves.toMatchObject({capabilities:['team.read','network.create']});
+  });
+  test('requires membership and ceiling', async () => {
+    await expect(delegation.resolveAuthorization(dbFor({member:false}),{userId:'u1',marketCode:'GA',requiredCapability:'network.create'}))
+      .rejects.toMatchObject({code:'MARKET_MEMBERSHIP_REQUIRED'});
+    await expect(delegation.resolveAuthorization(dbFor({ceiling:false}),{userId:'u1',marketCode:'GA',requiredCapability:'network.create'}))
+      .rejects.toMatchObject({code:'MARKET_CAPABILITY_OUTSIDE_CEILING'});
+  });
+  test('suspension still denies mutation', async () => {
+    await expect(delegation.resolveAuthorization(dbFor({status:'SUSPENDED'}),{userId:'u1',marketCode:'GA',requiredCapability:'network.create'}))
+      .rejects.toMatchObject({code:'MARKET_SUSPENDED'});
+  });
+});
+
+test('central default lookup preserves the historical SQL contract and denies provisioning by default', async () => {
+  const db = {query:jest.fn().mockResolvedValue({rows:[{assignment_id:'a1',lifecycle_status:'PROVISIONING'}]})};
+  await expect(delegation.resolveActiveAssignmentByMarketCode(db,'GA')).rejects.toMatchObject({code:'MARKET_NOT_FOUND'});
+  expect(db.query.mock.calls[0][1]).toEqual(['GA']);
+  expect(db.query.mock.calls[0][0]).toContain("m.lifecycle_status IN ('ACTIVE','SUSPENDED')");
+  await expect(delegation.resolveActiveAssignmentByMarketCode(db,'GA',{allowProvisioning:true})).resolves.toMatchObject({assignment_id:'a1'});
+  expect(db.query.mock.calls[1][1]).toEqual(['GA']);
+  expect(db.query.mock.calls[1][0]).toContain("m.lifecycle_status IN ('ACTIVE','SUSPENDED','PROVISIONING')");
+  await expect(delegation.resolveActiveAssignmentByMarketCode(db,'GA',{allowProvisioning:'true'})).rejects.toMatchObject({code:'MARKET_NOT_FOUND'});
+});
+
+test('pre-opening pricing requires an explicit route opt-in and never permits activation',async()=>{
+  function fakeDb(){return {query:jest.fn(async sql=>{
+    if(sql.includes('LEFT JOIN market_operating_assignments'))return {rows:[{market_id:'m1',market_code:'GA',assignment_id:'a1',lifecycle_status:'PROVISIONING'}]};
+    if(sql.includes('FROM assignment_memberships'))return {rows:[{id:'mem',user_id:'u1'}]};
+    if(sql.includes('FROM membership_capabilities'))return {rows:['pricing.read','pricing.decide','pricing.activate','catalog.expose','pricing.cost_component.update'].map(capability=>({capability}))};
+    if(sql.includes('FROM assignment_capability_ceiling'))return {rows:[{effect:'ACT'}]};
+    return {rows:[]};
+  })};}
+  const base={userId:'u1',marketCode:'GA',requiredCapability:'pricing.decide'};
+  await expect(delegation.resolveAuthorization(fakeDb(),base)).rejects.toMatchObject({code:'MARKET_NOT_FOUND'});
+  await expect(delegation.resolveAuthorization(fakeDb(),{...base,allowPreparationPricing:true})).resolves.toMatchObject({capabilities:['pricing.read','pricing.decide']});
+  for(const requiredCapability of ['pricing.activate','catalog.expose','pricing.cost_component.update']){
+    await expect(delegation.resolveAuthorization(fakeDb(),{...base,requiredCapability,allowPreparationPricing:true})).rejects.toMatchObject({code:'MARKET_NOT_FOUND'});
+  }
+});
+
+test('preparation economic reference capability is opt-in and does not grant finance or exposure',async()=>{
+  const db={query:jest.fn(async sql=>{
+    if(sql.includes('LEFT JOIN market_operating_assignments'))return {rows:[{market_id:'m1',market_code:'GA',assignment_id:'a1',lifecycle_status:'PROVISIONING'}]};
+    if(sql.includes('FROM assignment_memberships'))return {rows:[{id:'mem',user_id:'u1'}]};
+    if(sql.includes('FROM membership_capabilities'))return {rows:['pricing.read','pricing.cost_component.update','structure.event.record','finance.act','catalog.expose'].map(capability=>({capability}))};
+    if(sql.includes('FROM assignment_capability_ceiling'))return {rows:[{effect:'ACT'}]};
+    return {rows:[]};
+  })};
+  const base={userId:'u1',marketCode:'GA',requiredCapability:'pricing.cost_component.update'};
+  await expect(delegation.resolveAuthorization(db,base)).rejects.toMatchObject({code:'MARKET_NOT_FOUND'});
+  await expect(delegation.resolveAuthorization(db,{...base,allowPreparationReference:true})).resolves.toMatchObject({capabilities:['pricing.read','pricing.cost_component.update','structure.event.record']});
+  await expect(delegation.resolveAuthorization(db,{...base,requiredCapability:'finance.act',allowPreparationReference:true})).rejects.toMatchObject({code:'MARKET_NOT_FOUND'});
+});

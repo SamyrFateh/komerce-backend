@@ -99,3 +99,11 @@ describe('market commercial price decision boundary', () => {
     expect(ui).toMatch(/Viewer · lecture seule/);
   });
 });
+
+test('preparation price count is strictly scoped to market, currency and positive active product', async()=>{
+  const executor={query:jest.fn().mockResolvedValue({rows:[{drafts:3,authorized:1,active:0}]})};
+  await expect(service.getPricePreparation(executor,{id:'ga',code:'GA',currency:'XAF'})).resolves.toEqual({drafts:3,authorized:1,active:0});
+  expect(executor.query.mock.calls[0][1]).toEqual(['ga','XAF','DRAFT_PENDING_GATE','LOCAL_AUTHORIZED_PENDING_CUTOVER','LOCAL_ACTIVE']);
+  expect(executor.query.mock.calls[0][0]).toContain('d.amount>0');
+  expect(executor.query.mock.calls[0][0]).toContain('p.is_active=TRUE');
+});

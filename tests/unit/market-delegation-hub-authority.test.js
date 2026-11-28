@@ -37,7 +37,7 @@ describe('D4 Hub authority', () => {
     expect(db.query.mock.calls[0][0]).toMatch(/JOIN membership_capabilities mc/);
     expect(db.query.mock.calls[0][0]).toMatch(/JOIN assignment_capability_ceiling acc/);
     expect(db.query.mock.calls[0][0]).toMatch(/am\.status = 'ACTIVE'/);
-    expect(db.query.mock.calls[0][1]).toEqual(['u1', 'operations.read']);
+    expect(db.query.mock.calls[0][1]).toEqual(['u1', 'operations.read', false]);
   });
 
   test('aucun droit operations.read => aucune autorité marché', async () => {

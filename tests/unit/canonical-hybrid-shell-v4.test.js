@@ -92,9 +92,16 @@ describe('Canonical Hybrid Shell V4 — doctrine + mock style contract', () => {
   test('V4 porte seule la taxonomie cible et garde Sourcing/Fournisseurs découvrables', () => {
     const v4 = read('public/dashboards/canonical/js/navigation-policy-v4.js');
     expect(v4).not.toContain('ADMIN_CAPABILITY_GROUPS');
-    for (const [id,label] of [['work','Travail'],['decision','Décision'],['records','Dossiers'],['management','Gestion'],['help','Aide']]) {
-      expect(v4).toMatch(new RegExp("id: '" + id + "',\\s*label: '" + label + "'"));
-    }
+    // #5315 L3a.4 — le contrat gelé V5.4 remplace la taxonomie N1
+    // antérieure, pas les destinations ni leurs gardes.
+    const sandbox = { URL, URLSearchParams, console };
+    vm.runInNewContext(v4, sandbox);
+    const groups = sandbox.KomerceCanonicalNavigation.SIDEBAR_GROUPS;
+    expect(groups.map(group => group.label)).toEqual(['Travail', 'Décision', 'Dossiers', 'Gestion', 'Aide']);
+    const destinations = groups.flatMap(group => group.items.map(item => item.id));
+    expect(destinations).toHaveLength(22);
+    expect(new Set(destinations).size).toBe(22);
+    expect(groups.find(group => group.id === 'work').items.map(item => item.id)).toContain('live-import-runtime');
     expect(v4).toContain("id: 'live-import-runtime'");
     expect(v4).not.toContain("id: 'entity-suppliers'");
     expect(v4).toContain("surfaces: ['import-runtime', 'sourcing-workspace', 'supplier-360']");

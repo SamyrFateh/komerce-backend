@@ -47,7 +47,7 @@ async function resolveOrder(reference) {
       u.full_name AS customer_name, u.email AS customer_email, u.phone AS customer_phone,
       r.name AS relais_name, r.address AS relais_address, r.phone AS relais_phone,
       r.island AS relais_island,
-      m.code AS market_code, m.name AS market_name, m.currency AS market_currency
+      m.code AS market_code, m.name AS market_name, m.currency AS market_currency, m.business_timezone AS market_timezone
     FROM orders o
     LEFT JOIN users u ON u.id = o.user_id
     LEFT JOIN relais r ON r.id = o.relais_id
@@ -102,7 +102,7 @@ function publicOrder(order) {
       name: order.market_name || null,
       currency: order.market_currency || null,
     }),
-    business_timezone: resolveBusinessTimezone({ code: order.market_code }).timezone,
+    business_timezone: resolveBusinessTimezone({ code: order.market_code, business_timezone: order.market_timezone }).timezone,
     created_at: order.created_at,
     updated_at: order.updated_at,
   });
