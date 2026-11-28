@@ -1,0 +1,75 @@
+name: Finance exact SHA staging Chromium readonly
+on:
+  push:
+    branches: [diag/5353-staging-454d2a7]
+permissions:
+  contents: read
+concurrency:
+  group: komerce-canonical-chromium-staging
+  cancel-in-progress: false
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      CI: 'true'
+      E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      E2E_EXPECTED_DEPLOY_SHA: 454d2a7c7186186d4d2edf8b12b625a350ebfe27
+      E2E_AUDIT_ROLES: all
+      E2E_CHROMIUM_SPEC_FILTER: real-navigation
+      E2E_AUDIT_QUICK: '0'
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_MARKET_OPERATOR_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_EMAIL }}
+      E2E_MARKET_OPERATOR_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_PASSWORD }}
+      E2E_MARKET_OPERATOR_KM_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_KM_EMAIL }}
+      E2E_MARKET_OPERATOR_KM_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_KM_PASSWORD }}
+      E2E_MARKET_OPERATOR_CM_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_CM_EMAIL }}
+      E2E_MARKET_OPERATOR_CM_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_CM_PASSWORD }}
+      E2E_MARKET_OPERATOR_CG_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_CG_EMAIL }}
+      E2E_MARKET_OPERATOR_CG_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_CG_PASSWORD }}
+      E2E_FINANCE_EMAIL: ${{ secrets.E2E_FINANCE_EMAIL }}
+      E2E_FINANCE_PASSWORD: ${{ secrets.E2E_FINANCE_PASSWORD }}
+      E2E_SOURCING_EMAIL: ${{ secrets.E2E_SOURCING_EMAIL }}
+      E2E_SOURCING_PASSWORD: ${{ secrets.E2E_SOURCING_PASSWORD }}
+      E2E_AGENT_HUB_EMAIL: ${{ secrets.E2E_AGENT_HUB_EMAIL }}
+      E2E_AGENT_HUB_PASSWORD: ${{ secrets.E2E_AGENT_HUB_PASSWORD }}
+      E2E_HUB_DIRECTOR_EMAIL: ${{ secrets.E2E_HUB_DIRECTOR_EMAIL }}
+      E2E_HUB_DIRECTOR_PASSWORD: ${{ secrets.E2E_HUB_DIRECTOR_PASSWORD }}
+      E2E_AGENT_RELAIS_EMAIL: ${{ secrets.E2E_AGENT_RELAIS_EMAIL }}
+      E2E_AGENT_RELAIS_PASSWORD: ${{ secrets.E2E_AGENT_RELAIS_PASSWORD }}
+      E2E_AGENT_TRANSITAIRE_EMAIL: ${{ secrets.E2E_AGENT_TRANSITAIRE_EMAIL }}
+      E2E_AGENT_TRANSITAIRE_PASSWORD: ${{ secrets.E2E_AGENT_TRANSITAIRE_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 454d2a7c7186186d4d2edf8b12b625a350ebfe27
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Verify exact running SHA
+        run: |
+          test "$(git rev-parse HEAD)" = "454d2a7c7186186d4d2edf8b12b625a350ebfe27"
+          node scripts/recette/staging-chromium-deployment-preflight.js
+          node -e 'const r=require("./test-results/staging-chromium/deployment-preflight.json");if(r.status!=="DEPLOY_SHA_MATCHED"||r.observed_sha!=="454d2a7c7186186d4d2edf8b12b625a350ebfe27")process.exit(1)'
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Real authenticated Finance navigation, no business writes
+        run: npx playwright test --config=playwright.staging-canonical.config.js real-navigation --project=finance-desktop
+      - name: Verify exact running SHA after navigation
+        run: |
+          node scripts/recette/staging-chromium-deployment-preflight.js
+          node -e 'const r=require("./test-results/staging-chromium/deployment-preflight.json");if(r.status!=="DEPLOY_SHA_MATCHED"||r.observed_sha!=="454d2a7c7186186d4d2edf8b12b625a350ebfe27")process.exit(1)'
+      - name: Archive existing navigation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finance-staging-readonly
+          path: |
+            test-results/staging-chromium/evidence/finance-desktop.json
+            test-results/staging-chromium/deployment-preflight.json
+          retention-days: 14
+          if-no-files-found: warn
