@@ -7,7 +7,7 @@
   },
   "x-contract-debt": {
     "unknown_responses": 121,
-    "total_routes": 832,
+    "total_routes": 847,
     "note": "Voir docs/contract/DEBT.md pour la liste des routes UNKNOWN à couvrir"
   },
   "paths": {
@@ -17653,51 +17653,6 @@
         }
       }
     },
-    "/api/admin/costing/products/margin-steering": {
-      "get": {
-        "summary": "GET /api/admin/costing/products/margin-steering",
-        "x-route-file": "routes/admin-costing.js",
-        "responses": {
-          "200": {
-            "description": "Succès",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "x-contract-status": "test",
-                  "description": "Champs observés (source: test)",
-                  "type": "object",
-                  "properties": {
-                    "market_id": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "since_days": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "rules": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "products": {
-                      "type": "string",
-                      "x-observed": true
-                    },
-                    "truncated": {
-                      "type": "string",
-                      "x-observed": true
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Too Many Requests — rate limit exceeded"
-          }
-        }
-      }
-    },
     "/api/admin/costing/local-stock/receipt-lots": {
       "get": {
         "summary": "GET /api/admin/costing/local-stock/receipt-lots",
@@ -17827,6 +17782,51 @@
                       "x-observed": true
                     },
                     "linked_at": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/admin/costing/products/margin-steering": {
+      "get": {
+        "summary": "GET /api/admin/costing/products/margin-steering",
+        "x-route-file": "routes/admin-costing.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "test",
+                  "description": "Champs observés (source: test)",
+                  "type": "object",
+                  "properties": {
+                    "market_id": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "since_days": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "rules": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "products": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "truncated": {
                       "type": "string",
                       "x-observed": true
                     }
@@ -27958,6 +27958,784 @@
                   "type": "object",
                   "properties": {
                     "notification": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/client-requests": {
+      "post": {
+        "summary": "POST /api/client-requests",
+        "x-route-file": "routes/client-requests.js",
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "request": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      },
+      "get": {
+        "summary": "GET /api/client-requests",
+        "x-route-file": "routes/client-requests.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "requests": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/client-requests/{ref}": {
+      "get": {
+        "summary": "GET /api/client-requests/{ref}",
+        "x-route-file": "routes/client-requests.js",
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "request": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "messages": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/client-requests/{ref}/messages": {
+      "post": {
+        "summary": "POST /api/client-requests/{ref}/messages",
+        "x-route-file": "routes/client-requests.js",
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "request": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/client-requests/{ref}/attachments/{id}": {
+      "get": {
+        "summary": "GET /api/client-requests/{ref}/attachments/{id}",
+        "x-route-file": "routes/client-requests.js",
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Photo privée du dossier",
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary",
+                  "x-contract-status": "route-read"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary",
+                  "x-contract-status": "route-read"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary",
+                  "x-contract-status": "route-read"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Pièce jointe introuvable ou hors périmètre"
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/markets/{code}/client-requests": {
+      "get": {
+        "summary": "GET /api/markets/{code}/client-requests",
+        "x-route-file": "routes/client-requests.js",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "requests": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/markets/{code}/client-requests/{ref}": {
+      "get": {
+        "summary": "GET /api/markets/{code}/client-requests/{ref}",
+        "x-route-file": "routes/client-requests.js",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "request": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "messages": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/markets/{code}/client-requests/{ref}/messages": {
+      "post": {
+        "summary": "POST /api/markets/{code}/client-requests/{ref}/messages",
+        "x-route-file": "routes/client-requests.js",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "request": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/markets/{code}/client-requests/{ref}/attachments/{id}": {
+      "get": {
+        "summary": "GET /api/markets/{code}/client-requests/{ref}/attachments/{id}",
+        "x-route-file": "routes/client-requests.js",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Photo privée du dossier",
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary",
+                  "x-contract-status": "route-read"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary",
+                  "x-contract-status": "route-read"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary",
+                  "x-contract-status": "route-read"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Pièce jointe introuvable ou hors périmètre"
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/hub/client-requests": {
+      "get": {
+        "summary": "GET /api/hub/client-requests",
+        "x-route-file": "routes/client-requests.js",
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "requests": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/hub/client-requests/{ref}": {
+      "get": {
+        "summary": "GET /api/hub/client-requests/{ref}",
+        "x-route-file": "routes/client-requests.js",
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "request": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "messages": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/hub/client-requests/{ref}/messages": {
+      "post": {
+        "summary": "POST /api/hub/client-requests/{ref}/messages",
+        "x-route-file": "routes/client-requests.js",
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "request": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "message": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/hub/client-requests/{ref}/attachments/{id}": {
+      "get": {
+        "summary": "GET /api/hub/client-requests/{ref}/attachments/{id}",
+        "x-route-file": "routes/client-requests.js",
+        "parameters": [
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Photo privée du dossier",
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary",
+                  "x-contract-status": "route-read"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary",
+                  "x-contract-status": "route-read"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary",
+                  "x-contract-status": "route-read"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Pièce jointe introuvable ou hors périmètre"
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/markets/{code}/client-requests/{ref}/close": {
+      "post": {
+        "summary": "POST /api/markets/{code}/client-requests/{ref}/close",
+        "x-route-file": "routes/client-requests.js",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "request": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/markets/{code}/client-requests/{ref}/reopen": {
+      "post": {
+        "summary": "POST /api/markets/{code}/client-requests/{ref}/reopen",
+        "x-route-file": "routes/client-requests.js",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "route-read",
+                  "description": "Champs observés (source: route-read)",
+                  "type": "object",
+                  "properties": {
+                    "request": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      }
+    },
+    "/api/markets/{code}/client-requests/{ref}/hub-share": {
+      "post": {
+        "summary": "POST /api/markets/{code}/client-requests/{ref}/hub-share",
+        "x-route-file": "routes/client-requests.js",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "request": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "changed": {
+                      "type": "string",
+                      "x-observed": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests — rate limit exceeded"
+          }
+        }
+      },
+      "delete": {
+        "summary": "DELETE /api/markets/{code}/client-requests/{ref}/hub-share",
+        "x-route-file": "routes/client-requests.js",
+        "parameters": [
+          {
+            "name": "code",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ref",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "x-contract-status": "service-read",
+                  "description": "Champs observés (source: service-read)",
+                  "type": "object",
+                  "properties": {
+                    "request": {
+                      "type": "string",
+                      "x-observed": true
+                    },
+                    "changed": {
                       "type": "string",
                       "x-observed": true
                     }
