@@ -159,6 +159,6 @@ $utf8NoBom = New-Object System.Text.UTF8Encoding($false)
 
 Write-Host 'OK Hooks Komerce - niveaux 1-5 installes depuis PowerShell.'
 Write-Host '   pre-commit : technique + registry + schema + Boutique source + tests unitaires lies'
-Write-Host '   pre-push   : tampon pr:preflight vert uniquement (millisecondes)'
+Write-Host '   pre-push   : tampon pr:preflight vert ou prevol rapide (branche PR, millisecondes)'
 Write-Host '   lourds     : Carte First complet / rebuild CSS-dist / coverage / integration / E2E / 360 / meta en pause'
 Write-Host '   timings    : affiches gate par gate a chaque commit'

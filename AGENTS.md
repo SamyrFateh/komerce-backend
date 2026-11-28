@@ -35,7 +35,7 @@ Préférer :
 - fichiers/ranges précis via l'API ou le workspace déjà disponible ;
 - historique shallow et SHA/base exacts ;
 - tests/gates déterminés par le scope ;
-- `npm run pr:preflight` avant PR ;
+- `npm run pr:preflight -- --quick` avant PR ;
 - tests lourds uniquement lorsque le scope ou la preuve l'exige.
 
 Un clone/fetch complet, un scan global ou une exécution exhaustive reste autorisé quand nécessaire, mais la raison doit être explicite dans le plan d'attaque.
@@ -145,8 +145,8 @@ Exceptions : lecture simple, explication sans modification, commande triviale ex
 6. Annoncer le plan d'attaque avant de modifier.
 7. Si l'intention métier change, mettre à jour la carte dans la même PR.
 8. Régénérer les sorties dérivées pertinentes.
-9. Exécuter `npm run pr:preflight` et corriger jusqu'au vert.
-10. Ouvrir ou mettre à jour la PR seulement après ce preflight vert. La CI est une preuve indépendante, pas le premier lieu de découverte des erreurs.
+9. Exécuter les tests ciblés pertinents et `npm run pr:preflight -- --quick` ; corriger jusqu'au vert.
+10. Publier la PR après prévol rapide vert ; la CI officielle produit l'unique preflight intégral obligatoire sur le SHA exact. Aucun merge ni déploiement sans verdict applicable vert.
 11. Attendre le verdict des checks requis sur la PR.
 12. Dès que la PR est conforme, verte, à jour et mergeable, l'agent qui porte le chantier **doit la merger lui-même** sans demander une confirmation humaine supplémentaire.
 13. Vérifier ensuite que le merge est effectif sur `main` et, lorsqu'un déploiement automatique est attendu, vérifier que le déploiement correspondant a bien démarré ou abouti.
@@ -166,14 +166,14 @@ Exceptions : lecture simple, explication sans modification, commande triviale ex
 ## 4. Vérification avant PR — commande unique
 
 ```bash
-npm run pr:preflight
+npm run pr:preflight -- --quick
 ```
 
-Cette commande réutilise les gates canoniques selon le diff. Ne pas ouvrir une PR pour découvrir un rouge reproductible localement.
+**Arbitrage propriétaire du 28/11/2026 — pas de double préflight intégral.** Avant publication, exécuter les tests ciblés pertinents et le prévol rapide : gates structurels canoniques, couverture au contact, tests unitaires modifiés, contrôles statiques Boutique et intégrité des projections. Le prévol rapide ne vaut jamais certification. Le preflight intégral (`npm run pr:preflight`, sans `--quick`) reste obligatoire dans la CI officielle sur le SHA/base exacts, avec ses suites larges et tous les autres jobs requis. Ne pas lancer un second preflight intégral ad hoc sur le même candidat ; le réserver au diagnostic explicite.
 
 Le preflight rejoue toute commande de la CI reproductible localement ; les seules exceptions (corps de PR, couverture globale, base PostgreSQL reconstruite) sont déclarées dans `CI_ONLY` de `scripts/pr-preflight.js` avec leur raison, et un test de parité échoue si la CI gagne un gate sans le preflight. Un diff qui touche une migration exige l'historique git complet (`git fetch --unshallow origin`), comme la CI.
 
-Un preflight vert sur arbre propre tamponne le commit HEAD ; le hook pre-push géré (installé par `prepare`, `agent:context` et `pr:preflight`) refuse tout commit poussé sans ce tampon. Il ne lance aucun gate.
+Le prévol rapide sur arbre propre produit un tampon de publication `komerce-preflight-ready`, distinct de `komerce-preflight-green` (preuve intégrale locale). Le hook pre-push accepte le tampon rapide exact pour une branche de PR, jamais pour main/master ou un tag. Le verdict CI officiel ne fait confiance à aucun tampon local.
 
 Les commandes unitaires restent disponibles pour le diagnostic (`feature:registry`, `gate:schema`, `gate:touched-files`, `gate:docs-lint`, etc.), mais le chemin normal est le preflight unique.
 
@@ -228,7 +228,7 @@ npm run map:check
 - Ne pas créer de document horodaté, prompt bis, ZIP, patch ou rapport parallèle lorsqu'un document canonique existe déjà.
 - Les preuves reproductibles sont des commandes et des tests. Ne pas committer leurs logs bruts ; consigner un résumé et la commande, sauf preuve externe non régénérable et compacte.
 - Toute nouvelle instruction d'agent doit remplacer une instruction obsolète, jamais s'empiler avec elle.
-- Sandbox jetable : dans une session Claude Code cloud, `.claude/settings.json` sauvegarde automatiquement l'arbre de travail sur `wip/<branche>` (après les éditions, au plus toutes les 2 min, et à chaque fin de tour). Une session interrompue se reprend avec `npm run agent:restore -- <branche>`. `wip/*` n'est jamais une PR : livrer passe toujours par `pr:preflight` puis la branche normale.
+- Sandbox jetable : dans une session Claude Code cloud, `.claude/settings.json` sauvegarde automatiquement l'arbre de travail sur `wip/<branche>` (après les éditions, au plus toutes les 2 min, et à chaque fin de tour). Une session interrompue se reprend avec `npm run agent:restore -- <branche>`. `wip/*` n'est jamais une PR : livrer passe par le prévol rapide puis la branche normale et la CI officielle.
 - **Capacités avant conclusion** : un agent ne doit jamais déclarer « je ne peux pas pousser / ouvrir une PR / utiliser GitHub » sur la seule base de son sandbox ou de ses hypothèses. Avant cette conclusion, il vérifie le runtime sans lire de secret : `git rev-parse --is-inside-work-tree`, accès distant via `git ls-remote --heads origin main`, puis capacité d'écriture avec `git push --dry-run --force --porcelain origin HEAD:refs/heads/wip/capability-probe`. Le `--dry-run` ne modifie pas le remote ; `wip/*` est exempté du tampon pre-push. Si le probe réussit, l'agent est un agent d'exécution et poursuit jusqu'au push/PR selon la gouvernance. S'il échoue, il rapporte l'erreur d'authentification/capacité telle quelle, sans demander ni rechercher de token.
 
 ## 7.0. Coordination inter-agents — STATUS partagé (GPT / Sonnet / Opus)
@@ -268,7 +268,7 @@ Règles :
 - ouvrir ensuite uniquement le code ou la doctrine explicitement requis par le changement ;
 - si le contexte compilé est insuffisant, élargir une source à la fois et justifier l'élargissement ;
 - les gates restent `npm run pr:preflight` ; le compilateur réduit la lecture, jamais la preuve ;
-- **économie de tours** (mesure 2026-10-03 : chaque réponse relit ~400 k tokens de contexte, le coût suit le nombre de tours) : regrouper les commandes indépendantes en un seul appel ; attendre la CI par une seule commande bloquante, jamais par sondages répétés ; un seul push par PR, après `pr:preflight` vert.
+- **économie de tours** (mesure 2026-10-03 : chaque réponse relit ~400 k tokens de contexte, le coût suit le nombre de tours) : regrouper les commandes indépendantes en un seul appel ; attendre la CI par une seule commande bloquante, jamais par sondages répétés ; un seul push par PR, après prévol rapide vert.
 
 
 ## 7.2. GPT Execution Economy — spécifique à GPT
@@ -277,7 +277,7 @@ Cette section concerne uniquement GPT. Elle est additive : elle ne remplace aucu
 
 **Mode par défaut : FAST.** Quand la demande et le périmètre sont clairs, GPT suit directement :
 
-`pack → impact → sources nécessaires → modification → tests ciblés → preflight → PR`
+`pack → impact → sources nécessaires → modification → tests ciblés → prévol rapide → PR → CI intégrale`
 
 Règles de comportement :
 - **vérifier beaucoup, raconter peu** : ne pas reformuler en prose ce qu'une preuve machine établit déjà ;
@@ -291,7 +291,7 @@ Règles de comportement :
 
 ### PR rouge et synchronisation de branche
 
-- **PR rouge reproductible** : la CI ne devient jamais la boucle de développement. Identifier le premier gate rouge ; s'il n'est pas déclaré `CI_ONLY`, revenir au gate canonique / `npm run pr:preflight`, corriger la cause, puis ne repousser qu'après retour au vert reproductible. Les pushes successifs « log CI → petit patch → repush » sont interdits sauf preuve réellement CI_ONLY.
+- **PR rouge reproductible** : la CI ne devient jamais la boucle de développement. Identifier le premier gate rouge ; s'il n'est pas déclaré `CI_ONLY`, revenir au gate canonique / `npm run pr:preflight`, corriger la cause, puis ne repousser qu'après retour au vert du gate concerné et prévol rapide. Les pushes successifs « log CI → petit patch → repush » sont interdits sauf preuve réellement CI_ONLY.
 - **PR behind** : ne jamais synchroniser en fan-out toutes les PR ouvertes à chaque avancée de `main`. Les PR internes éligibles à l'auto-merge sont resynchronisées **une par une**, la plus ancienne d'abord, par `pr-sweep-behind.yml`. `hold`, draft, fork, conflit ou verdict rouge excluent la PR du sweep. Toute mutation `update-branch` exige un token attribuable explicite (`PR_SYNC_TOKEN`, ou legacy `SCHEMA_REFRESH_PR_TOKEN`) ; **aucun fallback sur `github.token`** n'est autorisé. Sans ce token, le workflow s'abstient et l'agent traite la synchronisation explicitement.
 - **REBASE_NO_IMPACT** : après une synchronisation automatique, la CI peut réutiliser le dernier `Required verdict` vert et skipper les jobs lourds uniquement si la preuve fail-closed établit simultanément : ancien HEAD vert ancêtre du nouveau, patch PR strictement identique, aucun fichier commun avec le delta de `main`, aucune intersection avec `arch:impact`, aucun fichier global à risque. Toute preuve absente ou ambiguë retombe sur la CI normale complète.
 

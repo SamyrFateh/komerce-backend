@@ -166,6 +166,6 @@ chmod +x "$PRE_COMMIT"
 
 echo "OK Hooks Komerce v7 - niveaux 1-5 + preflight gouvernance installes."
 echo "   pre-commit : technique + registry + feature-schema + touched-files + docs-lint + schema + Boutique source + tests unitaires lies"
-echo "   pre-push   : tampon pr:preflight vert uniquement (millisecondes)"
+echo "   pre-push   : tampon pr:preflight vert ou prévol rapide (branche PR, millisecondes)"
 echo "   lourds     : rebuild CSS-dist / coverage / integration / E2E / 360 / meta en pause"
 echo "   timings    : affiches gate par gate a chaque commit"

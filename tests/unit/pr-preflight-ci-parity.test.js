@@ -201,3 +201,25 @@ describe('preflight fail-fast multi-scopes', () => {
     expect(names.filter(n => n === 'Related unit tests')).toHaveLength(1);
   });
 });
+
+test('quick publication mode preserves structural gates and delegates broad suites to mandatory full CI', () => {
+  const scope = {...ALL_SCOPES, changedFiles:['migrations/999_x.sql','tests/unit/example.test.js','public/boutique/tests/unit/example.test.js']};
+  const full = buildPlan(scope,'base','head');
+  const quick = buildPlan(scope,'base','head',{quick:true});
+  const names = plan => plan.map(x=>x.label);
+  expect(names(full)).toContain('Related unit tests');
+  expect(names(full)).toContain('Boutique fast gates');
+  expect(names(quick)).not.toContain('Related unit tests');
+  expect(names(quick)).not.toContain('Boutique fast gates');
+  expect(names(quick)).toContain('Boutique static gates');
+  expect(names(quick)).toContain('Migration immutability');
+  expect(names(quick)).toContain('Touched tests / completion-at-contact');
+  expect(names(quick)).toContain('Tree unchanged (derived artifacts)');
+  expect(quick.find(x=>x.label==='Changed unit tests').argv.at(-1)).toBe('tests/unit/example.test.js,public/boutique/tests/unit/example.test.js');
+  const delegated = ['Related unit tests','Boutique fast gates'];
+  expect(names(full).filter(n=>!names(quick).includes(n))).toEqual(delegated);
+  expect(BOUTIQUE_SCRIPTS['check:fast']).toBe('npm run check:fast:static && npm run test:unit');
+  expect(BOUTIQUE_SCRIPTS['check:fast:static']).not.toMatch(/npm run test:unit/);
+  expect(WORKFLOW).toMatch(/npm run pr:preflight -- --base "\$PREFLIGHT_BASE"/);
+  expect(WORKFLOW).toMatch(/test "\$PREFLIGHT_RESULT" = "success"/);
+});
