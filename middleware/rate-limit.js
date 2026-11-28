@@ -197,7 +197,14 @@ const sharedCartLimiter = createLimiter({
   message: { error: 'Trop de requêtes sur les paniers partagés, réessayez dans 15 minutes' },
 }, 'shared-cart');
 
+const clientRequestLimiter = createLimiter({
+  windowMs: 15 * 60 * 1000, max: 30,
+  standardHeaders: true, legacyHeaders: false,
+  message: {error:'Trop de demandes ou messages, réessayez plus tard'},
+}, 'client-request');
+
 module.exports = {
+  clientRequestLimiter,
   globalRateLimitKey,
   globalLimiter,
   authLimiter,
