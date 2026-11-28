@@ -1,19 +1,25 @@
-name: 5359 staging Chromium service worker cache isolation
+name: 5356 On Demand real staging read-only preflight
 on:
   push:
     branches: [test/5359-market-context-preflight]
 permissions:
   contents: read
 concurrency:
-  group: komerce-staging-storefront-e2e-audit
+  group: komerce-g6-canonical-real-transaction
   cancel-in-progress: false
 jobs:
-  verify:
+  preflight:
     runs-on: ubuntu-24.04
-    timeout-minutes: 12
+    timeout-minutes: 10
     env:
-      STAGING_ORIGIN: https://komerce-backend-production.up.railway.app
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
       EXPECTED_SHA: c06f4779dcf1de6c214e6827d538fedc38dacc60
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
+      PGOPTIONS: '-c default_transaction_read_only=on'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -22,72 +28,48 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Confirm exact deployed staging revision before opening browser
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Confirm deployed target, migration, capability registry and marked identities
         run: |
-          mkdir -p test-results/5359
+          mkdir -p test-results/on-demand
           node <<'JS'
-          const fs=require('node:fs');
-          (async()=>{
-            const get=async p=>{const r=await fetch(process.env.STAGING_ORIGIN+p,{redirect:'error'});if(!r.ok)throw Error('HTTP '+r.status);return r.json()};
-            const h=await get('/health'),v=await get('/health/version');
-            const out={environment:h.komerce_env,db:h.db,sha:v.commit,fingerprint:h.target?.db_fingerprint,expected:process.env.EXPECTED_SHA};
-            console.log(JSON.stringify(out));fs.writeFileSync('test-results/5359/target.json',JSON.stringify(out,null,2));
-            if(h.komerce_env!=='staging'||h.db!=='connected'||!out.fingerprint||v.commit!==out.expected)throw Error('NOT_PROVEN_TARGET_PIN');
-          })().catch(e=>{console.error(e.message);process.exitCode=1});
-          JS
-      - run: npm ci --prefix public/boutique --ignore-scripts --no-audit --no-fund
-      - run: cd public/boutique && npx playwright install --with-deps chromium
-      - name: Real Chromium service worker registry cache isolation
-        run: |
-          node <<'JS'
-          const {chromium}=require('./public/boutique/node_modules/@playwright/test');
           const fs=require('node:fs'),assert=require('node:assert/strict');
-          const base=process.env.STAGING_ORIGIN,out='test-results/5359',target=JSON.parse(fs.readFileSync(out+'/target.json'));
-          const report={target,scope:'public read-only; synthetic stale entry in isolated browser cache only',verdict:'NOT_PROVEN',checks:{}};
-          const registry='/boutique/js/market-registry.js';
+          const report={verdict:'NOT_PROVEN',checks:{}};
+          const db=require('./db');
+          const base=process.env.STAGING_BASE_URL;
+          async function get(p){const r=await fetch(base+p,{redirect:'error'});assert.equal(r.status,200);return r.json()}
           (async()=>{
-            const browser=await chromium.launch();
+            const version=await get('/health/version'),health=await get('/health');
+            assert.equal(version.commit,process.env.EXPECTED_SHA);assert.equal(health.komerce_env,'staging');
+            const target=await require('./scripts/recette/target-guard').confirmTarget({db});
+            assert.equal(target.confirmed,true);report.target={sha:version.commit,fingerprint:target.fingerprint};
+            const q=await db.getClient();
             try{
-              const ctx=await browser.newContext({viewport:{width:1440,height:900},serviceWorkers:'allow'});
-              const page=await ctx.newPage();
-              await page.goto(base+'/CM',{waitUntil:'domcontentloaded'});
-              await page.waitForFunction(()=>document.body.dataset.marketCode==='CM');
-              await page.evaluate(async()=>{await navigator.serviceWorker.register('/sw.js');await navigator.serviceWorker.ready});
-              await page.waitForFunction(()=>navigator.serviceWorker.controller?.scriptURL.endsWith('/sw.js'));
-              report.checks.controller=true;
-              const live=await page.evaluate(async p=>{const r=await fetch(p,{cache:'no-store'});return {ok:r.ok,cacheControl:r.headers.get('cache-control'),body:await r.text()}},registry);
-              assert.ok(live.ok);assert.match(live.cacheControl,/no-store/i);
-              report.checks.registryNoStore=true;
-              const cachedBefore=await page.evaluate(async p=>Boolean(await caches.match(p)),registry);
-              assert.equal(cachedBefore,false);
-              report.checks.registryNotCached=true;
-              await page.evaluate(async p=>{const c=await caches.open('komerce-v341');await c.put(p,new Response('/* STALE_REGISTRY_TEST_SENTINEL */',{headers:{'Content-Type':'application/javascript'}}))},registry);
-              const fresh=await page.evaluate(async p=>{const r=await fetch(p,{cache:'no-store'});return {ok:r.ok,body:await r.text()}},registry);
-              assert.ok(fresh.ok);assert.equal(fresh.body,live.body);assert.ok(!fresh.body.includes('STALE_REGISTRY_TEST_SENTINEL'));
-              report.checks.onlineBypassesStale=true;
-              await ctx.setOffline(true);
-              const offline=await page.evaluate(async p=>{try{const r=await fetch(p,{cache:'no-store'});return {ok:r.ok,body:await r.text()}}catch(e){return {ok:false,rejected:true}}},registry);
-              assert.equal(offline.ok,false);assert.ok(!offline.body?.includes('STALE_REGISTRY_TEST_SENTINEL'));
-              report.checks.offlineDoesNotReplayStale=true;
-              await ctx.setOffline(false);
-              for(const code of ['CG','KM','CM']){
-                await page.goto(base+'/'+code,{waitUntil:'domcontentloaded'});
-                await page.waitForFunction(c=>document.body.dataset.marketCode===c,code,{timeout:15000});
-                assert.equal(await page.evaluate(()=>window.KomerceMarket.get().code),code);
-                report.checks['navigation_'+code]=true;
-              }
-              await page.evaluate(async p=>{for(const key of await caches.keys())await (await caches.open(key)).delete(p)},registry);
-              await ctx.close();
-            }finally{await browser.close()}
-            const v=await(await fetch(base+'/health/version')).json(),h=await(await fetch(base+'/health')).json();
-            assert.equal(v.commit,target.sha);assert.equal(h.komerce_env,'staging');assert.equal(h.target?.db_fingerprint,target.fingerprint);
-            report.verdict='PASS_SW_REGISTRY_ISOLATION';
-          })().catch(e=>{report.failure=e.message;process.exitCode=1}).finally(()=>{fs.writeFileSync(out+'/cache-report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report))});
+              await q.query('BEGIN READ ONLY');
+              assert.equal((await q.query('SHOW transaction_read_only')).rows[0].transaction_read_only,'on');
+              const schema=(await q.query("SELECT to_regclass('public.client_requests') IS NOT NULL AS requests,to_regclass('public.conversation_messages') IS NOT NULL AS messages,to_regclass('public.conversation_attachments') IS NOT NULL AS attachments")).rows[0];
+              report.checks.schema=schema;
+              assert.ok(Object.values(schema).every(Boolean),'MIGRATION_457_MISSING');
+              report.checks.capabilities=(await q.query("SELECT capability,status,effect FROM capability_registry WHERE capability IN ('client.read','client.case.handle') ORDER BY capability")).rows;
+              assert.equal(report.checks.capabilities.length,2,'CAPABILITY_REGISTRY_INCOMPLETE');
+              assert.ok(report.checks.capabilities.every(x=>x.status==='LIVE'),'CAPABILITY_NOT_LIVE');
+              report.checks.markedRoles=(await q.query("SELECT u.role::text AS role,count(*)::int AS n FROM e2e_test_accounts e JOIN users u ON u.id=e.user_id GROUP BY u.role ORDER BY u.role")).rows;
+              report.checks.marketActors=(await q.query("SELECT m.code, count(DISTINCT CASE WHEN mc.capability='client.read' THEN am.user_id END)::int AS readers,count(DISTINCT CASE WHEN mc.capability='client.case.handle' THEN am.user_id END)::int AS handlers FROM markets m JOIN market_operating_assignments a ON a.market_id=m.id AND a.status='ACTIVE' JOIN assignment_memberships am ON am.assignment_id=a.id AND am.status='ACTIVE' JOIN e2e_test_accounts e ON e.user_id=am.user_id JOIN membership_capabilities mc ON mc.membership_id=am.id AND mc.revoked_at IS NULL JOIN assignment_capability_ceiling acc ON acc.assignment_id=a.id AND acc.capability=mc.capability AND acc.revoked_at IS NULL WHERE m.is_active AND m.lifecycle_status='ACTIVE' GROUP BY m.code ORDER BY m.code")).rows;
+              report.checks.requestCount=(await q.query('SELECT count(*)::int AS n FROM client_requests')).rows[0].n;
+              await q.query('ROLLBACK');
+            }finally{q.release()}
+            report.checks.anonymous={};
+            for(const p of ['/api/client-requests','/api/markets/KM/client-requests','/api/hub/client-requests']){
+              const r=await fetch(base+p,{redirect:'error'});report.checks.anonymous[p]=r.status;assert.ok([401,403].includes(r.status),'ANONYMOUS_NOT_DENIED');
+            }
+            const end=await get('/health/version'),after=await get('/health');
+            assert.equal(end.commit,report.target.sha);assert.equal(after.target.db_fingerprint,report.target.fingerprint);
+            report.verdict='PASS_STAGING_PREFLIGHT_NOT_TRANSACTION_CERTIFICATION';
+          })().catch(e=>{report.failure=e.code||e.message?.slice(0,200);process.exitCode=1}).finally(async()=>{fs.writeFileSync('test-results/on-demand/report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));await db.pool.end()});
           JS
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: 5359-staging-country-proof
-          path: test-results/5359/
-          if-no-files-found: error
+          name: on-demand-staging-preflight
+          path: test-results/on-demand/report.json
           retention-days: 14
