@@ -60,16 +60,14 @@ jobs:
           const proof = { target: origin, candidate: sha, viewport: '1440x900', browser: 'chromium', mode: 'GUARDED_PROVISIONING', outcome: 'NOT_PROVEN', blockedWrites: [] };
           (async () => {
             let browser, page, actor, fixture, armed = false, writeAttempted = false;
-            const code = 'QZ';
+            let code, phone, name;
             const run = String(process.env.GITHUB_RUN_ID || '');
             const first = 'Test'+run.replace(/[0-9]/g, n=>String.fromCharCode(97+Number(n)));
             const email = 'recette.'+first.toLowerCase()+'@komerce.co';
-            const phone = '+12025550123';
-            const name = 'RECETTE 4370 QZ '+run;
             const cap = ['cash.custody.receive','execution.cash.confirm','settlement.receive','finance.act'];
             const limitsPayload = Object.fromEntries(cap.map(k=>[k,0]));
             async function owned() { const r = await db.query('SELECT id,name,lifecycle_status,is_active FROM markets WHERE code=$1',[code]); return r.rows[0] && r.rows[0].name===name ? r.rows[0] : null; }
-            async function absent(executor) { const m = await executor.query('SELECT 1 FROM markets WHERE code=$1',[code]); const u=await executor.query('SELECT 1 FROM users WHERE lower(email)=$1 OR phone=$2 OR whatsapp_phone=$2',[email,phone]); if(m.rowCount||u.rowCount) throw Error('FIXTURE_NOT_FREE'); }
+            async function absent(executor) { const m = await executor.query('SELECT 1 FROM markets WHERE code=$1',[code]); const u=await executor.query('SELECT 1 FROM users WHERE lower(email)=$1 OR phone=$2 OR whatsapp_phone=$2',[email,phone]); if(m.rowCount) throw Error('FIXTURE_MARKET_OCCUPIED'); if(u.rowCount) throw Error('FIXTURE_IDENTITY_OCCUPIED'); }
             async function versionNow(){const r=await fetch(origin+'/health/version',{redirect:'error'});const j=await r.json();if(!r.ok||String(j.commit||j.sha)!==sha)throw Error('SHA_DRIFT');}
 
             try {
@@ -78,7 +76,21 @@ jobs:
               if(!/^\d+$/.test(run)||!process.env.DATABASE_URL||!process.env.STAGING_DB_PIN) throw Error('STAGING_GUARDS_MISSING');
               const u = new URL(process.env.DATABASE_URL);
               if(u.hostname+':'+(u.port||'5432')+u.pathname!==process.env.STAGING_DB_PIN) throw Error('DB_PIN_MISMATCH');
+              // ISO user-assigned QM–QZ codes, never a real market code.
+              const poolCodes = Array.from({length:14},(_,i)=>'Q'+String.fromCharCode(77+i));
+              const existing = await db.query('SELECT code FROM markets WHERE code=ANY($1::text[])',[poolCodes]);
+              const busyCodes = new Set(existing.rows.map(r=>r.code));
+              code = poolCodes.find(x=>!busyCodes.has(x));
+              if(!code) throw Error('NO_RESERVED_FIXTURE_MARKET_FREE');
+              // NANP reserved fictional numbers 555-0100 to 555-0199; never send an OTP.
+              const phones = Array.from({length:100},(_,i)=>'+1202555'+String(100+i).padStart(4,'0'));
+              const users = await db.query('SELECT phone,whatsapp_phone FROM users WHERE lower(email)=$1 OR phone=ANY($2::text[]) OR whatsapp_phone=ANY($2::text[])',[email,phones]);
+              const busyPhones = new Set(users.rows.flatMap(r=>[r.phone,r.whatsapp_phone]));
+              phone = phones.find(x=>!busyPhones.has(x));
+              if(!phone) throw Error('NO_RESERVED_FIXTURE_PHONE_FREE');
+              name = 'RECETTE 4370 '+code+' '+run;
               await absent(db);
+              proof.fixtureCode = code;
               browser = await chromium.launch();
               page = await browser.newPage({ viewport: { width: 1440, height: 900 }, baseURL: origin });
               await page.route('**/*', route => {
