@@ -7,19 +7,23 @@ permissions:
 jobs:
   context:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 30
+    env:
+      TZ: UTC
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 80e7c8c3496468a26e6b268d8ee9b27d0192ccb2
-          fetch-depth: 1
+          ref: 62e4acee1c95da7f76b0c6464a8ecf7ace3c44fc
+          fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Canonical context and impact
+      - run: npm ci --prefix public/boutique --ignore-scripts --no-audit --no-fund
+      - name: Targeted unit regression tests
         run: |
-          npm run agent:context -- --pack ui --files public/boutique/js/market-context.js public/sw.js
-          npm run arch:impact -- public/boutique/js/market-context.js
-          npm run arch:impact -- public/sw.js
+          npx jest --config jest.unit.config.js --runInBand tests/unit/sw.test.js
+          npm --prefix public/boutique run test:unit -- market-country-path.test.js
+      - name: Canonical preflight before PR
+        run: npm run pr:preflight -- --base 80e7c8c3496468a26e6b268d8ee9b27d0192ccb2
