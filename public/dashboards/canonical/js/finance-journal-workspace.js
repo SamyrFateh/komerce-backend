@@ -250,15 +250,19 @@
           };
           add('kind','Nature',{choices:[['payment','Débit'],['goods_refund','Remboursement marchandise'],['fee_refund','Remboursement frais'],['other_refund','Autre remboursement']]});
           add('amount_currency','Montant '+row.currency,{decimal:true});
-          add('amount_kmf','Montant constaté KMF hors frais',{decimal:true});
-          add('fees_kmf','Frais KMF',{decimal:true,required:false});
+          const currencies=['EUR','USD','AED','CNY','KMF','XAF','DJF'].map(c=>[c,c]);
+          add('debit_currency','Devise réellement débitée',{choices:currencies});
+          add('debit_amount','Montant réellement débité hors frais',{decimal:true});
+          add('fee_currency','Devise des frais',{choices:currencies});
+          add('fee_amount','Frais réels',{decimal:true,required:false});
+          add('debit_at','Date de valeur (ISO avec fuseau, ex. 2026-01-01T10:00:00Z)');
           add('proof_ref','Référence unique du relevé / reçu');
           const submit=text(doc,'button','kmc-workspace-action','Consigner le règlement');submit.type='submit';form.appendChild(submit);
           form.addEventListener('submit',async e=>{
             e.preventDefault();if(pending||!current())return;
             const proof=fields.proof_ref.value.trim();if(!proof)return;
             pending=true;submit.disabled=true;
-            const body={kind:fields.kind.value,currency:row.currency,amount_currency:fields.amount_currency.value,amount_kmf:fields.amount_kmf.value,fees_kmf:fields.fees_kmf.value||'0',proof_ref:proof,idempotency_key:'finance-ui:'+proof};
+            const body={kind:fields.kind.value,currency:row.currency,amount_currency:fields.amount_currency.value,debit_currency:fields.debit_currency.value,debit_amount:fields.debit_amount.value,fee_currency:fields.fee_currency.value,fee_amount:fields.fee_amount.value||'0',debit_at:fields.debit_at.value,proof_ref:proof,idempotency_key:'finance-ui:'+proof};
             try{await request(prefix+'/'+encodeURIComponent(row.id)+'/finance-settlements',body);
               try{await load('Règlement enregistré.');}catch(_){feedback.textContent='Règlement enregistré ; actualisation indisponible.';}
             }catch(err){feedback.textContent=err.message;}finally{pending=false;submit.disabled=false;}

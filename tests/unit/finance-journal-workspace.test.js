@@ -25,8 +25,8 @@ test('B4 : poste réservé à Finance, écrit uniquement le fait via la route au
   const walk=n=>[n,...n.children.flatMap(walk)];
   const forms=walk(root).filter(n=>n.tag==='form');expect(forms).toHaveLength(1);
   const fields=Object.fromEntries(walk(forms[0]).filter(n=>n.name).map(n=>[n.name,n]));
-  Object.entries({kind:'payment',amount_currency:'12.00',amount_kmf:'5000',fees_kmf:'2',proof_ref:'BANK-1'}).forEach(([k,v])=>fields[k].value=v);
+  Object.entries({kind:'payment',amount_currency:'12.00',debit_currency:'AED',debit_amount:'45.00',fee_currency:'EUR',fee_amount:'2',debit_at:'2026-11-27T10:00:00Z',proof_ref:'BANK-1'}).forEach(([k,v])=>fields[k].value=v);
   await forms[0].listeners.submit({preventDefault(){}});
   expect(fetch.mock.calls[1][0]).toBe('/api/purchasing/supplier-payments/p1/finance-settlements');
-  expect(JSON.parse(fetch.mock.calls[1][1].body)).toEqual({kind:'payment',currency:'USD',amount_currency:'12.00',amount_kmf:'5000',fees_kmf:'2',proof_ref:'BANK-1',idempotency_key:'finance-ui:BANK-1'});
+  expect(JSON.parse(fetch.mock.calls[1][1].body)).toEqual({kind:'payment',currency:'USD',amount_currency:'12.00',debit_currency:'AED',debit_amount:'45.00',fee_currency:'EUR',fee_amount:'2',debit_at:'2026-11-27T10:00:00Z',proof_ref:'BANK-1',idempotency_key:'finance-ui:BANK-1'});
 });

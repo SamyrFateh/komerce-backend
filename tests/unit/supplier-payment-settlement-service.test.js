@@ -146,3 +146,16 @@ describe('recordSettlement', () => {
     expect(await code(listSettlements(client, '22222222-2222-4222-8222-222222222222'))).toBe('404:SUPPLIER_PAYMENT_NOT_FOUND');
   });
 });
+
+describe('B4 real debit input',()=>{
+  const baseNative={kind:'payment',currency:'USD',amount_currency:'10',debit_currency:'AED',debit_amount:'36.72',fee_currency:'EUR',fee_amount:'1.25',debit_at:'2025-01-01T12:00:00+04:00',proof_ref:'BANK',idempotency_key:'native'};
+  test('preserves actual debit and fee currency independent of supplier obligation',()=>{
+    const n=_internals.normalizePayload(baseNative,true);
+    expect(n.currency).toBe('USD');
+    expect(n.native).toEqual({currency:'AED',amount:'36.7200',feeCurrency:'EUR',fee:'1.2500',at:'2025-01-01T08:00:00.000Z'});
+    expect(n.amountKmf).toBeNull();
+  });
+  test.each([{amount_kmf:'42'},{debit_currency:'ZZZ'},{debit_amount:'1.001'},{debit_at:'2025-01-01'},{fee_amount:'-1'}])('rejects invalid facts %j',patch=>{
+    expect(()=>_internals.normalizePayload({...baseNative,...patch},true)).toThrow();
+  });
+});

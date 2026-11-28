@@ -145,7 +145,7 @@ if (!process.env.DATABASE_URL) {
     const p2 = (await pay(b, 50)).payment.id;
     const pWrong = (await pay(wrong, 50)).payment.id;
     const proof = 'B4-' + tag;
-    const body = { kind: 'payment', currency: 'AED', amount_currency: '20', amount_kmf: '1000', fees_kmf: '0', proof_ref: proof, idempotency_key: 'b4-1' };
+    const body = { kind: 'payment', currency: 'AED', amount_currency: '20', debit_currency:'KMF',debit_amount:'1000',fee_currency:'KMF',fee_amount:'0',debit_at:new Date(Date.now()-1000).toISOString(), proof_ref: proof, idempotency_key: 'b4-1' };
     const post = (paymentId, actor, payload = body) => recordSettlement(db, paymentId, payload, actor, {requireB4:true});
     expect(await refused(post(p, user))).toBe('FINANCE_B4_SEPARATION_REQUIRED');
     expect(await refused(post(pWrong, financeUser))).toBe('FINANCE_B4_AUTHORIZATION_REQUIRED');
@@ -158,7 +158,7 @@ if (!process.env.DATABASE_URL) {
     const replay = await post(winner.paymentId, financeUser);
     expect(replay.idempotent_replay).toBe(true);
     expect(replay.settlement.id).toBe(winner.value.settlement.id);
-    expect(await refused(post(winner.paymentId, financeUser, {...body,amount_kmf:'1001'}))).toBe('SETTLEMENT_IDEMPOTENCY_CONFLICT');
+    expect(await refused(post(winner.paymentId, financeUser, {...body,debit_amount:'1001'}))).toBe('SETTLEMENT_IDEMPOTENCY_CONFLICT');
     const after = await q('SELECT count(*)::int AS n FROM supplier_payment_settlements WHERE proof_ref=$1', [proof]);
     expect(after.rows[0].n).toBe(1);
   });
