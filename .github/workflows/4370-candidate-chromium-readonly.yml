@@ -123,7 +123,7 @@ jobs:
               if(final.rowCount!==1||final.rows[0].lifecycle_status!=='CLOSED'||final.rows[0].is_active!==false||final.rows[0].status!=='ENDED')throw Error('CLEANUP_READBACK_FAILED');
               // Negative login against the exact closed fixture, never request an OTP.
               const identity=await db.query("SELECT u.id,u.phone FROM users u JOIN assignment_memberships am ON am.user_id=u.id WHERE u.id=$1 AND am.assignment_id=$2",['10c72734-5ab4-44c6-a524-9f824c445690','326be9ce-d2c4-476c-b5a3-5eb190092d03']);
-              if(identity.rowCount!==1||!/^\\+120255501[0-9]{2}$/.test(identity.rows[0].phone))throw Error('NEGATIVE_IDENTITY_NOT_PROVEN');
+              if(identity.rowCount!==1||!/^\+120255501[0-9]{2}$/.test(identity.rows[0].phone))throw Error('NEGATIVE_IDENTITY_NOT_PROVEN');
               const lead=identity.rows[0];
               const eligible=await db.query("SELECT 1 FROM users u JOIN assignment_memberships am ON am.user_id=u.id JOIN market_operating_assignments a ON a.id=am.assignment_id JOIN markets m ON m.id=a.market_id WHERE (u.phone=$1 OR u.whatsapp_phone=$1) AND am.status='ACTIVE' AND am.is_operating_lead=TRUE AND a.status='ACTIVE' AND m.lifecycle_status IN ('PROVISIONING','ACTIVE','SUSPENDED')",[lead.phone]);
               if(eligible.rowCount!==0)throw Error('NEGATIVE_ACCOUNT_STILL_ELIGIBLE');
