@@ -7,7 +7,7 @@
  * @inputs        transaction executor, authorized locked subject, actor, message
  * @outputs       conversation projections, private attachment bytes
  * @depends       services/conversation-photo-sanitizer.js
- * @db-read       conversation_messages, conversation_attachments
+ * @db-read       conversation_messages, conversation_attachments, client_requests
  * @db-write      conversation_messages, conversation_attachments
  * @db-txn        caller-owned
  * @doctrine      private_client_conversation, immutable_messages
@@ -94,9 +94,14 @@ async function attachment(q,{requestId,attachmentId,scope}){
   return file;
 }
 async function purgeExpired(q){
-  const {rowCount}=await q.query(`DELETE FROM conversation_attachments a USING conversation_messages m,client_requests r
-    WHERE a.message_id=m.id AND m.subject_id=r.id AND r.status='closed'
-      AND a.purge_after IS NOT NULL AND a.purge_after<=now()`);
+  const {rowCount}=await q.query(`WITH due AS (
+    SELECT r.id FROM client_requests r WHERE r.status='closed' AND EXISTS (
+      SELECT 1 FROM conversation_messages m JOIN conversation_attachments a ON a.message_id=m.id
+       WHERE m.subject_id=r.id AND a.purge_after<=now())
+     ORDER BY r.closed_at,r.id LIMIT 100 FOR UPDATE OF r SKIP LOCKED
+   )
+   DELETE FROM conversation_attachments a USING conversation_messages m,due
+    WHERE a.message_id=m.id AND m.subject_id=due.id AND a.purge_after<=now()`);
   return rowCount;
 }
 module.exports={append,list,attachment,purgeExpired,prepare};
