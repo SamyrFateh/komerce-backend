@@ -339,3 +339,17 @@ test('Pilotage : trois horloges distinctes et population opérationnelle partiel
   await expect(page.locator('#pilotage-flow-health')).toContainText('projection partielle');
   expect(await page.evaluate(()=>document.documentElement.scrollWidth)).toBeLessThanOrEqual(1282);
 });
+
+test('Pilotage : vente canonique avec avoir, en EUR, distincte de la caisse',async({page})=>{
+  const model=JSON.parse(JSON.stringify(payload));
+  model.decision_clocks={stock:{},flow:{metric_id:'commerce.paid_sales_wallet_included',from:'2026-11-01',to:'2026-11-28'},economic:{}};
+  const sales=model.kpis_global.find(k=>k.key==='ca_encaisse');
+  Object.assign(sales,{value:123.45,unit:'EUR',data_quality:{metric_id:'commerce.paid_sales_wallet_included'}});
+  await mountControlTower(page,model);
+  const clocks=page.locator('[data-pilotage-clocks]');
+  await expect(clocks).toContainText('Ventes payées · avoir inclus');
+  await expect(clocks).toContainText('123,45');
+  await expect(clocks).toContainText('€');
+  await expect(clocks).toContainText('pas un encaissement de caisse');
+  await expect(clocks).not.toContainText('hors wallet');
+});

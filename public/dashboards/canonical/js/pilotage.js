@@ -66,7 +66,7 @@
     metrics: {
       source: 'pilotage.metrics',
       pick: [
-        { key: 'ca-encaisse', label: 'Commandes payées — part hors avoir' },
+        { key: 'ca-encaisse', label: 'Ventes payées (avoir inclus)' },
         { key: 'commandes-actives', label: 'Commandes actives' },
         { key: 'economic-period-result', label: 'Résultat économique mensuel' },
         { key: 'alertes-critiques', label: 'Alertes critiques' },

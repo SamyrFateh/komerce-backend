@@ -122,6 +122,18 @@ describeE2E('Commerce — journée commerciale du marché', ({ db }) => {
     expect(beyond.accounts).toEqual([]);
   });
 
+  it('Pilotage et Commerce partagent les mêmes ventes payées et le même effectif en KMF',async()=>{
+    const market={id:marketId,code:'KM',currency:'KMF'};
+    const {filters}=commerce.buildPeriodFilters({period:'7'},marketId,now,market);
+    const summary=await view('KM');
+    const pilotage=await commerce.getPilotagePaidSales(filters,market);
+    const sales=summary.kpis.find(k=>k.key==='ca_encaisse');
+    expect(pilotage.value).toBe(sales.value);
+    expect(pilotage.data_quality.items_total).toBe(sales.data_quality.items_total);
+    expect(pilotage.data_quality.metric_id).toBe('commerce.paid_sales_wallet_included');
+    expect(pilotage.drill_to).toBeNull();
+  });
+
   it('autre marché : aucune fuite entre périmètres', async () => {
     const r = await view('KM', '7', otherMarketId);
     expect(r.sales_series).toEqual([{ day: '2026-10-18', sales_kmf: 7777, orders: 1 }]);

@@ -438,3 +438,31 @@ describe('drill des acheteurs payants V5.4',()=>{
     expect(db.query).not.toHaveBeenCalled();
   });
 });
+
+describe('Pilotage utilise la vente canonique et la même frontière FX que Commerce',()=>{
+  const row={sales_kmf:'120000',basket_kmf:'10000',items_total:'12',paid_buyers:'8',repeat_paid_buyers:'3',unidentified_orders:'1'};
+  test('montant source, identité, projection groupe EUR et marché XAF',async()=>{
+    db.query.mockReset().mockResolvedValue({rows:[row]});
+    const project=jest.fn(async(source,market)=>({...source,value:market.currency==='EUR'?243.92:160000,unit:market.currency}));
+    const filters={market_id:'cm-id',from:'2026-11-01',simulation_scope:'RCT1'};
+    const group=await commerce.getPilotagePaidSales({},null,project);
+    expect(group).toMatchObject({key:'ca_encaisse',value:243.92,unit:'EUR',base_currency:'KMF',drill_to:null,data_quality:{metric_id:'commerce.paid_sales_wallet_included',cash_basis:false,fx_status:'GOVERNED_KMF_PROJECTION'}});
+    expect(project).toHaveBeenNthCalledWith(1,expect.objectContaining({value:120000,unit:'KMF',drill_to:null}),{currency:'EUR',minor_unit:2});
+    const cm={id:'cm-id',currency:'XAF',minor_unit:0};
+    expect(await commerce.getPilotagePaidSales(filters,cm,project)).toMatchObject({value:160000,unit:'XAF',data_quality:{items_total:12}});
+    expect(project).toHaveBeenNthCalledWith(2,expect.objectContaining({value:120000}),cm);
+    const [sql,params]=db.query.mock.calls[1];
+    expect(sql).toContain('o.wallet_applied_kmf');
+    expect(params).toEqual(['2026-11-01','cm-id','RCT1']);
+    expect(await commerce.getPilotagePaidSales({}, {currency:'KMF'}, project)).toMatchObject({value:120000,unit:'KMF',data_quality:{fx_status:'IDENTITY'}});
+    expect(project).toHaveBeenCalledTimes(2);
+  });
+  test('conversion manquante ou incohérente : aucun repli KMF ou faux zéro',async()=>{
+    db.query.mockReset().mockResolvedValue({rows:[row]});
+    const project=jest.fn().mockRejectedValueOnce(new Error('fx down')).mockResolvedValueOnce({value:120000,unit:'KMF'});
+    for(let i=0;i<2;i++)expect(await commerce.getPilotagePaidSales({},null,project)).toMatchObject({value:null,unit:'EUR',data_quality:{fx_status:'UNAVAILABLE',completeness:'provisional'}});
+    db.query.mockReset().mockResolvedValue({rows:[]});
+    expect(await commerce.getPilotagePaidSales({},null,project)).toMatchObject({value:null,unit:'EUR'});
+    expect(project).toHaveBeenCalledTimes(2);
+  });
+});

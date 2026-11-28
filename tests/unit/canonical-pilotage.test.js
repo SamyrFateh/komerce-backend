@@ -315,3 +315,15 @@ test('Pilotage V5.4 distingue les trois horloges et ne confond pas hors avoir et
   p.kpis_global=[];
   expect(pilotageDecision.clockItems(p,pilotage).map(i=>i.value)).toEqual(['—','—','—']);
 });
+
+test('Pilotage V5.4 : ventes wallet incluses, devise affichée et FX indisponible',()=>{
+  const payload={kpis_global:[{key:'ca_encaisse',value:12.34,unit:'EUR',data_quality:{metric_id:'commerce.paid_sales_wallet_included'}}],
+    decision_clocks:{stock:{},flow:{metric_id:'commerce.paid_sales_wallet_included'},economic:{}}};
+  const item=pilotageDecision.clockItems(payload,pilotage)[1];
+  expect(item.label).toBe('Ventes payées · avoir inclus');
+  expect(item.value).toContain('€');
+  expect(item.helper).toContain('pas un encaissement de caisse');
+  payload.kpis_global[0].value=null;
+  payload.kpis_global[0].data_quality.warning='Conversion en devise d’affichage indisponible';
+  expect(pilotageDecision.clockItems(payload,pilotage)[1]).toMatchObject({value:'—',tone:'warning',helper:expect.stringContaining('Conversion en devise')});
+});

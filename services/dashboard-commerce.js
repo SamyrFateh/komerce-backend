@@ -150,6 +150,27 @@ async function getCommercePaidSales(filters) {
   };
 }
 
+// Same business-sale projection as Commerce; only the display currency differs.
+async function getPilotagePaidSales(filters, market = null, project = require('./dashboard-metrics/market-currency').projectMarketPayload) {
+  const sales = await getCommercePaidSales(filters);
+  const source = sales.ca;
+  // Same display boundary (including minor-unit rounding) as Commerce.
+  const displayMarket = market || {currency:'EUR',minor_unit:2};
+  const target = displayMarket.currency;
+  const base = {...source,unit:target || null,base_currency:'KMF',drill_to:null};
+  const quality = {...source.data_quality,display_basis:'KMF_reporting_projection'};
+  const available = Number.isSafeInteger(source.value) && Number.isSafeInteger(sales.buyerCohort.paid_orders);
+  if (!available || !target) return {...base,value:null,data_quality:{...quality,completeness:'provisional',fx_status:'UNAVAILABLE',warning:'Ventes payées non déterminées'}};
+  if (target === 'KMF') return {...base,data_quality:{...quality,fx_status:'IDENTITY'}};
+  try {
+    const result = await project({...source,drill_to:null},displayMarket);
+    if (result?.value == null || !Number.isFinite(Number(result.value)) || result.unit !== target) throw new Error('invalid_fx_projection');
+    return {...base,value:result.value,data_quality:{...quality,fx_status:'GOVERNED_KMF_PROJECTION'}};
+  } catch (_error) {
+    return {...base,value:null,data_quality:{...quality,completeness:'provisional',fx_status:'UNAVAILABLE',warning:'Conversion en devise d’affichage indisponible'}};
+  }
+}
+
 async function getTopProducts(filters) {
   const { where, params } = buildFiltersClause(filters);
   const { rows } = await db.query(`
@@ -843,6 +864,7 @@ module.exports = {
   normalizePeriod,
   buildPeriodFilters,
   getCommercePaidSales,
+  getPilotagePaidSales,
   getTopProducts,
   getCollectedFromJournal,
   publicTopProduct,
