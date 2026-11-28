@@ -1168,3 +1168,33 @@ role: Rattachement explicite de la vente locale au lot clôturé, quantité et c
 -->
 
 La migration 454 (schéma visé, non live vérifié) étend la clé primaire de `local_stock_economic_lot_lines` à `(order_item_id, receipt_id)` pour permettre plusieurs lots par vente. Les sommes de quantités par lot et par vente sont plafonnées dans la transaction du writer.
+
+### B4 — débit fournisseur en devise native (migration 456 — intended_migration_schema)
+
+La migration 456 étend `supplier_payment_settlements` sans réécriture des faits historiques. Schéma visé, non confirmé live sur Railway : `supplier_payment_settlements.debit_amount` (montant positif du débit constaté), `supplier_payment_settlements.debit_currency` (devise effective du compte), `supplier_payment_settlements.fee_amount` (frais non négatifs, nuls hors payment), `supplier_payment_settlements.fee_currency` (devise des frais), `supplier_payment_settlements.debit_at` (date du débit), `supplier_payment_settlements.debit_fx_snapshot` (objet de conversion historique). La contrainte `chk_sps_native_debit_complete` impose soit six champs NULL (historique), soit six champs renseignés et conformes. `amount_kmf` demeure le fait KMF historique pour les anciennes lignes et une projection FX historique pour les nouveaux débits natifs, jamais un second débit bancaire. La migration n'active aucun paiement ; preuve du schéma live après déploiement.
+
+### On Demand V1 — migration 457 (intended_migration_schema)
+
+Ces objets sont prévus, non confirmés live sur Railway. Les dossiers sont bornés au client et au marché ; les messages distinguent canal client et interne. Les photos privées sont limitées en taille, contrôlées par dossier et purgées après clôture. Les contraintes de `client_notifications` permettent les réponses On Demand sans modifier le circuit commande. Aucun paiement, commande ou rail express activé.
+
+<!-- schema-pending
+object: client_requests
+kind: table
+migration: 457
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
+role: Dossier privé client-marché, état, motif et partage explicite Hub.
+-->
+<!-- schema-pending
+object: conversation_messages
+kind: table
+migration: 457
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
+role: Messages et événements internes ou visibles client, rattachés au dossier.
+-->
+<!-- schema-pending
+object: conversation_attachments
+kind: table
+migration: 457
+section: ### 4.8 Pricing et économie (tables live + 2 objets visés)
+role: Photos privées, empreinte, type MIME, taille et échéance de purge.
+-->
