@@ -327,13 +327,16 @@
       );
       flowSection.section.className += ' is-control-tower-flow';
       flowSection.section.setAttribute('data-dashboard-role', 'primary');
+      // FlowStrip owns and clears its render target. Keep the coverage label
+      // outside that target so a render cannot erase the qualification.
       const population=payload.control_chain?.population;
-      if (population && Number.isSafeInteger(population.shown) && Number.isSafeInteger(population.total)
-          && population.total>=population.shown && population.complete===(population.total===population.shown)) {
-        flowSection.body.appendChild(text(doc,'p','kmc-decision-dashboard-section-copy',
-          population.shown+' sur '+population.total+' commandes actives · '+(population.complete?'projection exhaustive':'projection partielle')));
-      } else if (payload.decision_clocks) {
-        flowSection.body.appendChild(text(doc,'p','kmc-decision-dashboard-section-copy','Total de la projection non déterminé.'));
+      const coverage = population && Number.isSafeInteger(population.shown) && Number.isSafeInteger(population.total)
+          && population.shown>=0 && population.total>=population.shown
+          && population.complete===(population.total===population.shown)
+        ? population.shown+' sur '+population.total+' commandes actives · '+(population.complete?'projection exhaustive':'projection partielle')
+        : payload.decision_clocks ? 'Total de la projection non déterminé.' : null;
+      if (coverage !== null) {
+        flowSection.section.insertBefore(text(doc,'p','kmc-decision-dashboard-section-copy',coverage),flowSection.body);
       }
       decisionUi.FlowStrip.render(flowSection.body, { stages });
       dashboard.appendChild(flowSection.section);
