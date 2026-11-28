@@ -21,7 +21,7 @@
 const db = require('../db');
 const metrics = require('./dashboard-metrics');
 const controlChain = require('./logistics-control-chain-projection');
-const { mergePilotageAlerts, summarizeControlChain, pilotageStockFilters, pilotageDecisionClocks } = require('./dashboard-pilotage-alert-aggregation');
+const { mergePilotageAlerts, summarizeControlChain, pilotageStockFilters, pilotageDecisionClocks, unavailableSimulationSignal } = require('./dashboard-pilotage-alert-aggregation');
 const { buildSignalMarketClause } = require('./dashboard-metrics/_helpers');
 const { EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL } = require('./signal-simulation-scope');
 const log = require('../utils/logger').child({ module: 'dashboard-pilotage-market' });
@@ -74,7 +74,7 @@ async function fetchTopAlerts(filters, limit = 10) {
   }
 }
 
-async function buildMarketPilotage(filters, market, actor=null) {
+async function buildMarketPilotage(filters, market, actor=null, flowPeriod=null) {
   if (!market || !market.id || !market.code) {
     throw new Error('dashboard_market_not_resolved');
   }
@@ -82,6 +82,9 @@ async function buildMarketPilotage(filters, market, actor=null) {
     throw new Error('dashboard_market_filter_not_server_bound');
   }
 
+  if (flowPeriod && flowPeriod.filters?.market_id !== market.id) {
+    throw new Error('dashboard_market_flow_filter_not_server_bound');
+  }
   const [
     ca, cmdsActives, alertesCritiques, tauxCouts,
     coutReel, cmdsCoutIncomplet, coutMoyParCmd,
@@ -89,9 +92,9 @@ async function buildMarketPilotage(filters, market, actor=null) {
     topAlerts,
     controlChainProjection,
   ] = await Promise.all([
-    require('./dashboard-commerce').getPilotagePaidSales(filters,market),
+    require('./dashboard-commerce').getPilotagePaidSales(flowPeriod ? flowPeriod.filters : filters,market),
     metrics.getCmdsActives(pilotageStockFilters(filters)),
-    metrics.getAlertesCritiques(filters),
+    filters.simulation_scope ? unavailableSimulationSignal('alertes_critiques','Alertes critiques') : metrics.getAlertesCritiques(filters),
     metrics.getTauxCompletudeCouts(filters),
     metrics.getCoutReel(filters),
     metrics.getCmdsCoutIncompletCount(filters),
@@ -101,8 +104,8 @@ async function buildMarketPilotage(filters, market, actor=null) {
     metrics.getDisponiblesRelais(filters),
     metrics.getRetardsCritiques(filters),
     metrics.getTauxCompletudeScans(filters),
-    fetchTopAlerts(filters, 10),
-    controlChain.getControlChain({ market }),
+    filters.simulation_scope ? null : fetchTopAlerts(filters, 10),
+    controlChain.getControlChain({market,...(filters.simulation_scope?{simulationScope:filters.simulation_scope}:{})}),
   ]);
 
   const periodStart=new Date().toISOString().slice(0,7)+'-01';
@@ -153,7 +156,7 @@ async function buildMarketPilotage(filters, market, actor=null) {
         currency: market.currency,
       },
     },
-    decision_clocks: pilotageDecisionClocks(filters,economicResult,new Date().toISOString()),
+    decision_clocks: pilotageDecisionClocks(flowPeriod ? flowPeriod.filters : filters,economicResult,new Date().toISOString(),flowPeriod),
     kpis_global: [ca, cmdsActives, economicResult, alertesCritiques, tauxCouts],
     view_blocks,
     economic_flow: {
@@ -175,12 +178,12 @@ async function buildMarketPilotage(filters, market, actor=null) {
       'Le dashboard doit aider à décider',
     ],
     control_chain: summarizeControlChain(controlChainProjection),
-    system_alerts: mergePilotageAlerts(topAlerts, controlChainProjection, 10),
+    system_alerts: filters.simulation_scope ? null : mergePilotageAlerts(topAlerts, controlChainProjection, 10),
     data_quality: {
       generated_at: new Date().toISOString(),
       filters: publicFilters(filters),
-      warnings: [],
-      incomplete_fields: [],
+      warnings: filters.simulation_scope ? ['Signaux transverses non certifiés pour ce périmètre de recette ; chaîne limitée aux commandes de la recette.'] : [],
+      incomplete_fields: filters.simulation_scope ? ['system_alerts','alertes_critiques'] : [],
       source_tables: [
         'orders', 'parcels', 'scan_events', 'signals',
         'purchase_lines', 'purchase_orders', 'hub_purchase_allocations',

@@ -149,6 +149,7 @@ function cacheMiddleware(endpointName) {
 
     // Construire la cle
     const filters = {
+      period: req.query.period,
       from: req.query.from,
       to: req.query.to,
       island: req.query.island,

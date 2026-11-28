@@ -42,9 +42,9 @@ function isKmfKpiWithoutValue(node) {
     && (node.value === null || node.value === undefined);
 }
 
-async function projectNode(node, market) {
+async function projectNode(node, market, failClosed = false) {
   if (Array.isArray(node)) {
-    for (let i = 0; i < node.length; i += 1) node[i] = await projectNode(node[i], market);
+    for (let i = 0; i < node.length; i += 1) node[i] = await projectNode(node[i], market, failClosed);
     return node;
   }
   if (node === null || typeof node !== 'object') return node;
@@ -55,13 +55,20 @@ async function projectNode(node, market) {
     node.unit = market.currency;
     node.base_currency = BASE_CURRENCY;
   } else if (isKmfKpi(node)) {
-    const projected = await projectAmount(Number(node.value), BASE_CURRENCY, market.currency);
-    node.value = roundToMinorUnit(projected, market.minor_unit);
+    try {
+      const projected = await projectAmount(Number(node.value), BASE_CURRENCY, market.currency);
+      node.value = roundToMinorUnit(projected, market.minor_unit);
+    } catch (error) {
+      if (!failClosed) throw error;
+      node.value = null;
+      node.data_quality = {...node.data_quality,completeness:'provisional',fx_status:'UNAVAILABLE',warning:'Conversion en devise d’affichage indisponible'};
+    }
     node.unit = market.currency;
     node.base_currency = BASE_CURRENCY;
+    if (failClosed) node.minor_unit = market.minor_unit;
   }
   for (const key of Object.keys(node)) {
-    if (node[key] !== null && typeof node[key] === 'object') node[key] = await projectNode(node[key], market);
+    if (node[key] !== null && typeof node[key] === 'object') node[key] = await projectNode(node[key], market, failClosed);
   }
   return node;
 }
@@ -82,21 +89,29 @@ async function projectMarketPayload(payload, market) {
 // market-currency amounts for the visible product/category rankings.
 // Do not expand the generic recursive projection to arbitrary *_kmf fields.
 async function projectCommerceMarketPayload(payload, market) {
-  const projected = await projectMarketPayload(payload, market);
-  if (!market || !market.currency || market.currency === BASE_CURRENCY) return projected;
-
-  const minorUnit = Number.isInteger(market.minor_unit) ? market.minor_unit : 0;
-  for (const group of ['top_products', 'categories']) {
+  const target=market || {currency:'EUR',minor_unit:2};
+  if (!target.currency || target.currency === BASE_CURRENCY || !payload || typeof payload!=='object') return payload;
+  const minorUnit = Number.isInteger(target.minor_unit) ? target.minor_unit : 0;
+  const projected=await projectNode(structuredClone(payload),{currency:target.currency,minor_unit:minorUnit},true);
+  // Only named visible commercial amounts cross the display boundary.
+  // Source KMF, relative shares and chart geometry stay unchanged.
+  const groups={top_products:['revenue_kmf','revenue_display'],categories:['revenue_kmf','revenue_display'],
+    sales_series:['sales_kmf','sales_display'],sales_by_market:['sales_kmf','sales_display'],
+    decision_signals:['value_kmf','value_display']};
+  let fxUnavailable=false;
+  for (const [group,[sourceKey,displayKey]] of Object.entries(groups)) {
     if (!Array.isArray(projected[group])) continue;
-    await Promise.all(projected[group].map(async (row) => {
-      if (row.revenue_kmf == null) return;
-      const value = await projectAmount(Number(row.revenue_kmf), BASE_CURRENCY, market.currency);
-      row.revenue_display = {
-        value: roundToMinorUnit(value, minorUnit),
-        unit: market.currency,
-        base_currency: BASE_CURRENCY,
-      };
+    await Promise.all(projected[group].map(async row=>{
+      if (row[sourceKey]==null) return;
+      let value=null;
+      try { value=roundToMinorUnit(await projectAmount(Number(row[sourceKey]),BASE_CURRENCY,target.currency),minorUnit); }
+      catch (_) { fxUnavailable=true; }
+      row[displayKey]={value,unit:target.currency,base_currency:BASE_CURRENCY,minor_unit:minorUnit};
     }));
+  }
+  if(fxUnavailable || projected.kpis?.some(k=>k.data_quality?.fx_status==='UNAVAILABLE')) {
+    projected.data_quality={...projected.data_quality,warnings:[...(projected.data_quality?.warnings||[]),
+      {code:'commerce_display_fx_unavailable',message:'Conversion en devise d’affichage indisponible.'}]};
   }
   return projected;
 }

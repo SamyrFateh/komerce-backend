@@ -211,6 +211,14 @@ describe('GET /api/admin/dashboard/context', () => {
 });
 
 describe('GET /api/admin/dashboard/unified/market/:marketCode', () => {
+  test('période commerciale du marché résolu, sans modifier le stock',async()=>{
+    const res=await request(makeApp()).get('/api/admin/dashboard/unified/market/CM?period=7');
+    expect(res.status).toBe(200);
+    const [filters,market,,flow]=mockBuildMarketPilotage.mock.calls[0];
+    expect(filters).toMatchObject({from:null,to:null,market_id:'market-cm-id'});
+    expect(flow).toMatchObject({period:7,timezone:'Africa/Douala',filters:{market_id:market.id}});
+    expect(flow).toEqual(require('../../services/dashboard-commerce').buildPeriodFilters({period:'7'},market.id,new Date(flow.filters.to),market));
+  });
   test('un non-admin est refusé avant toute résolution marché', async () => {
     mockCurrentUser = { id: 'client-1', role: 'client' };
     const res = await request(makeApp()).get('/api/admin/dashboard/unified/market/CM');

@@ -92,7 +92,7 @@ test('Commerce CM : KPI et top produits en XAF, données *_kmf inchangées', asy
   expect(projected.kpis[0]).toMatchObject({ unit: 'XAF', value: Math.round(10 * 655.957) });
   expect(projected.top_products[0].revenue_kmf).toBe(4919.6775);
   expect(projected.top_products[0].revenue_display).toEqual({
-    value: Math.round(10 * 655.957), unit: 'XAF', base_currency: 'KMF',
+    value: Math.round(10 * 655.957), unit: 'XAF', base_currency: 'KMF', minor_unit: 0,
   });
   expect(projected.categories[0].revenue_display.unit).toBe('XAF');
   expect(payload.top_products[0].revenue_display).toBeUndefined();
@@ -104,7 +104,33 @@ test('Commerce KM : ne change aucun montant ni cohorte', async () => {
   expect(await projectCommerceMarketPayload(payload, { currency: 'KMF' })).toBe(payload);
 });
 
-test('Commerce CM : parité manquante refuse la projection du classement', async () => {
-  const payload = { top_products: [{ revenue_kmf: 1000 }] };
-  await expect(projectCommerceMarketPayload(payload, { currency: 'ZZZ' })).rejects.toThrow(/parité/);
+test('Commerce : parité manquante refuse toute valeur monétaire affichée, sans substitution ni mutation', async () => {
+  const payload = {
+    kpis: [kpi(1000), kpi(4, 'count')],
+    top_products: [{ revenue_kmf: 1000 }],
+    categories: [{ revenue_kmf: 1000 }],
+    sales_series: [{ sales_kmf: 1000, orders: 4 }],
+    sales_by_market: [{ sales_kmf: 1000, share_pct: 100 }],
+    decision_signals: [{ value_kmf: -500 }],
+  };
+  const original=structuredClone(payload);
+  const out=await projectCommerceMarketPayload(payload, { currency: 'ZZZ', minor_unit: 2 });
+  expect(out.kpis[0]).toMatchObject({unit:'ZZZ',value:null,minor_unit:2,base_currency:'KMF',data_quality:{fx_status:'UNAVAILABLE',completeness:'provisional'}});
+  expect(out.kpis[1]).toEqual(payload.kpis[1]);
+  const missing={unit:'ZZZ',value:null,minor_unit:2,base_currency:'KMF'};
+  expect(out.top_products[0].revenue_display).toEqual(missing);
+  expect(out.categories[0].revenue_display).toEqual(missing);
+  expect(out.sales_series[0]).toMatchObject({sales_display:missing,orders:4});
+  expect(out.sales_by_market[0]).toMatchObject({sales_display:missing,share_pct:100});
+  expect(out.decision_signals[0].value_display).toEqual(missing);
+  expect(out.data_quality.warnings).toContainEqual(expect.objectContaining({code:'commerce_display_fx_unavailable'}));
+  expect(payload).toEqual(original);
+});
+
+test('Commerce groupe : projection EUR à deux décimales, sans altérer la cohorte', async () => {
+  const payload={kpis:[kpi(491.96775*12.34)],sales_series:[{sales_kmf:491.96775*12.34,orders:1}],buyer_cohort:{paid_buyers:1,population_token:'a'.repeat(32)}};
+  const out=await projectCommerceMarketPayload(payload,null);
+  expect(out.kpis[0]).toMatchObject({unit:'EUR',value:12.34,minor_unit:2});
+  expect(out.sales_series[0].sales_display).toEqual({unit:'EUR',value:12.34,minor_unit:2,base_currency:'KMF'});
+  expect(out.buyer_cohort).toEqual(payload.buyer_cohort);
 });

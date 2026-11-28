@@ -192,6 +192,28 @@ describe('LOT 2E-CANON — Operations vivant', () => {
       .toEqual({ purchase_orders: ['PO-42'], hub_units: [], parcels: ['P-42'] });
   });
 
+  test('census exhaustif distinct de la liste visible et page réconciliée',()=>{
+    const token='a'.repeat(32);
+    const stages=operationsDecision.PROCESS_PHASES.flatMap(p=>p.stages);
+    const counts=Object.fromEntries(stages.map(key=>[key,{GREEN:0,ORANGE:0,RED:0,UNKNOWN:0}]));
+    counts.ORDER.RED=26;
+    const by_stage=Object.fromEntries(stages.map(key=>[key,[]]));
+    by_stage.ORDER=[{order_reference:'K1',health:'RED'}];
+    const payload={control_chain:{stages:stages.map(key=>({key})),by_stage,
+      population:{total:26,shown:1,limit:1,complete:false,clock:'current_active_orders',simulation_scope:'real_only'},
+      population_census:{token,stage_counts:counts}}};
+    expect(operationsDecision.projectProcessPhases(payload)[0].count).toBe(26);
+    expect(operationsDecision.projectPopulation(payload)).toEqual({shown:1,total:26,state:'partial'});
+    expect(operationsDecision.controlHealthSummary(payload).RED).toBe(26);
+    const orders=[{order_reference:'K26',stage:'ORDER',health:'RED'}];
+    const page={drill:{phase:'ORDER',health:'RED',page:2,token,total:26,page_size:25},orders,
+      stages:payload.control_chain.stages,by_stage:{...by_stage,ORDER:orders}};
+    expect(operationsDecision.matchesChainDrill(page,{phase:'ORDER',health:'RED',page:2,token,total:26})).toBe(true);
+    expect(operationsDecision.matchesChainDrill(page,{phase:'ORDER',health:'RED',page:2,token,total:27})).toBe(false);
+    counts.ORDER.RED=25;
+    expect(operationsDecision.populationCensus(payload)).toBeNull();
+  });
+
   test('la vue d’ensemble ne rend aucun panneau secondaire non demandé', () => {
     const source = fs.readFileSync(
       path.join(__dirname, '..', '..', 'public', 'dashboards', 'canonical', 'js', 'operations-decision.js'),

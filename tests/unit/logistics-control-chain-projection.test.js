@@ -367,6 +367,53 @@ describe('logistics-control-chain-projection', () => {
     expect((await projection.getControlChain()).population).toMatchObject({total:1,shown:1,complete:true});
   });
 
+  test('census avant LIMIT : les positions non chargées restent comptées', async()=>{
+    const token='a'.repeat(32);
+    mockQuery.mockResolvedValue({rows:[{order_reference:'K1',current_stage:'ORDER',health:'RED',population_total:'3',
+      population_token:token,population_distribution:[{stage:'ORDER',health:'RED',count:1},{stage:'RELAY',health:'GREEN',count:2}]}]});
+    const result=await projection.getControlChain({limit:1});
+    expect(result.population_census).toMatchObject({token,stage_counts:{ORDER:{RED:1},RELAY:{GREEN:2}}});
+    expect(result.population).toMatchObject({total:3,shown:1,complete:false});
+    const [sql]=mockQuery.mock.calls[0];
+    expect(sql).toContain('FROM projected GROUP BY current_stage,health');
+  });
+
+  test('drill scope serveur, phase et santé avant LIMIT, token et page réconciliés',async()=>{
+    const token='b'.repeat(32);
+    const drill=projection.parseChainDrill({chain_drill:'HUB',health:'RED',page:'2',token});
+    mockQuery.mockResolvedValue({rows:[{order_reference:'K26',current_stage:'HUB_CONTROL',health:'RED',population_total:'26',population_token:token}]});
+    const result=await projection.getControlChain({market:{id:'cm'},drill});
+    expect(result.drill).toEqual({phase:'HUB',health:'RED',page:2,page_size:25,total:26,token});
+    const [sql,params]=mockQuery.mock.calls[0];
+    expect(params).toEqual(['cm',expect.any(Array),25,null,['HUB_RECEIVING','HUB_CONTROL'],'RED',25]);
+    expect(sql).toContain('current_stage = ANY($5::text[])');
+    expect(sql).toContain('OFFSET $7');
+    mockQuery.mockResolvedValueOnce({rows:[{order_reference:'K26',current_stage:'HUB_CONTROL',health:'RED',population_total:'26',population_token:'c'.repeat(32)}]});
+    await expect(projection.getControlChain({market:{id:'cm'},drill})).rejects.toMatchObject({status:409});
+    mockQuery.mockResolvedValueOnce({rows:[]});
+    await expect(projection.getControlChain({market:{id:'cm'},drill})).rejects.toMatchObject({status:409});
+  });
+
+  test('drill refuse remise non projetée, scope recette, état invalide et pagination ambiguë',()=>{
+    const valid={chain_drill:'ORDER',page:'1',token:'a'.repeat(32)};
+    for (const bad of [{chain_drill:'HANDOFF'},{health:'BAD'},{page:'0'},{page:'1.5'},{page:['1']},{token:'bad'},{simulation_scope:'bad'}]) {
+      expect(()=>projection.parseChainDrill({...valid,...bad})).toThrow('invalid_control_chain_drill');
+    }
+  });
+
+  test('scope de recette explicite paramétré avant projection et pagination',async()=>{
+    mockQuery.mockResolvedValue({rows:[]});
+    const result=await projection.getControlChain({market:{id:'cm'},simulationScope:'RCT1'});
+    expect(result.population.simulation_scope).toBe('RCT1');
+    const [sql,params]=mockQuery.mock.calls[0];
+    expect(sql).toContain('o.simulation_scope = $5::text');
+    expect(params[4]).toBe('RCT1');
+    const drill=projection.parseChainDrill({chain_drill:'ORDER',page:'1',token:'a'.repeat(32),simulation_scope:'RCT1'});
+    await expect(projection.getControlChain({market:{id:'cm'},drill})).rejects.toMatchObject({status:409});
+    expect(mockQuery.mock.calls[1][0]).toContain('o.simulation_scope = $8::text');
+    expect(mockQuery.mock.calls[1][1][7]).toBe('RCT1');
+  });
+
   test('le service reste strictement read-only', () => {
     const fs = require('fs');
     const src = fs.readFileSync(require.resolve('../../services/logistics-control-chain-projection'), 'utf8');

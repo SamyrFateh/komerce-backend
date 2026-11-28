@@ -260,6 +260,22 @@ describe("cacheMiddleware", () => {
     }
   });
 
+  test('les périodes 7, 30 et 90 ne partagent pas le même cache',async()=>{
+    const middleware=cache.cacheMiddleware('unified');
+    for(const period of ['7','30','90']) {
+      const response=makeRes();
+      await middleware(makeReq({query:{period}}),response,()=>response.json({period}));
+      expect(response._sentData.period).toBe(period);
+    }
+    expect(cache.stats().size).toBe(3);
+    for(const period of ['90','7','30']) {
+      const response=makeRes(); const next=jest.fn();
+      await middleware(makeReq({query:{period}}),response,next);
+      expect(next).not.toHaveBeenCalled();
+      expect(response._sentData.period).toBe(period);
+    }
+  });
+
   test("un cache hit annonce le vrai TTL du middleware", async () => {
     const middleware = cache.cacheMiddleware('unified');
     const req = makeReq();

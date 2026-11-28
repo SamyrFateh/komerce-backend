@@ -19,6 +19,7 @@
 'use strict';
 
 const db = require('../db');
+const {isValidScope}=require('./simulation-scope-service');
 const { ACTIVE_ORDER_STATUSES } = require('./dashboard-metrics/_helpers');
 
 const STAGES = Object.freeze([
@@ -41,6 +42,63 @@ const HEALTH = Object.freeze({
 });
 
 const STRUCTURAL_ALERT_MIN_ORDERS = 3;
+const DRILL_PAGE_SIZE = 25;
+const PHASE_STAGES = Object.freeze({
+  ORDER: Object.freeze(['ORDER']),
+  PURCHASING: Object.freeze(['PURCHASING','SUPPLIER']),
+  HUB: Object.freeze(['HUB_RECEIVING','HUB_CONTROL']),
+  CUSTOMS: Object.freeze(['FORWARDER','TRANSPORT','CUSTOMS']),
+  RELAY: Object.freeze(['RELAY']),
+});
+function drillError(status, code) {
+  return Object.assign(new Error(code), {status, code});
+}
+
+// Only a validated server-side selection can reach the paged projection.
+function parseChainDrill(query = {}) {
+  const phase = query.chain_drill;
+  const health = query.health == null ? null : query.health;
+  const page = Number(query.page);
+  if (typeof phase !== 'string' || (phase !== 'ALL' && !Object.prototype.hasOwnProperty.call(PHASE_STAGES,phase))
+      || (health !== null && (phase === 'ALL' || !Object.prototype.hasOwnProperty.call(HEALTH,health) || typeof health !== 'string'))
+      || typeof query.page !== 'string' || !/^[1-9][0-9]*$/.test(query.page)
+      || !Number.isSafeInteger(page) || page > 1000000
+      || typeof query.token !== 'string' || !/^[a-f0-9]{32}$/.test(query.token)
+      || (query.simulation_scope !== undefined && !isValidScope(query.simulation_scope))) {
+    throw drillError(400,'invalid_control_chain_drill');
+  }
+  return {phase,health,page,token:query.token,stages:phase==='ALL'?null:PHASE_STAGES[phase],
+    ...(query.simulation_scope ? {simulationScope:query.simulation_scope}: {})};
+}
+
+// A census is authoritative only when all stage/health cells reconcile to the full total.
+// The token pins membership, position, health and sort order (not a historical snapshot).
+function readCensus(rows,total) {
+  const first=rows[0];
+  if (!first || !Array.isArray(first.population_distribution) || !Number.isSafeInteger(total)
+      || typeof first.population_token !== 'string' || !/^[a-f0-9]{32}$/.test(first.population_token)
+      || !rows.every(row=>row.population_token===first.population_token)) return null;
+  const counts=Object.fromEntries(STAGES.map(stage=>[stage.key,{GREEN:0,ORANGE:0,RED:0,UNKNOWN:0}]));
+  const seen=new Set();
+  let sum=0;
+  for (const cell of first.population_distribution) {
+    if (!cell || !Object.prototype.hasOwnProperty.call(counts,cell.stage)
+        || !Object.prototype.hasOwnProperty.call(HEALTH,cell.health)
+        || !Number.isSafeInteger(cell.count) || cell.count<1) return null;
+    const key=cell.stage+':'+cell.health;
+    if(seen.has(key)) return null;
+    seen.add(key);
+    counts[cell.stage][cell.health]=cell.count;
+    sum+=cell.count;
+  }
+  if(sum!==total) return null;
+  for (const row of rows) {
+    const key=row.current_stage;
+    if (!counts[key] || !counts[key][row.health]) return null;
+  }
+  return Object.freeze({token:first.population_token,stage_counts:Object.freeze(Object.fromEntries(
+    Object.entries(counts).map(([key,value])=>[key,Object.freeze(value)])))});
+}
 
 function healthRank(health) {
   if (health === HEALTH.RED) return 3;
@@ -169,9 +227,14 @@ function projectRow(row) {
 }
 
 async function getControlChain(options = {}) {
-  const limit = Math.max(1, Math.min(Number(options.limit) || 250, 500));
+  const drill = options.drill || null;
+  const limit = drill ? DRILL_PAGE_SIZE : Math.max(1, Math.min(Number(options.limit) || 250, 500));
   const orderId = options.orderId || null;
   const params = [marketId(options.market), ACTIVE_ORDER_STATUSES, limit, orderId];
+  if (drill) params.push(drill.stages,drill.health,(drill.page-1)*limit);
+  const simulationScope=drill ? drill.simulationScope : options.simulationScope;
+  if(simulationScope!==undefined && !isValidScope(simulationScope)) throw drillError(400,'invalid_simulation_scope');
+  const scopeParam=simulationScope ? params.push(simulationScope) : null;
 
   const { rows } = await db.query(`
     WITH scoped_orders AS (
@@ -184,7 +247,7 @@ async function getControlChain(options = {}) {
              o.updated_at
         FROM orders o
        WHERE ($1::uuid IS NULL OR o.market_id = $1)
-         AND o.simulation_scope IS NULL
+         AND ${scopeParam ? 'o.simulation_scope = $'+scopeParam+'::text' : 'o.simulation_scope IS NULL'}
          AND o.status::text = ANY($2::text[])
          AND ($4::uuid IS NULL OR o.id = $4::uuid)
     ),
@@ -455,6 +518,11 @@ async function getControlChain(options = {}) {
            -- Même snapshot et mêmes prédicats que la liste. La fenêtre précède
            -- le LIMIT : le total décrit toute la population canonique éligible.
            COUNT(*) OVER () AS population_total,
+           -- Census and stable ordering token use the same scoped SQL snapshot.
+           (SELECT COALESCE(jsonb_agg(jsonb_build_object('stage',d.current_stage,'health',d.health,'count',d.n)), '[]'::jsonb)
+              FROM (SELECT current_stage,health,COUNT(*)::int AS n FROM projected GROUP BY current_stage,health) d) AS population_distribution,
+           (SELECT md5(COALESCE(string_agg(jsonb_build_array(order_reference,current_stage,health,last_fact_at)::text, ',' ORDER BY order_reference), ''))
+              FROM projected) AS population_token,
            current_stage,
            local_only,
            health,
@@ -475,11 +543,12 @@ async function getControlChain(options = {}) {
                      ORDER BY osh.created_at DESC
                      LIMIT 6) t) AS recent_transitions
       FROM projected
+     ${drill ? 'WHERE ($5::text[] IS NULL OR current_stage = ANY($5::text[])) AND ($6::text IS NULL OR health = $6)' : ''}
      ORDER BY
        CASE health WHEN 'RED' THEN 1 WHEN 'ORANGE' THEN 2 WHEN 'UNKNOWN' THEN 3 ELSE 4 END,
        last_fact_at ASC,
        order_reference ASC
-     LIMIT $3
+     LIMIT $3 ${drill ? 'OFFSET $7' : ''}
   `, params);
 
   const orders = rows.map(projectRow);
@@ -491,7 +560,7 @@ async function getControlChain(options = {}) {
   // La requête non paginée en offset et de limite >= 1 ne peut renvoyer
   // zéro ligne que si sa population est vide. En cas de métadonnée absente
   // ou incohérente, l'exhaustivité est indéterminée, jamais supposée.
-  const rawTotal = rows.length ? rows[0].population_total : 0;
+  const rawTotal = rows.length ? rows[0].population_total : (drill ? null : 0);
   const total = rawTotal !== null && rawTotal !== undefined && String(rawTotal).trim() !== ''
     ? Number(rawTotal) : NaN;
   const exact = Number.isSafeInteger(total) && total >= orders.length
@@ -503,12 +572,25 @@ async function getControlChain(options = {}) {
     limit,
     complete: exact ? total === orders.length : null,
     clock: 'current_active_orders',
-    simulation_scope: 'real_only',
+    simulation_scope: simulationScope || 'real_only',
   });
 
+  // A drill never claims an empty page to be an empty population. A changed
+  // or now-empty selection must be reopened from a fresh overview.
+  if(drill) {
+    if (!exact || !rows.length || rows.some(row=>row.population_token!==drill.token)
+        || orders.some(order=>(drill.stages&&!drill.stages.includes(order.stage))||(drill.health&&order.health!==drill.health))
+        || orders.length !== Math.min(limit,Math.max(0,total-(drill.page-1)*limit))) {
+      throw drillError(409,'control_chain_population_changed');
+    }
+  }
+  const census = !drill && exact ? readCensus(rows,total) : null;
   return Object.freeze({
     stages: STAGES,
     population,
+    ...(census ? {population_census:census} : {}),
+    ...(drill ? {drill:Object.freeze({phase:drill.phase,health:drill.health,page:drill.page,
+      page_size:limit,total,token:drill.token,...(simulationScope ? {simulation_scope:simulationScope}: {})})} : {}),
     orders: Object.freeze(orders),
     by_stage: Object.freeze(Object.fromEntries(
       Object.entries(byStage).map(([key, list]) => [key, Object.freeze(list)])
@@ -530,6 +612,8 @@ async function getOrderControlSnapshot(order) {
 module.exports = {
   STAGES,
   HEALTH,
+  PHASE_STAGES,
+  parseChainDrill,
   STRUCTURAL_ALERT_MIN_ORDERS,
   healthRank,
   buildStructuralAlerts,

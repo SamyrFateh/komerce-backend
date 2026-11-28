@@ -157,11 +157,11 @@
     return new Intl.NumberFormat('fr-FR', { maximumFractionDigits }).format(numeric);
   }
 
-  function formatMoney(value, unit = 'KMF') {
+  function formatMoney(value, unit = 'KMF', minorUnit = unit==='EUR'?2:0) {
     if (value == null || value === '') return '—';
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) return '—';
-    return `${formatNumber(numeric, 0)} ${unit}`;
+    return `${formatNumber(numeric, minorUnit)} ${unit}`;
   }
 
   function formatKmf(value) {
@@ -171,7 +171,7 @@
   function metricValue(metric) {
     if (!metric || metric.value == null) return '—';
     if (typeof metric.unit === 'string' && /^[A-Z]{3}$/.test(metric.unit)) {
-      return formatMoney(metric.value, metric.unit);
+      return formatMoney(metric.value, metric.unit,metric.minor_unit);
     }
     if (metric.unit === '%') return `${formatNumber(metric.value)} %`;
     return formatNumber(metric.value, 0);
@@ -276,8 +276,7 @@
     const search = options.location && typeof options.location.search === 'string'
       ? options.location.search
       : (typeof globalThis !== 'undefined' && globalThis.location ? globalThis.location.search : '');
-    const scope = new URLSearchParams(search || '').get('simulation_scope');
-    return scope && /^[A-Z][A-Z0-9-]{1,31}$/.test(scope) ? `&simulation_scope=${encodeURIComponent(scope)}` : '';
+    return new URLSearchParams(search || '').getAll('simulation_scope').map(scope=>`&simulation_scope=${encodeURIComponent(scope)}`).join('');
   }
 
   async function jsonRequest(fetchFn, url) {
@@ -332,7 +331,7 @@
         // only after this initial read resolves. isConnected is therefore false
         // for a valid mount; identity + request sequence are the stale guards.
         if (requestId !== requestSeq || rootNode.__dashboardViewIdentity !== identity) return Object.freeze({ stale: true });
-        const result = renderer.render(rootNode, schema, {
+        const result = typeof options.onPayload==='function' ? options.onPayload(payload,period,endpoint) : renderer.render(rootNode, schema, {
           data: resolveSources(payload),
           filters: { period },
           onFilterChange: (key, value) => {
@@ -362,8 +361,8 @@
       streamEnabled: options.user?.role === 'admin',
       isBusy: () => {
         const active = doc?.activeElement;
-        return Boolean(active && rootNode.contains?.(active)
-          && active.matches?.('input,textarea,select,[contenteditable="true"]'));
+        return Boolean(rootNode.querySelector?.('.kmc-commerce-buyer-detail:not([hidden])') || (active && rootNode.contains?.(active)
+          && active.matches?.('input,textarea,select,[contenteditable="true"]')));
       },
     });
     return initial;
