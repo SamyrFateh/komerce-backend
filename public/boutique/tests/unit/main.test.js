@@ -27,6 +27,7 @@ const mockGreetIfKnown = jest.fn();
 const mockIsDesktop = jest.fn();
 const mockSetupModalDesktopEnhancers = jest.fn();
 const mockSetupClientNotifications = jest.fn();
+const mockSetupOnDemand = jest.fn();
 const mockSetupKomerceNavIdentity = jest.fn();
 const mockSetupPasskeyEnrollment = jest.fn();
 
@@ -73,6 +74,7 @@ jest.mock('../../js/b-modal-discovery-detail.js', () => ({
 }));
 jest.mock('../../js/b-greeting.js', () => ({ greetIfKnown: mockGreetIfKnown }));
 jest.mock('../../js/b-notifications.js', () => ({ setupClientNotifications: mockSetupClientNotifications }));
+jest.mock('../../js/b-on-demand.js', () => ({ setupOnDemand: mockSetupOnDemand }));
 jest.mock('../../js/b-komerce-nav-identity.js', () => ({ setupKomerceNavIdentity: mockSetupKomerceNavIdentity }));
 jest.mock('../../js/b-passkey-enrollment.js', () => ({ setupPasskeyEnrollment: mockSetupPasskeyEnrollment }));
 
@@ -100,6 +102,7 @@ test('main initialise le runtime et applique les enrichissements desktop au prem
   expect(mockSetupPasskeyEnrollment).toHaveBeenCalledTimes(1);
   expect(mockGreetIfKnown).toHaveBeenCalledTimes(1);
   expect(mockSetupClientNotifications).toHaveBeenCalledTimes(1);
+  expect(mockSetupOnDemand).toHaveBeenCalledTimes(1);
 
   window.dispatchEvent(new Event('resize'));
   jest.advanceTimersByTime(150);

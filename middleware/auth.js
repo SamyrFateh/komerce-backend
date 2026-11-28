@@ -102,6 +102,7 @@ async function authenticate(req, res, next) {
       exp: decoded.exp,
       tokenUse: decoded.token_use || 'session-legacy-auth7',
       scoped: false,
+      verifiedOtpPhone: decoded.amr.includes('otp') && typeof decoded.phone === 'string' ? decoded.phone : null,
     };
 
     next();

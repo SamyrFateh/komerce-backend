@@ -1,0 +1,64 @@
+/* On Demand — one responsive conversation surface, scoped to the boutique. */
+.k-od-fab{background:var(--hero-market-accent,var(--cta-green));color:var(--white);border:0;animation:none;box-shadow:var(--shadow-lg);cursor:pointer}
+.k-on-demand{box-sizing:border-box;position:fixed;inset:auto 16px 16px auto;width:min(420px,calc(100% - 32px));height:min(720px,calc(100dvh - 32px));max-width:none;max-height:none;min-height:0;margin:0;padding:0;border:1px solid var(--border-text-15);border-radius:20px;background:var(--white);color:var(--text);box-shadow:var(--shadow-lg);overflow:hidden;z-index:1040;overscroll-behavior:contain}
+.k-on-demand[open]{display:flex;flex-direction:column}
+.k-on-demand::backdrop{background:var(--overlay-black-22)}
+.k-on-demand-head{display:flex;align-items:center;gap:10px;padding:14px 16px;flex-shrink:0;border-bottom:1px solid var(--border-text-12);background:var(--white)}
+.k-od-avatar{width:42px;height:42px;flex:0 0 42px;border-radius:50%;display:grid;place-items:center;background:var(--hero-market-accent,var(--cta-green));color:var(--white);font-weight:800;font-size:20px}
+.k-od-heading{flex:1;min-width:0}
+.k-on-demand-head h2{font-size:16px;line-height:1.3;margin:0}
+.k-od-heading small,.k-od-muted{font-size:12px;color:var(--text-muted);line-height:1.5}
+.k-od-btn{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:9px 14px;border:1px solid var(--border-text-15);border-radius:12px;background:var(--white);color:var(--text);font:inherit;font-size:14px;font-weight:600;line-height:1.35;cursor:pointer;text-decoration:none}
+.k-od-btn:disabled{opacity:.55;cursor:not-allowed}
+.k-od-btn:focus-visible{outline:2px solid var(--sage-deeper);outline-offset:2px}
+.k-od-primary{background:var(--hero-market-accent,var(--cta-green));color:var(--white);border-color:var(--hero-market-accent,var(--cta-green))}
+.k-od-icon{min-width:44px;width:44px;height:44px;padding:0;font-size:25px;border:0;background:var(--sage-bg)}
+.k-od-scroll{display:flex;flex-direction:column;gap:14px;min-height:0;flex:1;overflow:auto;overscroll-behavior:contain;padding:16px}
+.k-od-scroll h3{margin:8px 0 0;font-size:15px}
+.k-od-helper{background:var(--sage-bg);border-radius:4px 16px 16px 16px;padding:12px 14px;max-width:96%;align-self:flex-start;line-height:1.55;font-size:14px}
+.k-od-helper small{font-size:11px;color:var(--text-muted);font-weight:700}
+.k-od-helper p,.k-od-summary p{margin:5px 0 0;white-space:pre-wrap;overflow-wrap:anywhere}
+.k-od-progress{font-size:12px;color:var(--text-muted);margin:0}
+.k-od-choices{display:flex;flex-wrap:wrap;gap:8px}
+.k-od-choice[aria-pressed=true]{border-color:var(--hero-market-accent,var(--cta-green));background:var(--green-soft);color:var(--green-dark-text)}
+.k-od-field{display:flex;flex-direction:column;gap:6px;min-width:0;font-size:13px;font-weight:600}
+.k-od-field input,.k-od-field textarea{box-sizing:border-box;width:100%;min-width:0;border:1px solid var(--border-text-15);border-radius:12px;padding:12px;background:var(--white);color:var(--text);font:inherit;font-size:16px;font-weight:400;line-height:1.4}
+.k-od-field textarea{resize:vertical;min-height:64px;max-height:160px}
+.k-od-bottom{flex-shrink:0;display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;border-top:1px solid var(--border-text-12);background:var(--white)}
+.k-od-bottom>.k-od-primary{flex:1}
+.k-od-bottom>.k-on-demand-feedback{flex:0 0 100%}
+.k-od-photos{display:flex;flex-direction:column;gap:8px;padding:8px;border:1px dashed var(--border-text-15);border-radius:12px}
+.k-od-photo-actions{display:flex;flex-wrap:wrap;gap:8px}
+.k-od-camera{display:none}
+.k-od-previews{display:flex;flex-wrap:wrap;gap:8px}
+.k-od-previews:empty{display:none}
+.k-od-preview{position:relative;width:80px;height:80px}
+.k-od-previews img{width:80px;height:80px;object-fit:cover;border-radius:9px;background:var(--sage-bg)}
+.k-od-remove{position:absolute;top:2px;right:2px;width:32px;height:32px;min-height:32px;padding:0;border:0;border-radius:50%;box-shadow:var(--shadow-sm)}
+.k-od-summary{border:1px solid var(--border-text-15);border-radius:14px;padding:14px;display:grid;gap:8px;font-size:14px}
+.k-on-demand-list{display:grid;gap:8px}
+.k-od-conversation{display:grid;grid-template-columns:1fr auto;justify-items:start;text-align:left;width:100%}
+.k-od-conversation small{grid-column:1;font-size:12px;color:var(--text-muted)}
+.k-od-conversation span{grid-row:1 / span 2;grid-column:2;align-self:center;font-size:22px}
+.k-od-state{margin:0;padding:10px 16px 0;color:var(--text-muted);font-size:13px}
+.k-on-demand>.k-od-secondary{align-self:flex-start;margin:8px 16px;padding:5px 10px;min-height:32px;font-size:12px}
+.k-on-demand-thread{display:flex;flex:1;min-height:0;flex-direction:column;gap:12px;overflow:auto;overscroll-behavior:contain;padding:16px}
+.k-on-demand-message{align-self:flex-start;max-width:88%;background:var(--sage-bg);padding:10px 12px;border-radius:4px 15px 15px 15px;overflow-wrap:anywhere;white-space:pre-wrap;font-size:14px;line-height:1.5}
+.k-on-demand-message.is-own{align-self:flex-end;background:var(--green-soft);border-radius:15px 4px 15px 15px}
+.k-on-demand-message small{color:var(--text-muted);font-size:11px}
+.k-on-demand-message p{margin:3px 0}
+.k-on-demand-message img{display:block;max-width:min(100%,240px);max-height:220px;object-fit:contain;margin-top:8px;border-radius:8px}
+.k-on-demand-compose{width:100%;min-width:0;display:grid;gap:8px}
+.k-od-send-row{display:flex;align-items:flex-end;gap:8px}
+.k-od-send-row .k-od-field{flex:1}
+.k-od-send-row textarea{min-height:44px;max-height:92px}
+.k-on-demand-feedback{font-size:12px;line-height:1.4;color:var(--text);margin:0}
+.k-on-demand-feedback:empty{display:none}
+.k-on-demand [hidden]{display:none}
+.k-od-search-link{display:block;width:100%;margin-top:8px;border:0;background:transparent;color:var(--green-dark-text);font:inherit;font-weight:700;text-decoration:underline;cursor:pointer;padding:8px}
+@media(max-width:899px){
+ .k-on-demand{inset:0;width:100%;height:100dvh;max-height:100dvh;border:0;border-radius:0}
+ .k-on-demand-head{padding-top:calc(12px + env(safe-area-inset-top,0px))}
+ .k-od-bottom{padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))}
+ .k-od-camera{display:inline-flex}
+}

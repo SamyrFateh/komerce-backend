@@ -70,6 +70,8 @@ module.exports = {
       'tests/unit/order-notification.test.js',
       'tests/unit/parcel-notification.test.js',
       'tests/unit/client-notification-service.test.js',
+      'tests/unit/conversation-photo-sanitizer.test.js',
+      'tests/unit/conversation-service.test.js',
       'tests/unit/client-notifications-route.test.js',
       'tests/unit/relay-location.test.js',
     ],
@@ -104,6 +106,8 @@ module.exports = {
       'services/notifications/relay-location.js', // lien cartographique du relais, sans géocodeur
       'services/alert-engine.js',
       'services/client-notification-service.js',
+      'services/conversation-service.js',
+      'services/conversation-photo-sanitizer.js',
     ],
     routes: [
       'routes/notification-api.js',
@@ -133,6 +137,9 @@ module.exports = {
     tables: [
       'alerts: W!',  // OWNER - persistence via utils/alerts.js
       'client_notifications: RW',
+      'conversation_messages: RW!',
+      'conversation_attachments: RW!',
+      'client_requests: R',
       'incidents: R',  // W-via incident-management/incident-write-service - LOT9
       'notification_log: RW!',  // OWNER (campagne WRITER-NOT-OWNER, 2026-08)
       'orders: R',
@@ -170,9 +177,11 @@ module.exports = {
       { fn: 'notifyLoyaltyEarned', file: 'services/notifications/loyalty.js' },
       { fn: 'notifyText',    file: 'services/notifications/misc.js' },
       { fn: 'buildRelayMapUrl / formatRelayPoint / appendRelayLocation', file: 'services/notifications/relay-location.js' },
-      { fn: 'emitOrderMilestone / emitExceptional / resolveOrderMilestones', file: 'services/client-notification-service.js' },
+      { fn: 'emitOrderMilestone / emitExceptional / resolveOrderMilestones / emitClientRequestReply', file: 'services/client-notification-service.js' },
+      { fn: 'append / list / attachment / setRetention / purgeExpired', file: 'services/conversation-service.js' },
     ],
     consumes: [
+      'market-delegation (lecture du statut et verrou du dossier pour la rétention des photos)',
       'orders (dépendance data cross-feature observée et gouvernée par O5)',
       'logistics (dépendance data cross-feature observée et gouvernée par O5)',
       'auth-identity (dépendance data cross-feature observée et gouvernée par O5)',

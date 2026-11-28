@@ -47,6 +47,16 @@ const CI_EXCLUDED = new Set([
  * TABLE oubliés, par exemple).
  */
 const STRUCTURAL_PROBES = Object.freeze({
+  '457_on_demand_conversations.sql': async (client) => {
+    const {rows:[row]}=await client.query(`SELECT
+      to_regclass('public.client_requests') IS NOT NULL
+      AND to_regclass('public.conversation_messages') IS NOT NULL
+      AND to_regclass('public.conversation_attachments') IS NOT NULL
+      AND EXISTS (SELECT 1 FROM pg_constraint WHERE conname='client_notifications_entity_target_check' AND conrelid='public.client_notifications'::regclass)
+      AND EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='client_requests' AND column_name='verified_callback_phone')
+      AS represented`);
+    return row?.represented===true;
+  },
   // Migration 423 has no new tables/columns: it installs AFTER STATEMENT
   // NOTIFY triggers. A schema-only dump can include its SQL file in the git
   // baseline yet omit those triggers. Probe the actual catalog before

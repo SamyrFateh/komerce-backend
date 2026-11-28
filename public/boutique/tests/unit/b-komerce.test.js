@@ -245,6 +245,8 @@ describe('openMonKomerce — documents privés', () => {
     const primary = document.querySelector('.k-kmc-col-primary');
     expect(primary.children[0].id).toBe('k-kmc-documents-block');
     expect(primary.children[1].id).toBe('k-kmc-wallet-block');
+    expect(primary.children[2].id).toBe('k-kmc-requests-block');
+    expect(primary.children[2].querySelector('[data-on-demand]')).not.toBeNull();
     expect(document.querySelector('[data-subtab]')).toBeNull();
   });
 
@@ -602,4 +604,13 @@ describe('clôture — aucun résidu d\'architecture sous-onglet', () => {
     expect(document.body.textContent).not.toContain('Vue d\u2019ensemble');
     expect(document.body.textContent).not.toContain('Vue d\'ensemble');
   });
+});
+
+test('Mon Komerce expose une entrée vers les conversations privées', async () => {
+  getCurrentIdentity.mockReturnValue({ id: 1 });
+  await openMonKomerce();
+  await flush();
+  const entry = document.querySelector('#k-komerce-view [data-on-demand]');
+  expect(entry).not.toBeNull();
+  expect(entry.textContent).toContain('conversations');
 });

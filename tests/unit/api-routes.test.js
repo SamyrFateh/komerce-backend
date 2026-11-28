@@ -48,3 +48,8 @@ test('monte /api/markets/:marketCode/local-stock (réception et exposition par l
   expect(source).toContain("require('../routes/market-local-stock')");
   expect(source).toContain("app.use('/api/markets', marketLocalStockRouter)");
 });
+
+ test('On Demand monte le routeur unique sous le namespace API', () => {
+   expect(source).toContain("const clientRequestsRouter = require('../routes/client-requests')");
+   expect(source).toContain("app.use('/api', clientRequestsRouter)");
+ });

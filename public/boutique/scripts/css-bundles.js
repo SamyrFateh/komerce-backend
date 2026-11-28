@@ -44,7 +44,7 @@ const BUNDLES = [
             'shared-list-side-cart', 'shared-list-side-cart-responsive', 'shared-list-library-remove',
             'shared-list-lists-tab',
             'identity', 'paypal', 'mobile-money', 'wallet', 'komerce', 'notifications', 'checkout-vertical-rail',
-            'mobile-catalog-convergence', 'mobile-cart-convergence'],
+            'mobile-catalog-convergence', 'mobile-cart-convergence', 'on-demand'],
   },
   {
     out: 'desktop.css',

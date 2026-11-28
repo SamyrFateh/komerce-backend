@@ -98,6 +98,7 @@ function ensureShell() {
       <div class="k-kmc-col-primary">
         <section id="k-kmc-documents-block" class="k-kmc-block" aria-label="Mes documents"></section>
         <section id="k-kmc-wallet-block" class="k-kmc-block k-kmc-block--compact" aria-label="Mon wallet"></section>
+        <section id="k-kmc-requests-block" class="k-kmc-block" aria-label="Mes demandes"><strong>Votre conseiller Komerce</strong><p>Retrouvez vos demandes et vos échanges.</p><button type="button" class="k-kmc-action-btn" data-on-demand>Mes conversations</button></section>
       </div>
       <div class="k-kmc-col-secondary">
         <section id="k-kmc-profile-block" class="k-kmc-block" aria-label="Mon profil"></section>

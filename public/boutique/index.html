@@ -41,8 +41,8 @@
 <script src="/boutique/js/anti-fouc.js"></script>
 <link rel="stylesheet" href="/boutique/css/dist/base.css?v=268">
 <link rel="stylesheet" href="/boutique/css/dist/critical-home.css?v=5">
-<link id="k-components-preload" rel="preload" href="/boutique/css/dist/components.css?v=680" as="style">
-<noscript><link rel="stylesheet" href="/boutique/css/dist/components.css?v=680"></noscript>
+<link id="k-components-preload" rel="preload" href="/boutique/css/dist/components.css?v=682" as="style">
+<noscript><link rel="stylesheet" href="/boutique/css/dist/components.css?v=682"></noscript>
 <script src="/boutique/js/preload-css-swap.js"></script>
 <link rel="stylesheet" href="/boutique/css/dist/desktop.css?v=157">
 <!-- event.css RETIRÉ (2026-07) : ce bundle ne contenait QUE tokens.css, déjà
@@ -352,6 +352,7 @@
                  ID stable — le renderer JS (getElementById) est insensible à la position DOM.
                  Mobile : peuplé par b-modal-mobile-product.js, position neutre dans le flux. -->
             <div id="k-modal-delivery" class="k-modal-delivery"></div>
+            <button type="button" class="k-od-search-link" data-on-demand="product">Un besoin express ? Demander au conseiller</button>
             <p class="k-modal-desc" id="k-modal-desc"></p>
             <!-- Réassurance + partage — après la description (récit produit) -->
             <div id="k-modal-trust" class="k-modal-trust"></div>
@@ -466,10 +467,10 @@
 <!-- ═══ FAV TOAST ═══ -->
 <div class="k-toast" id="k-toast"></div>
 
-<!-- ═══ WHATSAPP FAB ═══ -->
-<a id="k-wa-fab" class="k-wa-fab" href="https://wa.me/33699272526?text=Bonjour%20Komerce%20!%20Je%20suis%20int%C3%A9ress%C3%A9(e)%20par%20vos%20produits%20%F0%9F%9B%8D" target="_blank" rel="noopener" aria-label="WhatsApp">
-  <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492l4.634-1.215A11.95 11.95 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-2.115 0-4.142-.578-5.906-1.672l-.424-.252-4.396 1.153 1.174-4.291-.276-.44A9.71 9.71 0 012.25 12 9.75 9.75 0 0112 2.25 9.75 9.75 0 0121.75 12 9.75 9.75 0 0112 21.75z"/></svg>
-</a>
+<!-- ═══ CONSEILLER KOMERCE — ON DEMAND ═══ -->
+<button id="k-wa-fab" class="k-wa-fab k-od-fab" type="button" data-on-demand aria-label="Votre conseiller Komerce" title="Votre conseiller Komerce">
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11.5a8 8 0 0 1-8 8h-1l-5 2 1.4-4.1A8 8 0 1 1 20 11.5Z"/><path d="M8 11.5h.01m4 0h.01m4 0h.01" stroke-width="2.8"/></svg>
+</button>
 
 <!-- ═══ FOOTER RICHE — desktop uniquement ═══ -->
 <footer class="k-footer" id="k-footer" aria-label="Pied de page Komerce">
@@ -513,6 +514,7 @@
     </div>
     <div>
       <div class="k-footer-col-title">Aide &amp; contact</div>
+      <button class="k-footer-col-link" type="button" data-on-demand>Contacter un conseiller — On Demand</button>
       <a class="k-footer-col-link" href="https://wa.me/33699272526?text=Bonjour%20Komerce%2C%20comment%20%C3%A7a%20marche%20%3F" target="_blank" rel="noopener">Comment ça marche</a>
       <a class="k-footer-col-link" href="https://wa.me/33699272526?text=Bonjour%2C%20je%20souhaite%20suivre%20ma%20commande" target="_blank" rel="noopener">Suivi de commande</a>
       <a class="k-footer-col-link" href="https://wa.me/33699272526?text=Bonjour%2C%20o%C3%B9%20se%20trouve%20le%20relais%20le%20plus%20proche%20%3F" target="_blank" rel="noopener">Trouver un relais</a>
@@ -594,7 +596,7 @@
 <!-- <script src="/boutique/js/mock-data.js"></script> -->
 <script defer src="/boutique/js/komerce-api.js?v=340"></script>
 <!-- Phase 2 Option C : main.js orchestre tous les modules ES -->
-<script type="module" src="/boutique/js/main.js?v=362"></script>
+<script type="module" src="/boutique/js/main.js?v=364"></script>
 
   <!-- Contract DOM: required by b-store.js initDom(); kept hidden unless cart UI enables it -->
   <a id="k-cart-whatsapp"

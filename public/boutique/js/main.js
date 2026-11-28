@@ -32,6 +32,7 @@ import { setupDiscoveryInquiry } from './discovery-inquiry.js';
 // FIX GREETING — b-greeting importé mais jamais appelé dans setupBoutiqueRuntime
 import { greetIfKnown } from './b-greeting.js';
 import { setupClientNotifications } from './b-notifications.js';
+import { setupOnDemand } from './b-on-demand.js';
 import { setupKomerceNavIdentity } from './b-komerce-nav-identity.js';
 import { setupPasskeyEnrollment } from './b-passkey-enrollment.js';
 import { setupCartQuote } from './b-cart-quote.js';
@@ -63,6 +64,7 @@ function setupBoutiqueRuntime() {
   // FIX GREETING — appelé après le boot, best-effort (silencieux si non connecté)
   greetIfKnown();
   setupClientNotifications();
+  setupOnDemand();
 }
 
 if (typeof window !== 'undefined') {

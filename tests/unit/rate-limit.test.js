@@ -274,3 +274,12 @@ describe('UX1 — identité du quota global sans affaiblir les protections IP', 
     expect(globalRateLimitKey(request('GET', '/api/administer/something'))).toBe('ip:203.0.113.7');
   });
 });
+
+ test('On Demand applique un plafond de 30 requêtes en 15 minutes', async () => {
+   const { clientRequestLimiter } = loadFreshModule({ NODE_ENV: 'test', DISABLE_RATE_LIMIT: '0', REDIS_URL: '' });
+   const app = require('express')();
+   app.post('/request', clientRequestLimiter, (_req, res) => res.sendStatus(200));
+   const request = require('supertest');
+   for (let i = 0; i < 30; i++) await request(app).post('/request').expect(200);
+   await request(app).post('/request').expect(429);
+ });
