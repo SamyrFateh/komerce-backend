@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 62e4acee1c95da7f76b0c6464a8ecf7ace3c44fc
+          ref: b42f515b3648ab3c49048fb17ca9a14954e61221
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v4
@@ -24,6 +24,6 @@ jobs:
       - name: Targeted unit regression tests
         run: |
           npx jest --config jest.unit.config.js --runInBand tests/unit/sw.test.js
-          npm --prefix public/boutique run test:unit -- market-country-path.test.js
+          cd public/boutique && npx jest --runInBand --runTestsByPath tests/unit/market-context.test.js tests/unit/market-country-path.test.js
       - name: Canonical preflight before PR
         run: npm run pr:preflight -- --base 80e7c8c3496468a26e6b268d8ee9b27d0192ccb2
