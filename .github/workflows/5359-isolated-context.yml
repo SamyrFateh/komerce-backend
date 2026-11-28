@@ -1,4 +1,4 @@
-name: 5359 staging country desktop read-only
+name: 5359 staging Chromium service worker cache isolation
 on:
   push:
     branches: [test/5359-market-context-preflight]
@@ -37,63 +37,52 @@ jobs:
           JS
       - run: npm ci --prefix public/boutique --ignore-scripts --no-audit --no-fund
       - run: cd public/boutique && npx playwright install --with-deps chromium
-      - name: Real desktop Chromium country navigation and public API reads
+      - name: Real Chromium service worker registry cache isolation
         run: |
           node <<'JS'
           const {chromium}=require('./public/boutique/node_modules/@playwright/test');
           const fs=require('node:fs'),assert=require('node:assert/strict');
           const base=process.env.STAGING_ORIGIN,out='test-results/5359',target=JSON.parse(fs.readFileSync(out+'/target.json'));
-          const report={target,scope:'public read-only desktop, service workers blocked for network evidence',markets:[],verdict:'NOT_PROVEN'};
-          const expected={KM:'KMF',CM:'XAF',CG:'XAF',DJ:'DJF',YT:'EUR'};
-          const accents={KM:'#176247',CM:'#155239',CG:'#9d2536',DJ:'#185779',YT:'#233e74'};
-          async function get(p){const r=await fetch(base+p,{redirect:'error'});assert.equal(r.status,200);return r.json()}
+          const report={target,scope:'public read-only; synthetic stale entry in isolated browser cache only',verdict:'NOT_PROVEN',checks:{}};
+          const registry='/boutique/js/market-registry.js';
           (async()=>{
-            const registry=(await get('/api/public/markets')).markets;
-            assert.ok(Array.isArray(registry)&&registry.length);
             const browser=await chromium.launch();
             try{
-              const ctx=await browser.newContext({viewport:{width:1440,height:900},serviceWorkers:'block'});
-              await ctx.route('**/*',route=>['GET','HEAD','OPTIONS'].includes(route.request().method())?route.continue():route.abort());
+              const ctx=await browser.newContext({viewport:{width:1440,height:900},serviceWorkers:'allow'});
               const page=await ctx.newPage();
-              for(const code of Object.keys(expected)){
-                const market=registry.find(m=>m.code===code),row={code,active:!!market,requests:[],errors:[]};report.markets.push(row);
-                const onReq=r=>{const u=new URL(r.url());if(u.origin===base&&/^\/api\/products(?:\/|$)/.test(u.pathname))row.requests.push({path:u.pathname,market:u.searchParams.get('market')})};
-                const onErr=e=>row.errors.push(e.message);
-                page.on('request',onReq);page.on('pageerror',onErr);
-                try{
-                  const response=await page.goto(base+'/'+code,{waitUntil:'domcontentloaded'});
-                  row.http=response.status();
-                  if(!market){assert.equal(row.http,404);continue}
-                  assert.equal(row.http,200);
-                  await page.waitForFunction(c=>document.body.dataset.marketCode===c,code,{timeout:15000});
-                  await page.waitForFunction(()=>window.KomerceMarket?.get?.()&&document.querySelector('#k-hero-badge')?.textContent?.trim(),null,{timeout:15000});
-                  await page.waitForTimeout(1800);
-                  row.dom=await page.evaluate(()=>({code:document.body.dataset.marketCode,title:document.title,badge:document.querySelector('#k-hero-badge').textContent.trim(),currency:window.KomerceMarket.get().currency,accent:getComputedStyle(document.querySelector('.k-hero')).getPropertyValue('--hero-market-accent').trim(),ids:Array.from(document.querySelectorAll('#k-grid [data-id]')).map(x=>x.dataset.id)}));
-                  assert.equal(row.dom.code,code);assert.equal(row.dom.currency,expected[code]);assert.equal(row.dom.accent,accents[code]);assert.equal(row.dom.badge,market.storefront_texts?.gentile||'Komerce — '+market.name);
-                  const api=await get('/api/products?market='+code+'&limit=1000');
-                  const list=Array.isArray(api)?api:api.products;
-                  assert.ok(Array.isArray(list));const ids=new Set(list.filter(p=>p.is_available!==false).map(p=>String(p.id)));
-                  row.api_count=ids.size;row.render_count=row.dom.ids.length;
-                  if(ids.size) {await page.waitForFunction(()=>document.querySelectorAll('#k-grid [data-id]').length>0,null,{timeout:15000});row.dom.ids=await page.locator('#k-grid [data-id]').evaluateAll(xs=>xs.map(x=>x.dataset.id));row.render_count=row.dom.ids.length}
-                  assert.ok(row.requests.some(r=>r.path==='/api/products'&&r.market===code),'No scoped catalogue request');
-                  assert.ok(row.requests.every(r=>r.market===code),'Wrong market product request');
-                  assert.ok(row.dom.ids.every(id=>ids.has(id)),'Rendered item not in scoped API');
-                  await page.screenshot({path:out+'/'+code+'.png'});
-                  await page.reload({waitUntil:'domcontentloaded'});
-                  await page.waitForFunction(c=>document.body.dataset.marketCode===c,code,{timeout:15000});
-                  row.reload_code=await page.locator('body').getAttribute('data-market-code');
-                  assert.equal(row.reload_code,code);
-                  row.verdict='PASS_PUBLIC_BROWSER_API';
-                }catch(e){row.verdict='FAIL';row.failure=e.message;await page.screenshot({path:out+'/'+code+'-failure.png'}).catch(()=>{})}
-                finally{page.off('request',onReq);page.off('pageerror',onErr);fs.writeFileSync(out+'/report.json',JSON.stringify(report,null,2))}
+              await page.goto(base+'/CM',{waitUntil:'domcontentloaded'});
+              await page.waitForFunction(()=>document.body.dataset.marketCode==='CM');
+              await page.evaluate(async()=>{await navigator.serviceWorker.register('/sw.js');await navigator.serviceWorker.ready});
+              await page.waitForFunction(()=>navigator.serviceWorker.controller?.scriptURL.endsWith('/sw.js'));
+              report.checks.controller=true;
+              const live=await page.evaluate(async p=>{const r=await fetch(p,{cache:'no-store'});return {ok:r.ok,cacheControl:r.headers.get('cache-control'),body:await r.text()}},registry);
+              assert.ok(live.ok);assert.match(live.cacheControl,/no-store/i);
+              report.checks.registryNoStore=true;
+              const cachedBefore=await page.evaluate(async p=>Boolean(await caches.match(p)),registry);
+              assert.equal(cachedBefore,false);
+              report.checks.registryNotCached=true;
+              await page.evaluate(async p=>{const c=await caches.open('komerce-v341');await c.put(p,new Response('/* STALE_REGISTRY_TEST_SENTINEL */',{headers:{'Content-Type':'application/javascript'}}))},registry);
+              const fresh=await page.evaluate(async p=>{const r=await fetch(p,{cache:'no-store'});return {ok:r.ok,body:await r.text()}},registry);
+              assert.ok(fresh.ok);assert.equal(fresh.body,live.body);assert.ok(!fresh.body.includes('STALE_REGISTRY_TEST_SENTINEL'));
+              report.checks.onlineBypassesStale=true;
+              await ctx.setOffline(true);
+              const offline=await page.evaluate(async p=>{try{const r=await fetch(p,{cache:'no-store'});return {ok:r.ok,body:await r.text()}}catch(e){return {ok:false,rejected:true}}},registry);
+              assert.equal(offline.ok,false);assert.ok(!offline.body?.includes('STALE_REGISTRY_TEST_SENTINEL'));
+              report.checks.offlineDoesNotReplayStale=true;
+              await ctx.setOffline(false);
+              for(const code of ['CG','KM','CM']){
+                await page.goto(base+'/'+code,{waitUntil:'domcontentloaded'});
+                await page.waitForFunction(c=>document.body.dataset.marketCode===c,code,{timeout:15000});
+                assert.equal(await page.evaluate(()=>window.KomerceMarket.get().code),code);
+                report.checks['navigation_'+code]=true;
               }
+              await page.evaluate(async p=>{for(const key of await caches.keys())await (await caches.open(key)).delete(p)},registry);
+              await ctx.close();
             }finally{await browser.close()}
-            const end=await get('/health/version'),health=await get('/health');
-            assert.equal(end.commit,target.sha);assert.equal(health.target?.db_fingerprint,target.fingerprint);assert.equal(health.komerce_env,'staging');
-            assert.ok(report.markets.filter(m=>m.active).length);
-            assert.ok(report.markets.every(m=>m.active?m.verdict==='PASS_PUBLIC_BROWSER_API':m.http===404));
-            report.verdict='PASS_PUBLIC_BROWSER_API_NOT_FULL_CERTIFICATION';
-          })().catch(e=>{report.failure=e.message;process.exitCode=1}).finally(()=>{fs.writeFileSync(out+'/report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report))});
+            const v=await(await fetch(base+'/health/version')).json(),h=await(await fetch(base+'/health')).json();
+            assert.equal(v.commit,target.sha);assert.equal(h.komerce_env,'staging');assert.equal(h.target?.db_fingerprint,target.fingerprint);
+            report.verdict='PASS_SW_REGISTRY_ISOLATION';
+          })().catch(e=>{report.failure=e.message;process.exitCode=1}).finally(()=>{fs.writeFileSync(out+'/cache-report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report))});
           JS
       - uses: actions/upload-artifact@v4
         if: always()
