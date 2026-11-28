@@ -541,6 +541,8 @@ module.exports = {
       'dashboards/canonical/css/renderer.css',
       'dashboards/canonical/css/demo-order-flow.css',
       'dashboards/canonical/js/app.js',
+      'dashboards/canonical/js/client-requests.js',
+      'dashboards/canonical/css/client-requests.css',
       'dashboards/canonical/js/hub-workstation.js',
       'dashboards/canonical/js/dashboard-freshness.js',
       'dashboards/canonical/css/dashboard-freshness.css',
