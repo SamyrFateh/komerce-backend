@@ -357,6 +357,9 @@ const ROUTE_SCHEMA_MAP = [
 // ── 4. Champs de réponse connus (extraits de A2 + tests intégration) ─────────
 // Format : chemin → méthode → { fields: [...], source: 'test|scan|UNKNOWN' }
 const KNOWN_RESPONSES = {
+  '/api/client-requests/{ref}/attachments/{id}': { get: { fields: [], source: 'route-read' } },
+  '/api/markets/{code}/client-requests/{ref}/attachments/{id}': { get: { fields: [], source: 'route-read' } },
+  '/api/hub/client-requests/{ref}/attachments/{id}': { get: { fields: [], source: 'route-read' } },
   // Binary response specified in RESPONSE_OVERRIDES.
   '/api/purchasing/po/{po_id}/commitment-pdf': { get: { fields: [], source: 'route-read' } },
   '/api/admin/dashboard/reference/resolve': {
@@ -2896,6 +2899,10 @@ if (inventory.length < 150) {
 }
 
 const SUCCESS_STATUS_OVERRIDES = Object.freeze({
+  'POST /api/client-requests': '201',
+  'POST /api/client-requests/{ref}/messages': '201',
+  'POST /api/markets/{code}/client-requests/{ref}/messages': '201',
+  'POST /api/hub/client-requests/{ref}/messages': '201',
   'POST /api/admin/workspaces/pricing/cost-centers/references': '201',
   'POST /api/admin/workspaces/pricing/market/{marketCode}/cost-centers/references': '201',
   'POST /api/admin/workspaces/pricing/cost-centers/families/{familyId}/posts': '201',
@@ -2929,6 +2936,30 @@ const SUCCESS_STATUS_OVERRIDES = Object.freeze({
 // KNOWN_RESPONSES (pas un schéma de corps, juste un code de statut documenté en plus).
 // Format : "METHOD /chemin/{param}" → { [code]: { description } }
 const RESPONSE_OVERRIDES = {
+  'GET /api/client-requests/{ref}/attachments/{id}': {
+    '200': { description: 'Photo privée du dossier', content: {
+      'image/jpeg': { schema: { type: 'string', format: 'binary', 'x-contract-status': 'route-read' } },
+      'image/png': { schema: { type: 'string', format: 'binary', 'x-contract-status': 'route-read' } },
+      'image/webp': { schema: { type: 'string', format: 'binary', 'x-contract-status': 'route-read' } },
+    } },
+    '404': { description: 'Pièce jointe introuvable ou hors périmètre' },
+  },
+  'GET /api/markets/{code}/client-requests/{ref}/attachments/{id}': {
+    '200': { description: 'Photo privée du dossier', content: {
+      'image/jpeg': { schema: { type: 'string', format: 'binary', 'x-contract-status': 'route-read' } },
+      'image/png': { schema: { type: 'string', format: 'binary', 'x-contract-status': 'route-read' } },
+      'image/webp': { schema: { type: 'string', format: 'binary', 'x-contract-status': 'route-read' } },
+    } },
+    '404': { description: 'Pièce jointe introuvable ou hors périmètre' },
+  },
+  'GET /api/hub/client-requests/{ref}/attachments/{id}': {
+    '200': { description: 'Photo privée du dossier', content: {
+      'image/jpeg': { schema: { type: 'string', format: 'binary', 'x-contract-status': 'route-read' } },
+      'image/png': { schema: { type: 'string', format: 'binary', 'x-contract-status': 'route-read' } },
+      'image/webp': { schema: { type: 'string', format: 'binary', 'x-contract-status': 'route-read' } },
+    } },
+    '404': { description: 'Pièce jointe introuvable ou hors périmètre' },
+  },
   'GET /api/admin/workspaces/operations/market/{marketCode}/supply/receipt-checks': {
     '400': { description: 'Périmètre ou identifiant invalide' },
     '403': { description: 'Accès Hub requis' },
