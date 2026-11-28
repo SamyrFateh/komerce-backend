@@ -50,3 +50,16 @@ describe('client notifications identity gate', () => {
     expect(mockApiGet).toHaveBeenCalledTimes(1);
   });
 });
+
+test('une réponse On Demand ouvre le dossier et non le suivi de commande', async () => {
+  mockApiGet.mockResolvedValue({ notifications: [{ id: 'n1', title: 'Réponse', message: 'Conseiller', action_target: 'client_requests', order_reference: 'REQ-1' }] });
+  setupClientNotifications();
+  window.dispatchEvent(new CustomEvent('komerce:identity-authenticated'));
+  await Promise.resolve(); await Promise.resolve();
+  const view = document.querySelector('.k-client-notification__view');
+  expect(view.textContent).toBe('Voir ma demande');
+  view.click();
+  expect(mockBus.emit).toHaveBeenCalledWith('on-demand:open', { reference: 'REQ-1' });
+  expect(mockBus.emit).not.toHaveBeenCalledWith('nav:goto-track', expect.anything());
+  window.dispatchEvent(new Event('komerce:identity-cleared'));
+});
