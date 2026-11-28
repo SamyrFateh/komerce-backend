@@ -1,0 +1,111 @@
+name: '4370 — Candidate staging Chromium read-only'
+on:
+  push:
+    branches: [recette/4370-candidate-chromium-2ec819c]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: komerce-canonical-chromium-staging
+  cancel-in-progress: false
+jobs:
+  onboarding-readonly:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      E2E_EXPECTED_DEPLOY_SHA: 2ec819c80d645f0cf50a32b3a775298ca729acab
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 2ec819c80d645f0cf50a32b3a775298ca729acab
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - name: Verify pinned staging SHA
+        run: node scripts/recette/staging-chromium-deployment-preflight.js
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Real admin login and market onboarding entry (read only)
+        shell: bash
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const { chromium } = require('playwright');
+          const { expect } = require('@playwright/test');
+          const origin = process.env.E2E_STAGING_BASE_URL;
+          const sha = '2ec819c80d645f0cf50a32b3a775298ca729acab';
+          const output = 'test-results/4370';
+          fs.mkdirSync(output, { recursive: true });
+          const proof = { target: origin, candidate: sha, viewport: '1440x900', browser: 'chromium', mode: 'READ_ONLY', outcome: 'NOT_PROVEN', blockedWrites: [] };
+          (async () => {
+            let browser;
+            try {
+              if (!process.env.E2E_ADMIN_EMAIL || !process.env.E2E_ADMIN_PASSWORD) throw Error('ADMIN_TEST_IDENTITY_MISSING');
+              browser = await chromium.launch();
+              const page = await browser.newPage({ viewport: { width: 1440, height: 900 }, baseURL: origin });
+              await page.route('**/*', route => {
+                const req = route.request();
+                const u = new URL(req.url());
+                if (u.origin !== origin) return route.abort();
+                if (['GET','HEAD','OPTIONS'].includes(req.method()) || (req.method() === 'POST' && u.pathname === '/api/auth/login')) return route.continue();
+                proof.blockedWrites.push({ method: req.method(), path: u.pathname });
+                return route.abort();
+              });
+              const version = await page.request.get('/health/version');
+              const body = await version.json();
+              proof.observedSha = String(body.commit || body.sha || '');
+              if (!version.ok() || !/^[a-f0-9]{8,40}$/.test(proof.observedSha) || !sha.startsWith(proof.observedSha)) throw Error('EXACT_CANDIDATE_SHA_NOT_OBSERVED');
+              await page.goto('/login.html?next='+encodeURIComponent('/admin/markets'), {waitUntil:'domcontentloaded'});
+              await page.locator('#email').fill(process.env.E2E_ADMIN_EMAIL);
+              await page.locator('#password').fill(process.env.E2E_ADMIN_PASSWORD);
+              const login = page.waitForResponse(r => new URL(r.url()).pathname === '/api/auth/login' && r.request().method() === 'POST');
+              await page.locator('#btn-submit').click();
+              proof.loginHttp = (await login).status();
+              if (proof.loginHttp !== 200) throw Error('LOGIN_REFUSED');
+              await page.waitForURL(u => u.pathname !== '/login.html');
+              const ctx = await page.request.get('/api/admin/dashboard/context');
+              proof.contextHttp = ctx.status();
+              const data = await ctx.json();
+              proof.role = data.actor?.role;
+              if (!ctx.ok() || proof.role !== 'admin') throw Error('ADMIN_CONTEXT_NOT_PROVEN');
+              await page.goto('/admin/markets', {waitUntil:'domcontentloaded'});
+              const create = page.getByRole('button', {name:'Nouveau marché', exact:true});
+              await expect(create).toBeVisible({timeout:20000});
+              await create.click();
+              const wizard = page.locator('.kmc-markets-onboarding');
+              await expect(wizard).toBeVisible({timeout:20000});
+              await expect(wizard.getByText('Initialiser un marché', {exact:true})).toBeVisible();
+              await expect(wizard.getByText(/La boutique restera fermée/)).toBeVisible();
+              await expect(wizard.locator('[name=code]')).toBeVisible();
+              await expect(wizard.locator('[name=currency]')).toBeVisible();
+              await expect(wizard.locator('[name=business_timezone]')).toBeVisible();
+              proof.entry = 'PASS';
+              proof.outcome = 'PASS_READONLY_ENTRY_ONLY';
+              proof.businessCertification = 'NOT_PROVEN';
+              await wizard.screenshot({path:output+'/wizard.png'});
+            } catch (err) {
+              proof.outcome = 'FAIL';
+              proof.reason = err.name || 'Error';
+              console.error('Read-only candidate smoke failed:', proof.reason);
+              process.exitCode = 1;
+            } finally {
+              if (browser) await browser.close();
+              fs.writeFileSync(output+'/proof.json', JSON.stringify(proof,null,2));
+            }
+          })();
+          NODE
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: candidate-4370-readonly-${{ github.run_id }}
+          path: |
+            test-results/4370/
+            test-results/staging-chromium/deployment-preflight.json
+          retention-days: 14
+          if-no-files-found: warn
