@@ -268,6 +268,27 @@ test.describe('Operations — logistics control board', () => {
     expect(new URL(page.url()).searchParams.has('health')).toBe(false);
   });
 
+  test('le manifeste distingue le total serveur de la population affichée', async ({ page }) => {
+    const updated=JSON.parse(JSON.stringify(payload));
+    const shown=Object.values(updated.control_chain.by_stage).reduce((sum,rows)=>sum+rows.length,0);
+    updated.control_chain.population={total:shown+12,shown,limit:250,complete:false,clock:'current_active_orders',simulation_scope:'real_only'};
+    await page.route(`${ORIGIN}/api/admin/dashboard/operations`, route=>route.fulfill({contentType:'application/json',body:JSON.stringify(updated)}));
+    await page.locator('.kmc-operations-refresh').click();
+    const label=page.locator('.kmc-operations-process-caption');
+    await expect(label).toHaveAttribute('data-population-state','partial');
+    await expect(label).toContainText(shown+' sur '+(shown+12)+' commandes actives');
+    const badges=await page.locator('[data-phase-health]').allTextContents();
+    expect(badges.reduce((sum,value)=>sum+Number(value),0)).toBe(shown);
+    updated.control_chain.population.total=shown;
+    updated.control_chain.population.complete=true;
+    await page.locator('.kmc-operations-refresh').click();
+    await expect(label).toHaveAttribute('data-population-state','complete');
+    updated.control_chain.population.shown=shown+1;
+    await page.locator('.kmc-operations-refresh').click();
+    await expect(label).toHaveAttribute('data-population-state','unknown');
+    await expect(label).toContainText('total non déterminé');
+  });
+
   test('une phase absente ne produit ni zéro, ni drill, ni santé globale inventée', async ({ page }) => {
     const partial=JSON.parse(JSON.stringify(payload));
     delete partial.control_chain.by_stage.CUSTOMS;
