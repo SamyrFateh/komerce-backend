@@ -87,19 +87,51 @@ function buildPeriodFilters(query = {}, marketId = null, now = new Date(), marke
 async function getCommercePaidSales(filters) {
   const { where, params } = buildFiltersClause(filters);
   const { rows } = await db.query(`
+    WITH paid AS (
+      SELECT o.user_id, o.total_kmf, o.wallet_applied_kmf
+      FROM orders o
+      WHERE ${where}
+        AND o.payment_status = 'paid'
+        AND o.status NOT IN ('cancelled', 'refunded')
+    ), buyers AS (
+      SELECT user_id, COUNT(*) AS order_count
+      FROM paid WHERE user_id IS NOT NULL GROUP BY user_id
+    )
     SELECT COALESCE(SUM(o.total_kmf + COALESCE(o.wallet_applied_kmf, 0)), 0)::bigint AS sales_kmf,
            AVG(o.total_kmf + COALESCE(o.wallet_applied_kmf, 0))::bigint AS basket_kmf,
-           COUNT(*)::int AS items_total
-    FROM orders o
-    WHERE ${where}
-      AND o.payment_status = 'paid'
-      AND o.status NOT IN ('cancelled', 'refunded')
+           COUNT(*)::int AS items_total,
+           COUNT(*) FILTER (WHERE o.user_id IS NULL)::int AS unidentified_orders,
+           (SELECT COUNT(*)::int FROM buyers) AS paid_buyers,
+           (SELECT COUNT(*)::int FROM buyers WHERE order_count >= 2) AS repeat_paid_buyers
+    FROM paid o
   `, params);
 
   const row = rows[0] || {};
   const itemsTotal = Number(row.items_total) || 0;
   const basis = { sales_basis: 'paid_order_total_plus_wallet', period_basis: 'orders.created_at', cash_basis: false };
+  // Seuls les comptes stables sont comptés. Un achat anonyme n'est pas
+  // une identité; aucun identifiant de client ne quitte cette projection.
+  const count = key => row[key] == null || String(row[key]).trim() === '' ? null : Number(row[key]);
+  const paidBuyers = count('paid_buyers');
+  const repeatBuyers = count('repeat_paid_buyers');
+  const unidentified = count('unidentified_orders');
+  const paidOrders = count('items_total');
+  const valid = [paidBuyers, repeatBuyers, unidentified, paidOrders].every(n => Number.isSafeInteger(n) && n >= 0)
+    && repeatBuyers <= paidBuyers && paidBuyers + repeatBuyers + unidentified <= paidOrders
+    && (paidBuyers > 0 || unidentified === paidOrders);
+  const buyerCohort = Object.freeze({
+    metric_ids: Object.freeze({ paid_buyers: 'clients.paid_buyers', repeat_paid_buyers: 'clients.repeat_paid_buyers' }),
+    identity: 'orders.user_id',
+    period_basis: 'orders.created_at',
+    repeat_basis: 'at_least_two_paid_orders_in_same_period',
+    paid_buyers: valid ? paidBuyers : null,
+    repeat_paid_buyers: valid ? repeatBuyers : null,
+    unidentified_paid_orders: valid ? unidentified : null,
+    paid_orders: valid ? paidOrders : null,
+    completeness: !valid ? 'unknown' : unidentified > 0 ? 'partial' : 'complete',
+  });
   return {
+    buyerCohort,
     ca: makeKpi('ca_encaisse', 'Ventes payées (avoir inclus)', Number(row.sales_kmf) || 0, 'KMF', {
       itemsTotal, itemsWithData: itemsTotal, extra: {...basis,metric_id:'commerce.paid_sales_wallet_included'}, drillTo: '/admin/operations',
     }),
@@ -692,6 +724,7 @@ async function buildCommerce(query = {}, options = {}) {
       to: filters.to,
     }),
     kpis: Object.freeze([sales.ca, commandes, sales.panier, marge, produitsActifsVendus, quantitySold]),
+    buyer_cohort: sales.buyerCohort,
     top_products: publicTopProducts,
     lines_revenue_kmf: linesTotal,
     collected,
