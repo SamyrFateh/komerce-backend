@@ -45,6 +45,8 @@
   function createInstance(root, { embedded = false, selectedMarket = null } = {}) {
 
   let mounting = false;
+  const identity={};
+  root.__marketClientCaseIdentity=identity;
 
   const STATUS_LABEL = Object.freeze({
     open: 'Ouvert',
@@ -111,7 +113,14 @@
     const card = el('article', 'kmc-team-member');
     const head = el('div', 'kmc-team-member-head');
     const copy = el('div', 'kmc-team-member-copy');
-    copy.appendChild(el('strong', '', `${dispute.type || 'Litige'} · commande ${dispute.order_id}`));
+    const orderRef=dispute.order_reference;
+    copy.appendChild(el('strong', '', `${dispute.type || 'Litige'} · ${orderRef?'commande '+orderRef:'référence commande indisponible'}`));
+    if(orderRef&&global.KomerceCanonicalNavigation?.canAccessSurface?.(global.KOMERCE_CANONICAL_AUTH_USER,'order-360',global.KOMERCE_CANONICAL_ADMIN_CONTEXT,marketCode)) {
+      const nav=global.KomerceCanonicalNavigation;
+      const link=el('a','kmc-workspace-nav-link','Consulter la commande');
+      link.href=nav.withEntityReturnTo('/admin/orders/'+encodeURIComponent(orderRef),nav.currentReturnTarget('/admin/clients?market='+encodeURIComponent(marketCode)),'Retour aux litiges');
+      copy.appendChild(link);
+    }
     copy.appendChild(el('small', '', dispute.description || ''));
     head.appendChild(copy);
     head.appendChild(pill(STATUS_LABEL[dispute.status] || dispute.status, dispute.status === 'resolved' || dispute.status === 'closed'));
@@ -132,28 +141,39 @@
     const resolutionInput = global.document.createElement('input');
     resolutionInput.type = 'text';
     resolutionInput.className = 'kmc-team-input';
-    resolutionInput.placeholder = 'Note de résolution (optionnelle)';
+    resolutionInput.placeholder = 'Note factuelle (obligatoire pour résoudre ou clore)';
+    resolutionInput.maxLength=2000;
     resolutionInput.value = dispute.resolution || '';
     form.appendChild(resolutionInput);
     card.appendChild(form);
 
     const actions = el('div', 'kmc-team-actions');
+    const feedback=el('p','kmc-workspace-note','');
+    feedback.setAttribute('role','status');
+    card.appendChild(feedback);
+    let pending=false;
+    const buttons=[];
     legalNext.forEach(nextStatus => {
       const btn = el('button', 'kmc-workspace-action is-secondary', `→ ${STATUS_LABEL[nextStatus] || nextStatus}`);
       btn.type = 'button';
       btn.addEventListener('click', async () => {
-        btn.disabled = true;
+        if(pending)return;
+        const note=resolutionInput.value.trim();
+        if(['resolved','closed'].includes(nextStatus)&&!['resolved','closed'].includes(dispute.status)&&note.length<3){feedback.textContent='Une note factuelle est requise pour ce contrôle.';return;}
+        pending=true;
+        buttons.forEach(b=>b.disabled=true);
         try {
           await request(`/api/market-delegation/markets/${encodeURIComponent(marketCode)}/client-cases/disputes/${encodeURIComponent(dispute.id)}`, {
             method: 'PUT',
-            body: { status: nextStatus, resolution: resolutionInput.value.trim() || undefined },
+            body: { status: nextStatus, resolution: note || undefined },
           });
-          await refresh();
+          feedback.textContent='Statut enregistré.';
+          try { await refresh(); } catch (_) { feedback.textContent='Statut enregistré ; actualisation indisponible.'; }
         } catch (error) {
-          global.alert(`${error.message}${error.code ? ` · ${error.code}` : ''}`);
-          btn.disabled = false;
-        }
+          feedback.textContent=`${error.message}${error.code ? ` · ${error.code}` : ''}`;
+        } finally {pending=false;buttons.forEach(b=>b.disabled=false);}
       });
+      buttons.push(btn);
       actions.appendChild(btn);
     });
     card.appendChild(actions);
@@ -165,12 +185,13 @@
     mounting = true;
     try {
       const marketCode = await resolveMarketCode();
-      if (!marketCode) return;
+      if (!marketCode || root.isConnected===false || root.__marketClientCaseIdentity!==identity) return;
 
       let data = null;
       try {
         data = await request(`/api/market-delegation/markets/${encodeURIComponent(marketCode)}/client-cases/disputes`);
       } catch (error) {
+        if (root.isConnected===false || root.__marketClientCaseIdentity!==identity) return;
         if (error.status === 403) return; // capacité absente : section absente, jamais grisée
         const section = el('section', 'kmc-section kmc-team-section');
         section.dataset.marketClientCase = '';
@@ -180,6 +201,7 @@
         return;
       }
 
+      if(root.isConnected===false||root.__marketClientCaseIdentity!==identity)return;
       const canHandle = (data.actor_capabilities || []).includes('client.case.handle');
       const disputes = data.disputes || [];
 

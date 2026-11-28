@@ -192,12 +192,14 @@
       const actions = el(doc, 'td', 'kmc-markets-mgmt-actions');
       const gapsButton = el(doc, 'button', 'kmc-access-button', 'Voir les écarts');
       gapsButton.type = 'button';
+      gapsButton.disabled=state.pending===true;
       gapsButton.addEventListener('click', () => options.onGaps(market));
       actions.appendChild(gapsButton);
       actionsFor(market.lifecycle_status).forEach(action => {
         const button = el(doc, 'button', action.target === 'ACTIVE' ? 'kmc-access-button is-primary' : 'kmc-access-button is-danger', action.label);
         button.type = 'button';
         button.dataset.lifecycleTarget = action.target;
+        button.disabled=state.pending===true || (action.target==='ACTIVE' && state.gaps?.code===market.code && state.gaps.ready===false);
         button.addEventListener('click', () => options.onLifecycle(market, action));
         actions.appendChild(button);
       });
@@ -208,7 +210,7 @@
         const cell = el(doc, 'td');
         cell.colSpan = 5;
         if (!state.gaps.items.length) {
-          cell.appendChild(el(doc, 'p', '', 'Aucun écart : le marché est prêt.'));
+          cell.appendChild(el(doc, 'p', '', state.gaps.ready===true?'Aucun écart : le marché est prêt.':'Aucun écart publié ; préparation non confirmée.'));
         } else {
           const list = el(doc, 'ul');
           state.gaps.items.forEach(gap => list.appendChild(el(doc, 'li', '', gap.message || gap.code)));
@@ -226,7 +228,8 @@
   async function mount(host, options = {}) {
     const fetchImpl = options.fetch || global.fetch.bind(global);
     const confirmImpl = options.confirm || ((message) => global.confirm(message));
-    const state = { markets: [], gaps: null, feedback: '', feedbackTone: '' };
+    const state = { markets: [], gaps: null, feedback: '', feedbackTone: '', pending:false };
+    let gapsSeq=0;
     const ctx = { document: options.document || global.document };
 
     async function load() {
@@ -236,66 +239,75 @@
     function paint() { render(host, state, ctx); }
 
     ctx.onGaps = async market => {
+      const seq=++gapsSeq;
+      state.gaps=null;
       try {
         const control = await request(fetchImpl, `/api/admin/markets/${encodeURIComponent(market.code)}/control-plane`);
-        state.gaps = { code: market.code, items: control.gaps || [], deliveryProof: control.deliveryProof || null };
+        if(seq!==gapsSeq)return false;
+        state.gaps = { code: market.code, items: control.gaps || [], deliveryProof: control.deliveryProof || null,ready:control.readiness?.ready_for_activation??null };
         state.carriers = Array.isArray(control.carriers) ? control.carriers : [];
         state.feedback = '';
+        state.feedbackTone='';
+        paint();
+        return true;
       } catch (error) {
+        if(seq!==gapsSeq)return false;
         state.feedback = error.message;
         state.feedbackTone = 'critical';
+        paint();
+        return false;
       }
-      paint();
     };
     ctx.onLifecycle = async (market, action) => {
-      if (!confirmImpl(confirmMessage(market, action))) return;
+      if (state.pending||!confirmImpl(confirmMessage(market, action))) return;
+      state.pending=true;++gapsSeq;
+      let committed=false;
       try {
         await request(fetchImpl, `/api/admin/markets/${encodeURIComponent(market.code)}/lifecycle`, {
           method: 'POST', body: { status: action.target },
         });
+        committed=true;
+        state.gaps=null;
         await load();
         state.feedback = `Marché ${market.code} : ${statusLabel(action.target).toLowerCase()}.`;
         state.feedbackTone = 'positive';
       } catch (error) {
-        state.feedback = error.message;
-        state.feedbackTone = 'critical';
+        state.feedback = committed?'Transition enregistrée ; liste à actualiser.':error.message;
+        state.feedbackTone = committed?'warning':'critical';
         if (error.code === 'MARKET_NOT_READY_FOR_ACTIVATION') state.gaps = null;
-      }
+      } finally {state.pending=false;}
       paint();
     };
 
     ctx.onAttest = async (market, payload) => {
+      if(state.pending)return;
+      state.pending=true;++gapsSeq;
       try {
         await request(fetchImpl, `/api/admin/markets/${encodeURIComponent(market.code)}/delivery-attestations`, {
           method: 'POST', body: payload,
         });
-        await ctx.onGaps(market);
-        state.feedback = `Marché ${market.code} : livrabilité attestée.`;
-        state.feedbackTone = 'positive';
-        paint();
-        return;
+        const refreshed=await ctx.onGaps(market);
+        state.feedback = `Marché ${market.code} : livrabilité attestée.${refreshed?'':' Préparation à actualiser.'}`;
+        state.feedbackTone = refreshed?'positive':'warning';
       } catch (error) {
         state.feedback = error.message;
         state.feedbackTone = 'critical';
-      }
-      paint();
+      } finally {state.pending=false;paint();}
     };
     ctx.onRevoke = async (market, attestationId, reason) => {
-      if (!confirmImpl(`Confirmer : révoquer l’attestation de livrabilité du marché ${market.code} ? Les nouvelles commandes seront refusées.`)) return;
+      if (state.pending||!confirmImpl(`Confirmer : révoquer l’attestation de livrabilité du marché ${market.code} ? Les nouvelles commandes seront refusées.`)) return;
+      state.pending=true;++gapsSeq;
       try {
         await request(fetchImpl, `/api/admin/markets/${encodeURIComponent(market.code)}/delivery-attestations/${encodeURIComponent(attestationId)}/revoke`, {
           method: 'POST', body: { reason },
         });
-        await ctx.onGaps(market);
-        state.feedback = `Marché ${market.code} : attestation révoquée.`;
-        state.feedbackTone = 'positive';
-        paint();
-        return;
+        const refreshed=await ctx.onGaps(market);
+        state.feedback = `Marché ${market.code} : attestation révoquée.${refreshed?'':' Préparation à actualiser.'}`;
+        state.feedbackTone = refreshed?'positive':'warning';
       } catch (error) {
         state.feedback = error.message;
         state.feedbackTone = 'critical';
-      }
-      paint();
+      } finally {state.pending=false;paint();}
     };
 
     try {

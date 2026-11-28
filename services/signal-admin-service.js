@@ -88,7 +88,9 @@ async function listSignals(filters = {}) {
     : null;
   const signalType = filters.signal_type ? String(filters.signal_type) : null;
   const ownerRole = filters.owner_role ? String(filters.owner_role) : null;
-  const familyTypes = filters.family && FAMILY_TYPES[filters.family] ? FAMILY_TYPES[filters.family] : null;
+  const otherFamily = filters.family === 'other';
+  const familyTypes = otherFamily ? Object.keys(TYPE_FAMILY) : (Object.prototype.hasOwnProperty.call(FAMILY_TYPES, filters.family) ? FAMILY_TYPES[filters.family] : null);
+  const familyPredicate = otherFamily ? 's.signal_type <> ALL($5::text[])' : 's.signal_type = ANY($5::text[])';
   const marketId = exactMarketId(filters.market_id);
   const limit = normalizeLimit(filters.limit);
   const offset = normalizeOffset(filters.offset);
@@ -102,7 +104,7 @@ async function listSignals(filters = {}) {
         AND ($2::text[] IS NULL OR s.severity = ANY($2::text[]))
         AND ($3::text IS NULL OR s.signal_type = $3)
         AND ($4::text IS NULL OR s.owner_role = $4)
-        AND ($5::text[] IS NULL OR s.signal_type = ANY($5::text[]))
+        AND ($5::text[] IS NULL OR ${familyPredicate})
         AND s.market_id IS NOT DISTINCT FROM $6::uuid
         AND ${EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL}
       ORDER BY
@@ -112,7 +114,7 @@ async function listSignals(filters = {}) {
           WHEN 'warning' THEN 3
           ELSE 4
         END,
-        s.created_at DESC
+        s.created_at DESC, s.signal_ref ASC
       LIMIT $7 OFFSET $8`,
     [...filterParams, limit, offset]
   );
@@ -125,7 +127,7 @@ async function listSignals(filters = {}) {
         AND ($2::text[] IS NULL OR s.severity = ANY($2::text[]))
         AND ($3::text IS NULL OR s.signal_type = $3)
         AND ($4::text IS NULL OR s.owner_role = $4)
-        AND ($5::text[] IS NULL OR s.signal_type = ANY($5::text[]))
+        AND ($5::text[] IS NULL OR ${familyPredicate})
         AND s.market_id IS NOT DISTINCT FROM $6::uuid
         AND ${EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL}`,
     filterParams

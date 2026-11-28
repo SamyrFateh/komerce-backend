@@ -45,6 +45,17 @@ test('listSignals defaults to global NULL scope and parameterizes family/paginat
   expect(countParams).toEqual([null, null, null, null, service.FAMILY_TYPES.ops, null]);
 });
 
+test('family other excludes every known type in both scoped list and count',async()=>{
+  mockQuery.mockResolvedValueOnce({rows:[]}).mockResolvedValueOnce({rows:[{count:'0'}]});
+  await service.listSignals({family:'other',market_id:'market-cm',offset:100});
+  for(const [sql,params] of mockQuery.mock.calls){
+    expect(sql).toContain('s.signal_type <> ALL($5::text[])');
+    expect(sql).toContain('s.market_id IS NOT DISTINCT FROM $6::uuid');
+    expect(params[4]).toEqual(Object.values(service.FAMILY_TYPES).flat());
+    expect(params[5]).toBe('market-cm');
+  }
+});
+
 test('listSignals accepts only a server supplied exact market parameter', async () => {
   mockQuery.mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ count: '0' }] });
   await service.listSignals({ market_id: 'market-cm', severity: 'warning' });

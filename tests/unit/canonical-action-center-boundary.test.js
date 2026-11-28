@@ -160,10 +160,15 @@ test('403 hors absence de marché : la couche UI ne masque pas une vraie erreur 
     status: 403, ok: false,
     json: async () => ({ code: 'agent_action_center_role_forbidden' }),
   }));
+  const notice={setAttribute:jest.fn(),textContent:''};
+  const root={replaceChildren:jest.fn(),appendChild:jest.fn()};
   await expect(ui.mount({
     user: { role: 'agent_transitaire' },
-    root: { replaceChildren: jest.fn() },
-    document: { createElement: jest.fn() },
+    root,
+    document: { createElement: jest.fn(()=>notice) },
     fetch,
   })).rejects.toMatchObject({ status: 403, code: 'agent_action_center_role_forbidden' });
+  expect(root.replaceChildren).toHaveBeenCalled();
+  expect(notice.setAttribute).toHaveBeenCalledWith('role','alert');
+  expect(root.appendChild).toHaveBeenCalledWith(notice);
 });

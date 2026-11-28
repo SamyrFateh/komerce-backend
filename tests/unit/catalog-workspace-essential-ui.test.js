@@ -55,3 +55,15 @@ test('Bandeau paramètres : provenance, usage, conséquence et accès à la conf
   expect(workspace).toContain('Configurer (');
   expect(workspace).toContain('pas un prix publié ni un coût réel');
 });
+
+
+test('Catalogue : retour du Produit 360 conserve tous les filtres et la pagination',()=>{
+  const catalog=require('../../public/dashboards/canonical/js/catalog-workspace');
+  const filters=catalog.readCatalogFilters('?search=robe&supplier=CJ&category=Mode&subcategory=Femme&status=validated&catalog_offset=100');
+  expect(filters).toEqual({search:'robe',supplier:'CJ',category:'Mode',subcategory:'Femme',status:'validated',offset:100});
+  const url=new URL(catalog.catalogContextTarget({catalogFilters:filters,catalogTab:'registry'},'KPR-000123',{search:'?market=CM'}),'https://komerce.co');
+  expect(url.searchParams.get('market')).toBe('CM');
+  expect(url.searchParams.get('product_ref')).toBe('KPR-000123');
+  expect(catalog.readCatalogFilters(url.search)).toEqual(filters);
+  expect(catalog.readCatalogFilters('?catalog_offset=-1&status=bad')).toMatchObject({offset:0,status:''});
+});
