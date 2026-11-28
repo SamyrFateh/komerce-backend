@@ -94,13 +94,17 @@ describe('CAP-003 — decision-signals Market ID contract', () => {
     });
   });
 
-  test('global AdminContext remains on the explicitly global endpoint', async () => {
+  test('global AdminContext selects explicit authorized market or remains on central endpoint', async () => {
     const ui = require('../../public/dashboards/canonical/js/action-center');
     const runtime = await ui.resolveRuntimeScope({
       adminContext: { access: { mode: 'global', allowedMarkets: ['CM', 'CG'], defaultMarket: null } },
       fetch: jest.fn(),
       location: { href: 'https://komerce.co/admin/action-center?market=CM' },
     });
-    expect(runtime).toMatchObject({ mode: 'global', marketCode: null, endpoint: '/api/admin/action-center' });
+    expect(runtime).toMatchObject({ mode: 'market', marketCode: 'CM', endpoint: '/api/admin/action-center/market/CM' });
+    for (const search of ['', '?market=DJ']) {
+      const central=await ui.resolveRuntimeScope({adminContext:{access:{mode:'global',allowedMarkets:['CM','CG']}},location:{href:'https://komerce.co/admin/action-center'+search}});
+      expect(central).toMatchObject({mode:'global',marketCode:null,endpoint:'/api/admin/action-center'});
+    }
   });
 });

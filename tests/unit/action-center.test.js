@@ -66,9 +66,22 @@ describe('Canonical Action Center — presentation contract', () => {
 
 test('les liens Traiter / Voir vers fiches 360 et PO passent par le retour contextuel de l’Action Center', () => {
   const src = require('fs').readFileSync(require('path').join(__dirname, '..', '..', 'public/dashboards/canonical/js/action-center.js'), 'utf8');
-  expect(src).toContain('work.href = withReturn(row.work_item.href);');
-  expect(src).toContain('link.href = withReturn(row.entity.href);');
+  expect(src).toContain('work.href = withReturn(row.work_item.href,row.signal_ref);');
+  expect(src).toContain('link.href = withReturn(row.entity.href,row.signal_ref);');
   expect(src).toContain("'Retour à À traiter'");
+});
+
+test('retour : ouvre le groupe de la référence et restaure le dossier sans exécuter de mutation',()=>{
+  const group={open:false};
+  const card={closest:jest.fn(()=>group),scrollIntoView:jest.fn()};
+  const root={querySelector:jest.fn(()=>card)};
+  expect(actionCenter.restoreSignal(root,{hash:'#signal-KSG-000123'})).toBe(true);
+  expect(root.querySelector).toHaveBeenCalledWith('#signal-KSG-000123');
+  expect(group.open).toBe(true);
+  expect(card.scrollIntoView).toHaveBeenCalled();
+  root.querySelector.mockClear();
+  expect(actionCenter.restoreSignal(root,{hash:'#invalid'})).toBe(false);
+  expect(root.querySelector).not.toHaveBeenCalled();
 });
 
 test('D3 — « Résolu » exige une note de preuve et les types auto-fermés l’annoncent', () => {

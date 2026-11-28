@@ -195,11 +195,12 @@
   }
 
   // Retour vers l'Action Center (filtres conservés) depuis les fiches 360 et les PO.
-  function withReturn(href) {
+  function withReturn(href, signalRef) {
     const nav = globalThis.KomerceCanonicalNavigation;
     const loc = globalThis.location;
     if (!nav || typeof nav.withEntityReturnTo !== 'function' || !loc) return href;
-    return nav.withEntityReturnTo(href, `${loc.pathname || '/admin/action-center'}${loc.search || ''}`, 'Retour à À traiter');
+    const target=`${loc.pathname || '/admin/action-center'}${loc.search || ''}${/^KSG-\\d{6,}$/.test(signalRef||'')?'#signal-'+signalRef:''}`;
+    return nav.withEntityReturnTo(href,target,'Retour à À traiter');
   }
 
   function ageLabel(value, now = Date.now()) {
@@ -211,6 +212,21 @@
     return `${Math.round(minutes / 1440)} j`;
   }
 
+  function ownerLabel(role) {
+    return ({hub:'Hub',relais:'Relais',customs:'Douane / transitaire',transitaire:'Transitaire',logistics:'Logistique',purchasing:'Achats',finance:'Finance',admin:'Administration',sourcing:'Sourcing',support:'Support'})[role]||'Responsable métier';
+  }
+
+  function restoreSignal(rootNode,loc=globalThis.location) {
+    const hash=String(loc?.hash||'');
+    if(!/^#signal-KSG-\d{6,}$/.test(hash))return false;
+    const card=rootNode.querySelector?.(hash);
+    if(!card)return false;
+    const group=card.closest?.('details.kmc-action-group');
+    if(group)group.open=true;
+    card.scrollIntoView?.({block:'nearest'});
+    return true;
+  }
+
   function renderSignal(doc, row) {
     const card = doc.createElement('article');
     const severity = ['urgent', 'critical', 'warning', 'info'].includes(String(row.severity || '').toLowerCase())
@@ -218,6 +234,7 @@
       : 'info';
     card.className = `kmc-action-signal is-${severity}`;
     card.dataset.signalRef = row.signal_ref;
+    if(/^KSG-\\d{6,}$/.test(row.signal_ref||'')) card.id='signal-'+row.signal_ref;
     card.dataset.severity = severity;
 
     const refLabel = (row.entity && (row.entity.ref || row.entity.label)) || row.signal_ref;
@@ -231,17 +248,19 @@
 
     card.appendChild(text(doc, 'p', 'kmc-action-signal-cause', row.summary || row.title));
     if (row.recommendation) card.appendChild(text(doc, 'p', 'kmc-action-signal-next', `Prochaine action · ${row.recommendation}`));
+    if(row.work_item?.owner_role) card.appendChild(text(doc,'p','kmc-action-signal-age','Responsable · '+ownerLabel(row.work_item.owner_role)));
+    if(row.exception_evidence) card.appendChild(text(doc,'p','kmc-action-signal-age',row.exception_evidence.closure==='source_reconciliation'?'Clôture sur constat métier réconcilié':'Contrôle distinct — preuve à établir'));
 
     const bar = doc.createElement('div');
     bar.className = 'kmc-action-signal-bar';
     if (row.work_item && row.work_item.actionable && row.work_item.href) {
       const work = text(doc, 'a', 'kmc-workspace-action', 'Traiter');
-      work.href = withReturn(row.work_item.href);
+      work.href = withReturn(row.work_item.href,row.signal_ref);
       work.dataset.actionCenterWorkItem = row.signal_ref;
       bar.appendChild(work);
     } else if (row.entity && row.entity.href) {
       const link = text(doc, 'a', 'kmc-workspace-action', 'Traiter');
-      link.href = withReturn(row.entity.href);
+      link.href = withReturn(row.entity.href,row.signal_ref);
       bar.appendChild(link);
     }
     const allowed = new Set(row.actions || []);
@@ -495,9 +514,10 @@
     rootNode.__dashboardViewIdentity = identity;
     context.identity=identity;
     let requestSeq = 0;
+    let restorePending=true;
     const workspaceBusy = () => {
       const focused = context.document.activeElement;
-      return Boolean(rootNode.querySelector?.('[aria-modal="true"]') ||
+      return Boolean(rootNode.querySelector?.('[aria-modal="true"], details.kmc-action-group[open], [data-action-center-action]:disabled') ||
         (focused && rootNode.contains?.(focused) &&
          focused.matches?.('input,textarea,select,button,[contenteditable="true"]')));
     };
@@ -507,9 +527,9 @@
       try {
         payload = await jsonRequest(context.fetch, listEndpoint(context.loadEndpoint, context.domain, context.offset, context.scopeMode));
       } catch (error) {
-        if (currentRequest !== requestSeq) return {};
+        if (currentRequest !== requestSeq || rootNode.__dashboardViewIdentity !== identity) return {};
         if (renderAgentScopeMissing(context, error)) return { blocked: true };
-        if (background) {
+        if (background || error.status === 401 || error.status === 403) {
           if (error.status === 401 || error.status === 403) {
             rootNode.replaceChildren();
             const notice = context.document.createElement('p');
@@ -523,6 +543,7 @@
       }
       if (currentRequest !== requestSeq || rootNode.__dashboardViewIdentity !== identity ||
           (background && (rootNode.isConnected === false || workspaceBusy()))) return payload;
+      const expanded=new Set(Array.from(rootNode.querySelectorAll?.('details.kmc-action-group[open] [data-signal-ref]')||[]).map(el=>el.dataset.signalRef));
       rootNode.replaceChildren();
       rootNode.removeAttribute?.('data-dashboard-stale');
       rootNode.classList.add('kmc-action-center');
@@ -555,6 +576,10 @@
         },
       });
       renderPagination(rootNode,context,payload);
+      for(const card of Array.from(rootNode.querySelectorAll?.('[data-signal-ref]')||[])) {
+        if(expanded.has(card.dataset.signalRef)){const group=card.closest?.('details.kmc-action-group');if(group)group.open=true;}
+      }
+      if(restorePending){restoreSignal(rootNode,options.location||globalThis.location);restorePending=false;}
       bind(rootNode, context);
       return payload;
     }
@@ -582,5 +607,6 @@
     readListContext,
     listEndpoint,
     bind,
+    restoreSignal,
   };
 });

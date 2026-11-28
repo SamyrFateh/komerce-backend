@@ -88,6 +88,7 @@ function publicSignal(row) {
     status: row.status,
     created_at: row.created_at,
     entity_type: row.entity_type || null,
+    exception_evidence: {observed_at:row.updated_at||row.created_at||null,closure:signalAdminService.isAutoResolved?.(row.signal_type)?'source_reconciliation':'manual_control',proof_status:'not_established'},
     actions: allowedActions(row.status),
   };
 }
@@ -110,7 +111,7 @@ async function listForAgent(user, query = {}) {
   const { limit, offset } = normalizePage(query);
   const { rows } = await db.query(
     `SELECT s.signal_ref, s.signal_type, s.severity, s.title, s.summary, s.recommendation,
-            s.owner_role, s.status, s.created_at, s.entity_type
+            s.owner_role, s.status, s.created_at, s.updated_at, s.entity_type
        FROM signals s
       WHERE ${SCOPE_SQL}
       ORDER BY CASE s.severity WHEN 'urgent' THEN 1 WHEN 'critical' THEN 2 WHEN 'warning' THEN 3 ELSE 4 END,

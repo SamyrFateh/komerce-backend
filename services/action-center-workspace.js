@@ -178,6 +178,12 @@ function publicSignal(signal, entityMaps, canManage = true) {
     updated_at: signal.updated_at,
     expires_at: signal.expires_at || null,
     auto_resolves: signalAdminService.isAutoResolved(signal.signal_type),
+    exception_evidence: Object.freeze({
+      source: signal.source_module || null,
+      observed_at: signal.updated_at || signal.created_at || null,
+      closure: signalAdminService.isAutoResolved(signal.signal_type) ? 'source_reconciliation' : 'manual_control',
+      proof_status: 'not_established',
+    }),
     // Une action n'est proposée que si l'appelant peut l'exécuter (decision_signal.manage) : la garde serveur
     // refuse déjà le reste, mais l'écran ne doit pas offrir un bouton voué au 403.
     actions: canManage ? actionSet(signal.status, signal.signal_type) : [],
