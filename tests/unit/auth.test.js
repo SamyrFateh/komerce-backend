@@ -240,3 +240,14 @@ describe('invalidateUserCache', () => {
     expect(mockCacheInvalidate).toHaveBeenCalledWith('user-1');
   });
 });
+
+ test('On Demand: seul un téléphone porté par une session OTP est transmis au dossier', async () => {
+   for (const [amr, expected] of [[['otp'], '+2691234567'], [['password'], null]]) {
+     mockQuery.mockReset().mockResolvedValueOnce({ rows: [] }).mockResolvedValueOnce({ rows: [{ id: 'user-1', role: 'client', phone: '+2697654321' }] });
+     const req = makeReq({ cookies: { kmrc_jwt: validToken({ amr, phone: '+2691234567' }) } });
+     const next = makeNext();
+     await authenticate(req, makeRes(), next);
+     expect(next).toHaveBeenCalledTimes(1);
+     expect(req.auth.verifiedOtpPhone).toBe(expected);
+   }
+ });
