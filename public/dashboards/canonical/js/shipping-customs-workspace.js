@@ -715,29 +715,42 @@
       journeyTab: 'transport',
       journeyRef: null,
     };
+    const identity={};
+    rootNode.__dashboardViewIdentity=identity;
+    let requestSeq=0;
     const workspaceBusy = () => {
       const active = doc.activeElement;
       return Boolean(active && rootNode.contains?.(active) &&
         active.matches?.('input,textarea,select,[contenteditable="true"]'));
     };
     context.reload = async ({ background = false } = {}) => {
-      const payload = await jsonRequest(fetchFn, endpointFor(context.marketCode));
+      const seq=++requestSeq;
+      const requestedRef=context.journeyRef;
+      const requestedTab=context.journeyTab;
+      const isCurrent=()=>seq===requestSeq&&rootNode.__dashboardViewIdentity===identity&&context.journeyRef===requestedRef&&context.journeyTab===requestedTab;
+      let payload;
+      try { payload = await jsonRequest(fetchFn, endpointFor(context.marketCode)); }
+      catch(error){if(!isCurrent())return {stale:true};throw error;}
+      if(!isCurrent())return {stale:true};
       // The new chain is additive. If migration is not yet installed, show a
       // visible error in the journey panel without breaking existing customs.
       try {
         const international = await jsonRequest(fetchFn, endpointFor(context.marketCode, 'international'));
+        if(!isCurrent())return {stale:true};
         payload.international = Array.isArray(international.shipments) ? international.shipments : [];
-        if (context.journeyRef && payload.international.some(r => r.reference === context.journeyRef)) {
+        if (requestedRef && payload.international.some(r => r.reference === requestedRef)) {
           payload.internationalDetail = await jsonRequest(fetchFn,
-            endpointFor(context.marketCode, 'international/' + encodeURIComponent(context.journeyRef)));
-        } else {
-          context.journeyRef = null;
+            endpointFor(context.marketCode, 'international/' + encodeURIComponent(requestedRef)));
         }
       } catch (err) {
+        if(!isCurrent())return {stale:true};
+        if(err.status===401||err.status===403)throw err;
         payload.internationalError = err.message;
         payload.international = [];
       }
+      if(!isCurrent())return {stale:true};
       if (background && workspaceBusy()) return payload;
+      if(!payload.internationalError&&requestedRef&&!payload.international.some(r=>r.reference===requestedRef))context.journeyRef=null;
       renderPayload(rootNode, ui, doc, payload, context);
       rootNode.removeAttribute?.('data-dashboard-stale');
       return payload;
@@ -748,6 +761,7 @@
       refresh:async () => {
         try { return await context.reload({ background:true }); }
         catch (error) {
+          if(rootNode.__dashboardViewIdentity!==identity)return {stale:true};
           if (error.status === 401 || error.status === 403) {
             rootNode.replaceChildren();
             const notice = doc.createElement('p');
