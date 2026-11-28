@@ -199,6 +199,11 @@ function publicScope(market) {
   });
 }
 
+async function buildControlChainDrill(query, options = {}) {
+  const drill=controlChain.parseChainDrill(query);
+  return controlChain.getControlChain({market:options.market||null,drill});
+}
+
 async function buildOperations(options = {}) {
   const market = options.market || null;
   const filters = marketFilters(market);
@@ -273,4 +278,5 @@ module.exports = {
   getCriticalDelays,
   getOperationalSignals,
   buildOperations,
+  buildControlChainDrill,
 };

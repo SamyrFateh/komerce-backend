@@ -230,9 +230,12 @@ router.get(
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
-      const payload = await projectMarketPayload(await operations.buildOperations({ market: req.dashboardMarket }), req.dashboardMarket);
+      const payload = Object.prototype.hasOwnProperty.call(req.query,'chain_drill')
+        ? await operations.buildControlChainDrill(req.query,{market:req.dashboardMarket})
+        : await projectMarketPayload(await operations.buildOperations({ market: req.dashboardMarket }), req.dashboardMarket);
       res.json(payload);
     } catch (err) {
+      if ([400,409].includes(err.status) && ['invalid_control_chain_drill','control_chain_population_changed'].includes(err.code)) return res.status(err.status).json({error:err.code,code:err.code});
       log.error({ err, market: req.dashboardMarket && req.dashboardMarket.code }, '[admin-dashboard-market] operations market error');
       next(err);
     }
@@ -333,9 +336,12 @@ router.get(
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
-      const payload = await operations.buildOperations();
+      const payload = Object.prototype.hasOwnProperty.call(req.query,'chain_drill')
+        ? await operations.buildControlChainDrill(req.query)
+        : await operations.buildOperations();
       res.json(payload);
     } catch (err) {
+      if ([400,409].includes(err.status) && ['invalid_control_chain_drill','control_chain_population_changed'].includes(err.code)) return res.status(err.status).json({error:err.code,code:err.code});
       log.error({ err }, '[admin-dashboard-market] operations global error');
       next(err);
     }
