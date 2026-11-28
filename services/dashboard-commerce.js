@@ -84,15 +84,21 @@ function buildPeriodFilters(query = {}, marketId = null, now = new Date(), marke
 
 // Commerce business-sale basis: paid orders, before wallet tender; discounts already frozen
 // in total_kmf. Unlike Finance's cash-oriented projection this is NOT a cash receipt.
+// Prédicat unique partagé par le KPI et le drill. Les bornes et le marché
+// sont résolus par le serveur, jamais par un UUID fourni par le navigateur.
+function paidOrdersFrom(where) {
+  return `FROM orders o
+      WHERE ${where}
+        AND o.payment_status = 'paid'
+        AND o.status NOT IN ('cancelled', 'refunded')`;
+}
+
 async function getCommercePaidSales(filters) {
   const { where, params } = buildFiltersClause(filters);
   const { rows } = await db.query(`
     WITH paid AS (
       SELECT o.user_id, o.total_kmf, o.wallet_applied_kmf
-      FROM orders o
-      WHERE ${where}
-        AND o.payment_status = 'paid'
-        AND o.status NOT IN ('cancelled', 'refunded')
+      ${paidOrdersFrom(where)}
     ), buyers AS (
       SELECT user_id, COUNT(*) AS order_count
       FROM paid WHERE user_id IS NOT NULL GROUP BY user_id
@@ -664,6 +670,72 @@ async function getCollectedFromJournal(filters, market) {
   }
 }
 
+const BUYER_DRILL_PAGE_SIZE = 25;
+const BUYER_DRILL_TYPES = Object.freeze(['paid_buyers', 'repeat_paid_buyers']);
+
+function invalidBuyerDrill() {
+  return Object.assign(new Error('Paramètres de consultation des acheteurs invalides'), {status:400,code:'invalid_buyer_drill'});
+}
+
+async function buildBuyerDrill(query = {}, options = {}) {
+  const kind = query.buyer_drill;
+  const pageText = query.page === undefined ? '1' : String(query.page);
+  const page = Number(pageText);
+  const serverNow = new Date(options.now || Date.now());
+  const anchor = typeof query.as_of === 'string' ? new Date(query.as_of) : new Date(NaN);
+  if (!BUYER_DRILL_TYPES.includes(kind) || !/^[1-9][0-9]*$/.test(pageText)
+      || !Number.isSafeInteger(page) || page > 1000000
+      || !Number.isFinite(anchor.getTime()) || anchor.toISOString() !== query.as_of
+      || anchor > serverNow || !ALLOWED_PERIODS.includes(Number(query.period))
+      || (query.simulation_scope !== undefined && !isValidScope(query.simulation_scope))) {
+    throw invalidBuyerDrill();
+  }
+  const market = options.market || null;
+  // Fige les bornes du KPI cliqué, y compris au changement de jour civil.
+  // Il s'agit d'une nouvelle lecture des statuts courants, pas d'un historique.
+  const {period,filters,timezone,timezone_source:timezoneSource} =
+    buildPeriodFilters(query,market && market.id,anchor,market);
+  const {where,params} = buildFiltersClause(filters);
+  const limitIndex = params.push(BUYER_DRILL_PAGE_SIZE);
+  const offsetIndex = params.push((page - 1) * BUYER_DRILL_PAGE_SIZE);
+  const minOrders = kind === 'repeat_paid_buyers' ? 2 : 1;
+  const {rows} = await db.query(`
+    WITH paid AS (
+      SELECT o.id, o.user_id, o.reference, o.created_at
+      ${paidOrdersFrom(where)}
+    ), buyers AS (
+      SELECT user_id, COUNT(*)::int AS order_count,
+             (ARRAY_AGG(reference ORDER BY created_at DESC,id DESC))[1] AS latest_order_reference
+      FROM paid WHERE user_id IS NOT NULL GROUP BY user_id
+      HAVING COUNT(*) >= ${minOrders}
+    )
+    SELECT totals.total, selected.order_count, selected.latest_order_reference
+      FROM (SELECT COUNT(*)::int AS total FROM buyers) totals
+      LEFT JOIN LATERAL (
+        SELECT user_id, order_count, latest_order_reference
+        FROM buyers ORDER BY order_count DESC,user_id
+        LIMIT $${limitIndex} OFFSET $${offsetIndex}
+      ) selected ON TRUE
+      ORDER BY selected.order_count DESC,selected.user_id
+  `,params);
+  const total = rows[0]?.total == null ? NaN : Number(rows[0].total);
+  const accounts = rows.filter(row=>row.order_count != null).map(row=>Object.freeze({
+    paid_orders:Number(row.order_count),
+    latest_order_reference:row.latest_order_reference,
+  }));
+  // Aucun UUID, téléphone, nom ou identifiant compte brut exposé.
+  if (!Number.isSafeInteger(total) || total < 0 || accounts.length !== Math.min(BUYER_DRILL_PAGE_SIZE,Math.max(0,total-(page-1)*BUYER_DRILL_PAGE_SIZE))
+      || accounts.some(row=>!Number.isSafeInteger(row.paid_orders)||row.paid_orders<minOrders||typeof row.latest_order_reference!=='string'||!row.latest_order_reference)) {
+    throw new Error('buyer_drill_population_inconsistent');
+  }
+  return Object.freeze({
+    kind, scope:publicScope(market), simulation:SIMULATION_VIEW(query), period,
+    period_definition:Object.freeze({kind:'civil_days_including_today',days:period,timezone,timezone_source:timezoneSource,from:filters.from,to:filters.to}),
+    pagination:Object.freeze({page,page_size:BUYER_DRILL_PAGE_SIZE,total,total_pages:Math.ceil(total/BUYER_DRILL_PAGE_SIZE)}),
+    accounts:Object.freeze(accounts),
+  });
+}
+
 async function buildCommerce(query = {}, options = {}) {
   const market = options.market || null;
   const { period, filters, timezone, timezone_source: timezoneSource } = buildPeriodFilters(query, market && market.id, options.now || new Date(), market);
@@ -785,4 +857,5 @@ module.exports = {
   availabilitySignal,
   buildDecisionSignals,
   buildCommerce,
+  buildBuyerDrill,
 };

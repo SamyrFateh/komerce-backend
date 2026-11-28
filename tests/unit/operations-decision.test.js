@@ -220,3 +220,21 @@ test('les alertes structurelles ne se dupliquent pas dans le parcours', () => {
   expect(SRC).not.toContain('commandes · même anomalie');
   expect(SRC).toContain('const isEmpty = !hasOrders;');
 });
+
+test('population : exhaustivité uniquement attestée et réconciliée avec la liste', () => {
+  const view=require('../../public/dashboards/canonical/js/operations-decision');
+  const stages=view.PROCESS_PHASES.flatMap(phase=>phase.stages).map(key=>({key,label:key}));
+  const by_stage=Object.fromEntries(stages.map(({key})=>[key,[]]));
+  by_stage.ORDER=[{order_reference:'K1',health:'GREEN'}];
+  const model={control_chain:{stages,by_stage,population:{total:9,shown:1,limit:250,complete:false,clock:'current_active_orders',simulation_scope:'real_only'}}};
+  expect(view.projectPopulation(model)).toEqual({shown:1,total:9,state:'partial'});
+  model.control_chain.population.total=1;
+  model.control_chain.population.complete=true;
+  expect(view.projectPopulation(model)).toEqual({shown:1,total:1,state:'complete'});
+  model.control_chain.population.shown=2;
+  expect(view.projectPopulation(model)).toEqual({shown:1,total:null,state:'unknown'});
+  delete model.control_chain.population;
+  expect(view.projectPopulation(model)).toEqual({shown:1,total:null,state:'unknown'});
+  delete by_stage.CUSTOMS;
+  expect(view.projectPopulation(model)).toEqual({shown:null,total:null,state:'unknown'});
+});

@@ -408,3 +408,33 @@ describe('dashboard-commerce', () => {
     expect(reporting.customerCashSubtotal).not.toHaveBeenCalled();
   });
 });
+
+describe('drill des acheteurs payants V5.4',()=>{
+  const now=new Date('2026-10-20T12:00:00Z');
+  const query={period:'7',as_of:now.toISOString(),buyer_drill:'repeat_paid_buyers',page:'1',simulation_scope:'RCT1'};
+  test('même prédicat, compte stable, pagination et absence de PII',async()=>{
+    db.query.mockReset().mockResolvedValue({rows:[{total:'1',order_count:2,latest_order_reference:'K-CM-1'}]});
+    const result=await commerce.buildBuyerDrill(query,{market:{id:'cm-id',code:'CM'},now});
+    const [sql,params]=db.query.mock.calls[0];
+    expect(sql).toContain("o.payment_status = 'paid'");
+    expect(sql).toContain("o.status NOT IN ('cancelled', 'refunded')");
+    expect(sql).toContain('FROM paid WHERE user_id IS NOT NULL GROUP BY user_id');
+    expect(sql).toContain('HAVING COUNT(*) >= 2');
+    expect(params).toEqual(['2026-10-13T23:00:00.000Z',now.toISOString(),'cm-id','RCT1',25,0]);
+    expect(result.pagination).toEqual({page:1,page_size:25,total:1,total_pages:1});
+    expect(result.accounts).toEqual([{paid_orders:2,latest_order_reference:'K-CM-1'}]);
+    expect(result.period_definition.to).toBe(now.toISOString());
+    expect(JSON.stringify(result)).not.toContain('cm-id');
+  });
+  test('page au-delà du dernier résultat conserve le total',async()=>{
+    db.query.mockReset().mockResolvedValue({rows:[{total:1,order_count:null,latest_order_reference:null}]});
+    const r=await commerce.buildBuyerDrill({...query,page:'2'},{now});
+    expect(r.pagination).toMatchObject({total:1,page:2,total_pages:1});
+    expect(r.accounts).toEqual([]);
+  });
+  test.each([{buyer_drill:'other'},{page:'0'},{page:'1e2'},{as_of:'invalid'},{as_of:'2026-10-21T00:00:00.000Z'},{period:'15'},{simulation_scope:'wrong'}])('refuse %j avant SQL',async overrides=>{
+    db.query.mockReset();
+    await expect(commerce.buildBuyerDrill({...query,...overrides},{now})).rejects.toMatchObject({status:400,code:'invalid_buyer_drill'});
+    expect(db.query).not.toHaveBeenCalled();
+  });
+});

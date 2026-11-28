@@ -468,6 +468,126 @@
     return card.section;
   }
 
+  const BUYER_METRICS = Object.freeze([
+    ['paid_buyers','Acheteurs payants'],
+    ['repeat_paid_buyers','Acheteurs récurrents'],
+  ]);
+
+  function buyerDrillUrl(payload, kind, page, endpoint) {
+    const period = payload?.period_definition;
+    const count = payload?.buyer_cohort?.[kind];
+    if (!BUYER_METRICS.some(([key])=>key===kind) || !Number.isSafeInteger(count) || count<0
+        || !Number.isSafeInteger(page) || page<1 || !period?.from || !period?.to
+        || ![7,30,90].includes(Number(payload.period)) || !endpoint) return null;
+    const params = new URLSearchParams({period:String(payload.period),buyer_drill:kind,as_of:period.to,page:String(page)});
+    if (payload.simulation?.scope) params.set('simulation_scope',payload.simulation.scope);
+    return endpoint + '?' + params.toString();
+  }
+
+  function matchesBuyerDrill(payload, kind, page, result) {
+    const total = payload?.buyer_cohort?.[kind];
+    const p = result?.pagination;
+    const period = payload?.period_definition;
+    const other = result?.period_definition;
+    const minOrders = kind === 'repeat_paid_buyers' ? 2 : 1;
+    return Number.isSafeInteger(total) && total>=0 && result?.kind===kind
+      && result.scope?.mode===payload.scope?.mode && result.scope?.market?.code===payload.scope?.market?.code
+      && (result.simulation?.scope||null)===(payload.simulation?.scope||null)
+      && other?.from===period?.from && other?.to===period?.to && other?.timezone===period?.timezone
+      && Number(result.period)===Number(payload.period)
+      && p?.total===total && p.page===page && p.page_size===25 && p.total_pages===Math.ceil(total/25)
+      && Array.isArray(result.accounts) && result.accounts.length===Math.min(25,Math.max(0,total-(page-1)*25))
+      && result.accounts.every(row=>Number.isSafeInteger(row.paid_orders)&&row.paid_orders>=minOrders
+        && typeof row.latest_order_reference==='string'&&row.latest_order_reference.length>0);
+  }
+
+  function renderBuyerCohort(doc, payload, options, base) {
+    const cohort=payload?.buyer_cohort;
+    if (!cohort) return null;
+    const host=doc.createElement('section');
+    host.className='kmc-commerce-buyer-cohort';
+    host.setAttribute('data-buyer-cohort','');
+    host.appendChild(text(doc,'h3','kmc-commerce-flow-title','Acheteurs identifiés'));
+    host.appendChild(text(doc,'p','kmc-decision-dashboard-section-copy',
+      'Comptes distincts ayant payé une commande créée sur la période ; récurrents : au moins deux commandes éligibles sur cette même période.'));
+    if (cohort.completeness==='partial') host.appendChild(text(doc,'p','kmc-decision-dashboard-section-copy',
+      String(cohort.unidentified_paid_orders)+' commande(s) payée(s) sans compte identifié : exclues du nombre d’acheteurs.'));
+    if (cohort.completeness==='unknown') host.appendChild(text(doc,'p','kmc-decision-dashboard-section-copy','Population non déterminée.'));
+    const strip=doc.createElement('div');
+    strip.className='kmc-commerce-buyer-metrics';
+    const panel=doc.createElement('div');
+    panel.className='kmc-commerce-buyer-detail';
+    panel.setAttribute('aria-live','polite');
+    panel.hidden=true;
+    let seq=0,active=null;
+    const buttons=[];
+    const close=()=>{
+      seq++;active=null;panel.hidden=true;panel.replaceChildren();
+      buttons.forEach(button=>button.setAttribute('aria-expanded','false'));
+    };
+    const endpoint=options.buyerEndpoint;
+    const fetchFn=options.fetch;
+    async function load(kind,page,button) {
+      const url=buyerDrillUrl(payload,kind,page,endpoint);
+      if (!url || typeof fetchFn!=='function') return;
+      const request=++seq;active=kind;
+      buttons.forEach(item=>item.setAttribute('aria-expanded',item===button?'true':'false'));
+      panel.hidden=false;panel.replaceChildren();
+      const heading=text(doc,'h4','kmc-commerce-flow-title',BUYER_METRICS.find(([key])=>key===kind)[1]);
+      panel.appendChild(heading);
+      const dismiss=text(doc,'button','kmc-commerce-buyer-close','Fermer');
+      dismiss.type='button';dismiss.addEventListener('click',close);panel.appendChild(dismiss);
+      const content=doc.createElement('div');
+      content.appendChild(text(doc,'p','kmc-decision-dashboard-section-copy','Chargement…'));
+      panel.appendChild(content);
+      try {
+        const response=await fetchFn(url,{method:'GET',credentials:'include',headers:{Accept:'application/json'}});
+        if (!response.ok) throw new Error('buyer_drill_read_failed');
+        const result=await response.json();
+        if (request!==seq || !host.isConnected) return;
+        content.replaceChildren();
+        if (!matchesBuyerDrill(payload,kind,page,result)) {
+          content.appendChild(text(doc,'p','kmc-decision-dashboard-section-copy','Population modifiée ou non réconciliée. Actualisez Commerce avant de consulter le détail.'));
+          return;
+        }
+        content.appendChild(text(doc,'p','kmc-decision-dashboard-section-copy',
+          result.pagination.total+' compte(s) · même période et périmètre que l’indicateur.'));
+        const list=doc.createElement('ol');
+        list.className='kmc-commerce-buyer-list';
+        result.accounts.forEach(row=>{
+          const item=doc.createElement('li');
+          const copy=text(doc,'span','',row.paid_orders+' commande(s) payée(s) · dernière commande : ');
+          item.appendChild(copy);
+          const ref=text(doc,'span','kmc-commerce-buyer-reference',row.latest_order_reference);
+          item.appendChild(ref);list.appendChild(item);
+        });
+        content.appendChild(list);
+        if (!result.accounts.length) content.appendChild(text(doc,'p','kmc-decision-dashboard-section-copy','Aucun compte dans cette population.'));
+        const paging=doc.createElement('div');paging.className='kmc-commerce-buyer-pagination';
+        const previous=text(doc,'button','','Précédent');previous.type='button';previous.disabled=page<=1;
+        previous.addEventListener('click',()=>load(kind,page-1,button));
+        const next=text(doc,'button','','Suivant');next.type='button';next.disabled=page>=result.pagination.total_pages;
+        next.addEventListener('click',()=>load(kind,page+1,button));
+        paging.appendChild(previous);
+        paging.appendChild(text(doc,'span','',result.pagination.total_pages ? page+' / '+result.pagination.total_pages : '0 / 0'));
+        paging.appendChild(next);content.appendChild(paging);
+      } catch (_error) {
+        if (request!==seq || !host.isConnected) return;
+        content.replaceChildren(text(doc,'p','kmc-decision-dashboard-section-copy','Détail indisponible ou accès refusé. Aucun résultat supposé.'));
+      }
+    }
+    BUYER_METRICS.forEach(([kind,label])=>{
+      const count=cohort[kind];
+      const known=Number.isSafeInteger(count)&&count>=0;
+      const button=text(doc,'button','kmc-commerce-buyer-metric',label+' · '+(known?base.formatNumber(count,0):'—'));
+      button.type='button';button.setAttribute('data-buyer-drill',kind);button.setAttribute('aria-expanded','false');
+      button.disabled=!known||!buyerDrillUrl(payload,kind,1,endpoint)||typeof fetchFn!=='function';
+      button.addEventListener('click',()=>active===kind?close():load(kind,1,button));
+      buttons.push(button);strip.appendChild(button);
+    });
+    host.appendChild(strip);host.appendChild(panel);return host;
+  }
+
   function render(rootNode, payload, options, base, decisionUi) {
     const doc = options.document;
     const ui = options.ui;
@@ -527,6 +647,9 @@
       activity.body.appendChild(text(doc, 'p', 'kmc-decision-dashboard-section-copy kmc-commerce-collected',
         collectedText(payload, base)));
     }
+
+    const buyerCohort = renderBuyerCohort(doc,payload,options,base);
+    if (buyerCohort) activity.body.appendChild(buyerCohort);
 
     const flowTitle = text(doc, 'h3', 'kmc-commerce-flow-title', 'Parcours des commandes');
     activity.body.appendChild(flowTitle);
@@ -614,6 +737,7 @@
             result: render(options.root, result.payload, {
               ...options,
               period: result.period,
+              buyerEndpoint: result.endpoint,
               onPeriodChange: rerender,
             }, base, decisionUi),
             decisionFirst: true,
@@ -656,6 +780,9 @@
     profitabilityItems,
     funnelStages,
     trust,
+    buyerDrillUrl,
+    matchesBuyerDrill,
+    renderBuyerCohort,
     render,
     enhance,
   });
