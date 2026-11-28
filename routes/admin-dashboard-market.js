@@ -207,7 +207,9 @@ router.get(
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
-      const payload = await projectCommerceMarketPayload(await commerce.buildCommerce(req.query, { market: req.dashboardMarket }), req.dashboardMarket);
+      const payload = Object.prototype.hasOwnProperty.call(req.query,'buyer_drill')
+        ? await commerce.buildBuyerDrill(req.query,{market:req.dashboardMarket})
+        : await projectCommerceMarketPayload(await commerce.buildCommerce(req.query, { market: req.dashboardMarket }), req.dashboardMarket);
       res.json(payload);
     } catch (err) {
       log.error({ err, market: req.dashboardMarket && req.dashboardMarket.code }, '[admin-dashboard-market] commerce market error');
@@ -313,7 +315,9 @@ router.get(
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
-      const payload = await commerce.buildCommerce(req.query);
+      const payload = Object.prototype.hasOwnProperty.call(req.query,'buyer_drill')
+        ? await commerce.buildBuyerDrill(req.query)
+        : await commerce.buildCommerce(req.query);
       res.json(payload);
     } catch (err) {
       log.error({ err }, '[admin-dashboard-market] commerce global error');

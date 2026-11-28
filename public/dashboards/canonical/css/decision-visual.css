@@ -999,3 +999,21 @@ body.kmc-shell-v4 .kmc-param-line > .kmc-workspace-action {
 .kmc-market-prompt-choice { min-height: 36px; padding: 6px 16px; border: 1px solid #6b4fd8; border-radius: 8px; background: #fff; color: #4b32b0; font-weight: 600; cursor: pointer; }
 .kmc-market-prompt-choice:hover { background: #f3efff; }
 .kmc-recette-banner { margin: 0 0 16px; padding: 10px 16px; border: 1px solid #c9bff0; border-radius: 10px; background: #f3f0fc; color: #3b2f86; font-size: .9rem; line-height: 1.4; }
+
+/* Commerce V5.4 : compteurs de cohortes et détail à la demande. */
+.kmc-commerce-buyer-cohort { margin: 12px 0; min-width: 0; }
+.kmc-commerce-buyer-metrics { display: flex; flex-wrap: wrap; gap: 8px; }
+.kmc-commerce-buyer-metric, .kmc-commerce-buyer-detail button {
+  background: #fff; color: #172b49; font: inherit; font-size: 12px;
+  font-weight: 600; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer;
+}
+.kmc-commerce-buyer-metric[aria-expanded="true"] { border-color: #4f67ff; }
+.kmc-commerce-buyer-cohort button:focus-visible { outline: 2px solid #4f67ff; outline-offset: 2px; }
+.kmc-commerce-buyer-cohort button:disabled { opacity: .55; cursor: default; }
+.kmc-commerce-buyer-detail { padding: 12px; margin-top: 8px; border: 1px solid #dfe5ec; border-radius: 8px; background: #fff; }
+.kmc-commerce-buyer-detail[hidden] { display: none; }
+.kmc-commerce-buyer-close { float: right; }
+.kmc-commerce-buyer-list { padding-inline-start: 24px; font-size: 12px; }
+.kmc-commerce-buyer-list li { padding: 6px 0; border-bottom: 1px solid #e2e8f0; overflow-wrap: anywhere; }
+.kmc-commerce-buyer-reference { font-weight: 600; }
+.kmc-commerce-buyer-pagination { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px; font-size: 12px; }

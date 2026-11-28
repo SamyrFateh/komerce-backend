@@ -98,3 +98,60 @@ for (const [label, viewport] of [['1440', { width: 1440, height: 900 }], ['390',
     });
   });
 }
+
+test('Commerce : drill acheteurs paginé, périmètre figé et refus de population modifiée', async ({page})=>{
+  await page.setViewportSize({width:1280,height:900});
+  await page.setContent('<main id="root"></main>');
+  await page.addStyleTag({path:path.join(CANONICAL,'css','decision-visual.css')});
+  await page.evaluate(()=>{window.module={exports:{}};});
+  await page.addScriptTag({path:path.join(CANONICAL,'js','commerce-decision.js')});
+  await page.evaluate(()=>{
+    const period={from:'2026-10-13T23:00:00.000Z',to:'2026-10-20T12:00:00.000Z',timezone:'Africa/Douala'};
+    const scope={mode:'market',market:{code:'CM'}};
+    const simulation={scope:'RCT1'};
+    const payload={period:7,period_definition:period,scope,simulation,buyer_cohort:{paid_buyers:26,repeat_paid_buyers:1,completeness:'complete'}};
+    window.buyerCalls=[];window.buyerChanged=false;
+    const fetch=async(url,opts)=>{
+      const p=new URL(url,'https://komerce.test').searchParams;
+      const kind=p.get('buyer_drill');const pg=Number(p.get('page'));
+      window.buyerCalls.push({url,method:opts.method});
+      const total=kind==='repeat_paid_buyers'?1:26;
+      const accounts=Array.from({length:Math.min(25,Math.max(0,total-(pg-1)*25))},(_,i)=>({
+        paid_orders:kind==='repeat_paid_buyers'?2:1,latest_order_reference:'K-'+(i+1+(pg-1)*25)
+      }));
+      return {ok:true,json:async()=>({kind,period:7,period_definition:period,scope,simulation,
+        pagination:{page:pg,page_size:25,total:window.buyerChanged?total+1:total,total_pages:Math.ceil(total/25)},accounts})};
+    };
+    const host=window.module.exports.renderBuyerCohort(document,payload,{fetch,buyerEndpoint:'/api/admin/dashboard/commerce/market/CM'},{formatNumber:String});
+    document.getElementById('root').appendChild(host);
+  });
+  const paid=page.locator('[data-buyer-drill="paid_buyers"]');
+  const repeat=page.locator('[data-buyer-drill="repeat_paid_buyers"]');
+  const detail=page.locator('.kmc-commerce-buyer-detail');
+  await expect(detail).toBeHidden();
+  await expect(paid).toContainText('26');
+  await paid.click();
+  await expect(detail.locator('li')).toHaveCount(25);
+  await detail.getByRole('button',{name:'Suivant'}).click();
+  await expect(detail.locator('li')).toHaveCount(1);
+  await expect(detail).toContainText('K-26');
+  await expect(detail.getByRole('button',{name:'Suivant'})).toBeDisabled();
+  await repeat.click();
+  await expect(detail.locator('li')).toHaveCount(1);
+  await expect(detail).toContainText('2 commande(s) payée(s)');
+  await detail.getByRole('button',{name:'Fermer'}).click();
+  await expect(detail).toBeHidden();
+  await page.evaluate(()=>{window.buyerChanged=true;});
+  await paid.click();
+  await expect(detail).toContainText('Population modifiée ou non réconciliée');
+  await expect(detail.locator('li')).toHaveCount(0);
+  const calls=await page.evaluate(()=>window.buyerCalls);
+  expect(calls).toHaveLength(4);
+  for(const call of calls){
+    const url=new URL(call.url,'https://komerce.test');
+    expect(url.pathname).toBe('/api/admin/dashboard/commerce/market/CM');
+    expect(url.searchParams.get('as_of')).toBe('2026-10-20T12:00:00.000Z');
+    expect(url.searchParams.get('simulation_scope')).toBe('RCT1');
+    expect(call.method).toBe('GET');
+  }
+});
