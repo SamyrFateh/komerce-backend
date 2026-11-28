@@ -114,7 +114,7 @@ async function listForAgent(user, query = {}) {
        FROM signals s
       WHERE ${SCOPE_SQL}
       ORDER BY CASE s.severity WHEN 'urgent' THEN 1 WHEN 'critical' THEN 2 WHEN 'warning' THEN 3 ELSE 4 END,
-               s.created_at DESC
+               s.created_at DESC, s.signal_ref ASC
       LIMIT $4 OFFSET $5`,
     [ownerRoles, relaisId, marketIds, limit, offset]
   );
@@ -132,6 +132,7 @@ async function listForAgent(user, query = {}) {
     owner_roles: ownerRoles,
     relay_bound: Boolean(relaisId),
     total,
+    pagination: {total, limit, offset},
     summary: { urgent: Number(count.urgent) || 0, warning: Number(count.warning) || 0, info: Number(count.info) || 0, total_active: total },
     signals: rows.map(publicSignal),
   };

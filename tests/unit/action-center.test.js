@@ -17,6 +17,28 @@ function read(relative) {
 }
 
 describe('Canonical Action Center — presentation contract', () => {
+  test('le choix marché de la vue groupe ouvre uniquement un endpoint marché autorisé',async()=>{
+    const context={access:{mode:'global',allowedMarkets:['CM','CG']}};
+    const scope=await actionCenter.resolveRuntimeScope({adminContext:context,location:{href:'https://komerce.co/admin/action-center?market=CM&severity=critical'}});
+    expect(scope).toMatchObject({mode:'market',marketCode:'CM',loadEndpoint:'/api/admin/action-center/market/CM?severity=critical'});
+    expect(actionCenter.selectedMarketCode(context,{href:'https://komerce.co/admin/action-center?market=DJ'})).toBeNull();
+    expect(actionCenter.selectedMarketCode(context,{href:'https://komerce.co/admin/action-center'})).toBeNull();
+  });
+  test('pagination et famille sont portées par le serveur et restaurées depuis le retour',()=>{
+    const loc={href:'https://komerce.co/admin/action-center?market=CM&family=ops&offset=100'};
+    expect(actionCenter.readListContext(loc)).toEqual({domain:'ops',offset:100});
+    expect(actionCenter.listEndpoint('/api/admin/action-center/market/CM?severity=critical','ops',100,'market')).toBe('/api/admin/action-center/market/CM?severity=critical&family=ops&offset=100');
+    expect(actionCenter.listEndpoint('/api/agent/action-center','ops',100,'agent')).toBe('/api/agent/action-center?offset=100');
+  });
+  test('un refresh remplace le handler précédent : une seule mutation au clic',()=>{
+    const root={addEventListener:jest.fn(),removeEventListener:jest.fn()};
+    actionCenter.bind(root,{});
+    const old=root.__actionCenterClickHandler;
+    actionCenter.bind(root,{});
+    expect(root.removeEventListener).toHaveBeenCalledWith('click',old);
+    expect(root.__actionCenterClickHandler).not.toBe(old);
+    expect(root.addEventListener).toHaveBeenLastCalledWith('click',root.__actionCenterClickHandler);
+  });
   test('conserve la classification métier reçue du serveur sans recalcul', () => {
     expect(actionCenter.severityLabel('urgent')).toBe('Urgent');
     expect(actionCenter.severityLabel('critical')).toBe('Critique');

@@ -215,7 +215,7 @@ router.use(requireRole(['admin']), requireDecisionSignalGlobalAuthority);
 router.get('/', async (req, res, next) => {
   try {
     res.set('Cache-Control', 'no-store');
-    res.json(await workspace.buildWorkspace(req.query || {}));
+    res.json(await workspace.buildWorkspace(req.query || {}, { canManage: await hasDecisionSignalGlobalAuthority(req.user.id) }));
   } catch (error) { handleError(error, res, next); }
 });
 

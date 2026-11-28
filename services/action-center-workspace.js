@@ -255,13 +255,14 @@ async function buildScopedWorkspace({ market = null, filters = {}, canManage = t
     },
     summary: summaryFromStats(stats),
     work_queues: workQueues(list.signals),
+    work_queues_basis: 'visible_page',
     signals: list.signals.map(signal => publicSignal(signal, entityMaps, canManage)),
     pagination: { total: list.total, limit: list.limit, offset: list.offset },
   };
 }
 
-async function buildWorkspace(filters = {}) {
-  return buildScopedWorkspace({ filters });
+async function buildWorkspace(filters = {}, { canManage = true } = {}) {
+  return buildScopedWorkspace({ filters, canManage });
 }
 
 async function buildMarketWorkspace(market, filters = {}, { canManage = true } = {}) {

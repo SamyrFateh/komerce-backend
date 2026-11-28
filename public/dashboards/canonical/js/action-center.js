@@ -70,13 +70,14 @@
   function selectedMarketCode(adminContext, locationLike) {
     const access = adminContext && adminContext.access ? adminContext.access : {};
     const allowed = Array.isArray(access.allowedMarkets) ? access.allowedMarkets.map(code => String(code).toUpperCase()) : [];
-    if (!allowed.length || access.mode !== 'market') return null;
+    if (!allowed.length || !['market','global'].includes(access.mode)) return null;
 
     let requested = null;
     try {
       if (locationLike && locationLike.href) requested = new URL(locationLike.href).searchParams.get('market');
     } catch (_) {}
     if (requested && allowed.includes(String(requested).toUpperCase())) return String(requested).toUpperCase();
+    if (access.mode === 'global') return null;
 
     const preferred = access.defaultMarket ? String(access.defaultMarket).toUpperCase() : null;
     if (preferred && allowed.includes(preferred)) return preferred;
@@ -105,7 +106,7 @@
     const marketCode = selectedMarketCode(adminContext, locationLike);
     const severity = severityFilterFromLocation(locationLike);
     const query = severity ? `?severity=${encodeURIComponent(severity)}` : '';
-    if (adminContext && adminContext.access && adminContext.access.mode === 'market') {
+    if (marketCode || (adminContext && adminContext.access && adminContext.access.mode === 'market')) {
       if (!marketCode) {
         const error = new Error('Aucun Market ID autorisé pour le Centre d’actions');
         error.code = 'action_center_market_context_missing';
@@ -312,11 +313,11 @@
     select.addEventListener('change', () => { if (state.onDomain) state.onDomain(select.value); });
     bar.appendChild(select);
     const markets = state.markets || [];
-    if (markets.length > 1) {
+    if (markets.length) {
       const market = doc.createElement('select');
       market.setAttribute('aria-label', 'Filtrer par marché');
       market.dataset.actionCenterMarket = '';
-      [['', 'Tous les marchés'], ...markets.map(code => [code, code])].forEach(([value, label]) => {
+      [['', 'Signaux centraux'], ...markets.map(code => [code, code])].forEach(([value, label]) => {
         const option = text(doc, 'option', '', label);
         option.value = value;
         if (value === (state.market || '')) option.selected = true;
@@ -325,7 +326,7 @@
       market.addEventListener('change', () => { if (state.onMarket) state.onMarket(market.value); });
       bar.appendChild(market);
     }
-    bar.appendChild(text(doc, 'span', 'kmc-action-signal-age', 'Se ferme automatiquement quand la cause disparaît.'));
+    bar.appendChild(text(doc, 'span', 'kmc-action-signal-age', 'Se ferme automatiquement quand la cause disparaît. Les contrôles manuels exigent une preuve.'));
     rootNode.appendChild(bar);
 
     const grid = doc.createElement('div');
@@ -338,7 +339,7 @@
       const list = rows.filter(pick);
       const col = doc.createElement('section');
       col.className = `kmc-action-column is-${tone}`;
-      col.appendChild(text(doc, 'h2', 'kmc-action-column-title', `${title} · ${list.length}`));
+      col.appendChild(text(doc, 'h2', 'kmc-action-column-title', `${title} · ${list.length} sur cette page`));
       if (!list.length) col.appendChild(text(doc, 'div', 'kmc-workspace-empty', 'Rien à traiter.'));
       else renderSignalGroups(doc, col, list);
       grid.appendChild(col);
@@ -365,9 +366,10 @@
   }
 
   function bind(rootNode, context) {
-    rootNode.addEventListener('click', async event => {
+    if (rootNode.__actionCenterClickHandler) rootNode.removeEventListener('click',rootNode.__actionCenterClickHandler);
+    const handler = async event => {
       const button = event.target.closest('[data-action-center-action]');
-      if (!button) return;
+      if (!button || button.disabled || rootNode.__dashboardViewIdentity !== context.identity) return;
       const action = button.dataset.actionCenterAction;
       const signalRef = button.dataset.signalRef;
 
@@ -395,7 +397,9 @@
         }
         await runAction(context, button, `${signalPath}/resolve`, { note }, 'Signal résolu.');
       }
-    });
+    };
+    rootNode.__actionCenterClickHandler=handler;
+    rootNode.addEventListener('click',handler);
   }
 
   // Un transitaire sans affectation marché ne peut pas voir les signaux.
@@ -419,6 +423,52 @@
     return true;
   }
 
+  function readListContext(loc) {
+    try {
+      const q=new URL(loc.href).searchParams;
+      const domain=q.get('family')||'';
+      const offset=Number(q.get('offset')||0);
+      return {domain:Object.hasOwn(FAMILY_LABELS,domain)?domain:'',offset:Number.isSafeInteger(offset)&&offset>=0&&offset<=1000000?offset:0};
+    } catch (_) { return {domain:'',offset:0}; }
+  }
+
+  function listEndpoint(endpoint,domain,offset,mode) {
+    const [path,search='']=endpoint.split('?');
+    const q=new URLSearchParams(search);
+    if(mode!=='agent'&&Object.hasOwn(FAMILY_LABELS,domain))q.set('family',domain);
+    if(offset>0)q.set('offset',String(offset));
+    const query=q.toString();
+    return path+(query?'?'+query:'');
+  }
+
+  function syncListContext(context) {
+    try {
+      const url=new URL(globalThis.location.href);
+      if(context.domain)url.searchParams.set('family',context.domain);else url.searchParams.delete('family');
+      if(context.offset)url.searchParams.set('offset',String(context.offset));else url.searchParams.delete('offset');
+      globalThis.history.replaceState(globalThis.history.state,'',url.pathname+url.search+url.hash);
+    } catch (_) {}
+  }
+
+  function renderPagination(rootNode,context,payload) {
+    const p=payload?.pagination;
+    if(!p||!Number.isSafeInteger(p.total)||!Number.isSafeInteger(p.limit)||p.limit<1||!Number.isSafeInteger(p.offset)||p.offset<0)return;
+    const count=(payload.signals||[]).length;
+    if(p.total<=p.limit&&p.offset===0)return;
+    const doc=context.document;
+    const bar=doc.createElement('nav');
+    bar.className='kmc-workspace-nav';
+    bar.setAttribute('aria-label','Pagination des exceptions');
+    bar.appendChild(text(doc,'span','kmc-action-signal-age',count?String(p.offset+1)+'–'+String(p.offset+count)+' / '+String(p.total):'Page vide · '+String(p.total)+' résultat(s)'));
+    for(const [label,offset,disabled] of [['Précédent',Math.max(0,p.offset-p.limit),p.offset===0],['Suivant',p.offset+p.limit,p.offset+count>=p.total||count===0]]) {
+      const button=text(doc,'button','kmc-workspace-action',label);
+      button.type='button';button.disabled=disabled;
+      button.addEventListener('click',()=>{context.offset=offset;syncListContext(context);context.reload();});
+      bar.appendChild(button);
+    }
+    rootNode.appendChild(bar);
+  }
+
   async function mount(options) {
     const runtime = isAgentUser(options.user)
       ? { mode: 'agent', marketCode: null, severity: null, endpoint: AGENT_ENDPOINT, loadEndpoint: AGENT_ENDPOINT }
@@ -435,13 +485,15 @@
       scopeMode: runtime.mode,
       marketCode: runtime.marketCode,
       adminContext: runtime.adminContext || null,
-      domain: '',
+      domain: readListContext(options.location || globalThis.location).domain,
+      offset: readListContext(options.location || globalThis.location).offset,
       reload: null,
     };
 
     const rootNode = context.root;
     const identity = {};
     rootNode.__dashboardViewIdentity = identity;
+    context.identity=identity;
     let requestSeq = 0;
     const workspaceBusy = () => {
       const focused = context.document.activeElement;
@@ -453,7 +505,7 @@
       const currentRequest = ++requestSeq;
       let payload;
       try {
-        payload = await jsonRequest(context.fetch, context.loadEndpoint);
+        payload = await jsonRequest(context.fetch, listEndpoint(context.loadEndpoint, context.domain, context.offset, context.scopeMode));
       } catch (error) {
         if (currentRequest !== requestSeq) return {};
         if (renderAgentScopeMissing(context, error)) return { blocked: true };
@@ -479,6 +531,7 @@
       rootNode.appendChild(context.ui.KpiStrip.create(metricItems(payload.summary)).element);
       if (context.scopeMode === 'agent') {
         renderAgentSignals(rootNode, context.ui, context.document, payload);
+        renderPagination(rootNode,context,payload);
         bind(rootNode, context);
         return payload;
       }
@@ -488,14 +541,20 @@
       const markets = ((context.adminContext && context.adminContext.access && context.adminContext.access.allowedMarkets) || []).map(String);
       renderFamilies(rootNode, context.ui, context.document, payload, {
         domain: context.domain || '',
-        markets: context.scopeMode === 'global' ? markets : [],
+        markets: context.adminContext?.access?.mode === 'global' ? markets : [],
         market: context.marketCode || '',
-        onDomain: value => { context.domain = value; load(); },
+        onDomain: value => { context.domain = value; context.offset=0; syncListContext(context); load(); },
         onMarket: value => {
           const loc = globalThis.location;
-          if (loc) loc.href = value ? `/admin/action-center?market=${encodeURIComponent(value)}` : '/admin/action-center';
+          if (loc) {
+            const url=new URL(loc.href);
+            if(value) url.searchParams.set('market',value); else url.searchParams.delete('market');
+            url.searchParams.delete('offset');
+            loc.href=url.pathname+url.search+url.hash;
+          }
         },
       });
+      renderPagination(rootNode,context,payload);
       bind(rootNode, context);
       return payload;
     }
@@ -520,5 +579,8 @@
     severityLabel,
     selectedMarketCode,
     resolveRuntimeScope,
+    readListContext,
+    listEndpoint,
+    bind,
   };
 });
