@@ -268,6 +268,27 @@ test.describe('Operations — logistics control board', () => {
     expect(new URL(page.url()).searchParams.has('health')).toBe(false);
   });
 
+  test('le manifeste distingue le total serveur de la population affichée', async ({ page }) => {
+    const updated=JSON.parse(JSON.stringify(payload));
+    const shown=Object.values(updated.control_chain.by_stage).reduce((sum,rows)=>sum+rows.length,0);
+    updated.control_chain.population={total:shown+12,shown,limit:250,complete:false,clock:'current_active_orders',simulation_scope:'real_only'};
+    await page.route(`${ORIGIN}/api/admin/dashboard/operations`, route=>route.fulfill({contentType:'application/json',body:JSON.stringify(updated)}));
+    await page.locator('.kmc-operations-refresh').click();
+    const label=page.locator('.kmc-operations-process-caption');
+    await expect(label).toHaveAttribute('data-population-state','partial');
+    await expect(label).toContainText(shown+' sur '+(shown+12)+' commandes actives');
+    const badges=await page.locator('[data-phase-health]').allTextContents();
+    expect(badges.reduce((sum,value)=>sum+Number(value),0)).toBe(shown);
+    updated.control_chain.population.total=shown;
+    updated.control_chain.population.complete=true;
+    await page.locator('.kmc-operations-refresh').click();
+    await expect(label).toHaveAttribute('data-population-state','complete');
+    updated.control_chain.population.shown=shown+1;
+    await page.locator('.kmc-operations-refresh').click();
+    await expect(label).toHaveAttribute('data-population-state','unknown');
+    await expect(label).toContainText('total non déterminé');
+  });
+
   test('une phase absente ne produit ni zéro, ni drill, ni santé globale inventée', async ({ page }) => {
     const partial=JSON.parse(JSON.stringify(payload));
     delete partial.control_chain.by_stage.CUSTOMS;
@@ -459,6 +480,45 @@ test.describe('Operations — logistics control board', () => {
     await expect(transport.locator('.kmc-control-order-issue')).toHaveText('Suivi transport à vérifier');
     await expect(transport.locator('.kmc-control-order-summary')).toContainText('depuis 8 j');
     await expect(transport).not.toContainText('in_transit');
+  });
+
+  test('le détail paginé retrouve toutes les commandes et refuse une population périmée', async ({ page }) => {
+    const token='a'.repeat(32);
+    const all=Array.from({length:26},(_,i)=>({...order('K-PAGE-'+(i+1),'RED'),stage:'ORDER'}));
+    const counts=Object.fromEntries(stages.map(([key])=>[key,{GREEN:0,ORANGE:0,RED:0,UNKNOWN:0}]));
+    counts.ORDER.RED=26;
+    const empty=Object.fromEntries(stages.map(([key])=>[key,[]]));
+    const model=JSON.parse(JSON.stringify(payload));
+    model.control_chain={stages:payload.control_chain.stages,by_stage:{...empty,ORDER:all.slice(0,1)},
+      population:{total:26,shown:1,limit:1,complete:false,clock:'current_active_orders',simulation_scope:'real_only'},
+      population_census:{token,stage_counts:counts}};
+    let reject=false;
+    await page.route('**/api/admin/dashboard/operations**', async route=>{
+      const query=new URL(route.request().url()).searchParams;
+      if(!query.has('chain_drill')) return route.fulfill({contentType:'application/json',body:JSON.stringify(model)});
+      if(reject) return route.fulfill({status:409,contentType:'application/json',body:JSON.stringify({code:'control_chain_population_changed'})});
+      expect(query.get('chain_drill')).toBe('ORDER');
+      expect(query.get('health')).toBe('RED');
+      expect(query.get('token')).toBe(token);
+      const n=Number(query.get('page'));
+      const rows=all.slice((n-1)*25,n*25);
+      return route.fulfill({contentType:'application/json',body:JSON.stringify({stages:model.control_chain.stages,
+        by_stage:{...empty,ORDER:rows},orders:rows,drill:{phase:'ORDER',health:'RED',page:n,page_size:25,total:26,token}})});
+    });
+    await page.locator('.kmc-operations-refresh').click();
+    const counter=page.locator('[data-compact-phase="ORDER"] [data-phase-health="RED"]');
+    await expect(counter).toHaveText('26');
+    await counter.click();
+    await expect(page.locator('[data-chain-pagination]')).toContainText('1–25 sur 26 commandes');
+    await expect(page.locator('.kmc-control-order')).toHaveCount(25);
+    await page.getByRole('button',{name:'Suivant'}).click();
+    await expect(page.locator('[data-chain-pagination]')).toContainText('26–26 sur 26 commandes');
+    await expect(page.locator('.kmc-control-order')).toHaveCount(1);
+    await expect(page.locator('.kmc-control-order')).toContainText('K-PAGE-26');
+    reject=true;
+    await page.getByRole('button',{name:'Précédent'}).click();
+    await expect(page.locator('#operations-control-chain')).toContainText('Population modifiée ou détail indisponible');
+    await expect(page.locator('.kmc-control-order')).toHaveCount(0);
   });
 
   test('capture de revue 1672×941', async ({ page }, testInfo) => {

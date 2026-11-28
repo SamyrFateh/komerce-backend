@@ -25,6 +25,13 @@ test('Relais live : KPI, file et détail dans une seule vue, mêmes endpoints, l
   expect(src).toContain("relayViewer=options?.user||null");
 });
 
+test('Relais conserve le marché de navigation et verrouille les doubles soumissions incident',()=>{
+  expect(src).toContain('market:currentRelayMarket()');
+  expect(src).toContain('market:v4Market(p)');
+  expect(src).toContain("if(form.dataset.relayIncidentPending==='true')return;");
+  expect(src).toContain('delete form.dataset.relayIncidentPending');
+});
+
 test('Relais canonique : lecteur marché sans geste physique, signalement conditionné par capacité',()=>{
   expect(src).toContain("relayViewer?.role==='market_operator'");
   expect(src).toContain("includes('hub.supervise')");

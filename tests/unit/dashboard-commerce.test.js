@@ -372,6 +372,18 @@ describe('dashboard-commerce', () => {
     expect(signals.every(signal => signal.lifecycle?.mode === 'projection_only')).toBe(true);
   });
 
+  test('recette : aucun signal de stock ou viabilité issu des référentiels réels',async()=>{
+    const market={id:'market-cm-id',code:'CM',currency:'XAF'};
+    const result=await commerce.buildCommerce({period:'7',simulation_scope:'RCT1'},{market,now:new Date('2026-08-24T12:00:00Z')});
+    expect(result.simulation.scope).toBe('RCT1');
+    expect(mockPricingMarketCorridor.buildMarketCorridor).not.toHaveBeenCalled();
+    expect(mockLocalStockDecision.getDecisionAvailabilityEvidence).not.toHaveBeenCalled();
+    expect(result.product_viability).toEqual([]);
+    expect(result.product_availability).toEqual([]);
+    expect(result.data_quality).toMatchObject({product_viability_basis:'simulation_unavailable',product_availability_basis:'simulation_unavailable'});
+    expect(result.decision_signals.some(s=>['sku_non_viable','best_seller_local_unavailable'].includes(s.kind))).toBe(false);
+  });
+
   test('projection globale n’invente aucun market_id, aucune viabilité locale ni disponibilité locale', async () => {
     const now = new Date('2026-08-24T12:00:00.000Z');
     const result = await commerce.buildCommerce({ period: '7' }, { now });
@@ -406,5 +418,68 @@ describe('dashboard-commerce', () => {
     reporting.customerCashSubtotal.mockClear();
     expect(await commerce.getCollectedFromJournal({simulation_scope:'RCT1'},null)).toEqual({available:false,reason:'simulation_excluded'});
     expect(reporting.customerCashSubtotal).not.toHaveBeenCalled();
+  });
+});
+
+describe('drill des acheteurs payants V5.4',()=>{
+  const now=new Date('2026-10-20T12:00:00Z');
+  const token='a'.repeat(32);
+  const query={period:'7',as_of:now.toISOString(),buyer_drill:'repeat_paid_buyers',page:'1',simulation_scope:'RCT1',population_token:token};
+  test('même prédicat, compte stable, pagination et absence de PII',async()=>{
+    db.query.mockReset().mockResolvedValue({rows:[{total:'1',population_token:token,order_count:2,latest_order_reference:'K-CM-1'}]});
+    const result=await commerce.buildBuyerDrill(query,{market:{id:'cm-id',code:'CM'},now});
+    const [sql,params]=db.query.mock.calls[0];
+    expect(sql).toContain("o.payment_status = 'paid'");
+    expect(sql).toContain("o.status NOT IN ('cancelled', 'refunded')");
+    expect(sql).toContain('FROM paid WHERE user_id IS NOT NULL GROUP BY user_id');
+    expect(sql).toContain('HAVING COUNT(*) >= 2');
+    expect(params).toEqual(['2026-10-13T23:00:00.000Z',now.toISOString(),'cm-id','RCT1',25,0]);
+    expect(result.pagination).toEqual({page:1,page_size:25,total:1,total_pages:1});
+    expect(result.accounts).toEqual([{paid_orders:2,latest_order_reference:'K-CM-1'}]);
+    expect(result.period_definition.to).toBe(now.toISOString());
+    expect(JSON.stringify(result)).not.toContain('cm-id');
+  });
+  test('page au-delà du dernier résultat conserve le total',async()=>{
+    db.query.mockReset().mockResolvedValue({rows:[{total:1,population_token:token,order_count:null,latest_order_reference:null}]});
+    const r=await commerce.buildBuyerDrill({...query,page:'2'},{now});
+    expect(r.pagination).toMatchObject({total:1,page:2,total_pages:1});
+    expect(r.accounts).toEqual([]);
+  });
+  test('refuse une composition changée même à cardinalité constante',async()=>{
+    db.query.mockReset().mockResolvedValue({rows:[{total:1,population_token:'b'.repeat(32),order_count:2,latest_order_reference:'K-CM-2'}]});
+    await expect(commerce.buildBuyerDrill(query,{now})).rejects.toMatchObject({status:409,code:'buyer_drill_population_changed'});
+  });
+  test.each([{population_token:'bad'},{page:['1']},{period:['7']},{buyer_drill:'other'},{page:'0'},{page:'1e2'},{as_of:'invalid'},{as_of:'2026-10-21T00:00:00.000Z'},{period:'15'},{simulation_scope:'wrong'}])('refuse %j avant SQL',async overrides=>{
+    db.query.mockReset();
+    await expect(commerce.buildBuyerDrill({...query,...overrides},{now})).rejects.toMatchObject({status:400,code:'invalid_buyer_drill'});
+    expect(db.query).not.toHaveBeenCalled();
+  });
+});
+
+describe('Pilotage utilise la vente canonique et la même frontière FX que Commerce',()=>{
+  const row={sales_kmf:'120000',basket_kmf:'10000',items_total:'12',paid_buyers:'8',repeat_paid_buyers:'3',unidentified_orders:'1'};
+  test('montant source, identité, projection groupe EUR et marché XAF',async()=>{
+    db.query.mockReset().mockResolvedValue({rows:[row]});
+    const project=jest.fn(async(source,market)=>({...source,value:market.currency==='EUR'?243.92:160000,unit:market.currency}));
+    const filters={market_id:'cm-id',from:'2026-11-01',simulation_scope:'RCT1'};
+    const group=await commerce.getPilotagePaidSales({},null,project);
+    expect(group).toMatchObject({key:'ca_encaisse',value:243.92,unit:'EUR',base_currency:'KMF',drill_to:null,data_quality:{metric_id:'commerce.paid_sales_wallet_included',cash_basis:false,fx_status:'GOVERNED_KMF_PROJECTION'}});
+    expect(project).toHaveBeenNthCalledWith(1,expect.objectContaining({value:120000,unit:'KMF',drill_to:null}),{currency:'EUR',minor_unit:2});
+    const cm={id:'cm-id',currency:'XAF',minor_unit:0};
+    expect(await commerce.getPilotagePaidSales(filters,cm,project)).toMatchObject({value:160000,unit:'XAF',data_quality:{items_total:12}});
+    expect(project).toHaveBeenNthCalledWith(2,expect.objectContaining({value:120000}),cm);
+    const [sql,params]=db.query.mock.calls[1];
+    expect(sql).toContain('o.wallet_applied_kmf');
+    expect(params).toEqual(['2026-11-01','cm-id','RCT1']);
+    expect(await commerce.getPilotagePaidSales({}, {currency:'KMF'}, project)).toMatchObject({value:120000,unit:'KMF',data_quality:{fx_status:'IDENTITY'}});
+    expect(project).toHaveBeenCalledTimes(2);
+  });
+  test('conversion manquante ou incohérente : aucun repli KMF ou faux zéro',async()=>{
+    db.query.mockReset().mockResolvedValue({rows:[row]});
+    const project=jest.fn().mockRejectedValueOnce(new Error('fx down')).mockResolvedValueOnce({value:120000,unit:'KMF'});
+    for(let i=0;i<2;i++)expect(await commerce.getPilotagePaidSales({},null,project)).toMatchObject({value:null,unit:'EUR',data_quality:{fx_status:'UNAVAILABLE',completeness:'provisional'}});
+    db.query.mockReset().mockResolvedValue({rows:[]});
+    expect(await commerce.getPilotagePaidSales({},null,project)).toMatchObject({value:null,unit:'EUR'});
+    expect(project).toHaveBeenCalledTimes(2);
   });
 });

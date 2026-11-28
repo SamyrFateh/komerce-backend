@@ -29,6 +29,7 @@ jest.mock('../../middleware/auth-guest', () => ({
 }));
 
 jest.mock('../../services/mobile-money/registry', () => ({
+  ...jest.requireActual('../../services/mobile-money/registry'),
   getAdapter: jest.fn((provider) => {
     if (provider !== 'kartapay') {
       const err = new Error('unknown provider');

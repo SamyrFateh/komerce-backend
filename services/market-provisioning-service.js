@@ -6,15 +6,16 @@
  * @criticality   high
  * @inputs        central admin, market identity, central referent, first operating lead
  * @outputs       PROVISIONING market, ACTIVE assignment, first lead invitation/membership, readiness
- * @depends       services/market-lifecycle-service.js, services/market-delegation-service.js, services/market-operator-provisioning.js, services/market-delegation-team-service.js, services/market-scope-projector.js, services/market-cash-control-policy-service.js, services/market-payment-provider-config-service.js, services/relais-mutation-service.js, services/central-authority.js, services/market-control-plane.js, services/economic-cost-reference-service.js
+ * @depends       services/user-mutation-service.js, utils/phone.js, bcryptjs, crypto, services/market-lifecycle-service.js, services/market-delegation-service.js, services/market-operator-provisioning.js, services/market-delegation-team-service.js, services/market-scope-projector.js, services/market-cash-control-policy-service.js, services/market-payment-provider-config-service.js, services/relais-mutation-service.js, services/central-authority.js, services/market-control-plane.js, services/economic-cost-reference-service.js
  * @used-by       routes/admin-market-control-plane.js
- * @db-read       catalog_global_access_grants, dashboard_global_access_grants, decision_signal_global_access_grants, pricing_global_access_grants, sourcing_global_access_grants, markets, market_operating_assignments
+ * @db-read       users, assignment_memberships, catalog_global_access_grants, dashboard_global_access_grants, decision_signal_global_access_grants, pricing_global_access_grants, sourcing_global_access_grants, markets, market_operating_assignments
  * @db-write      none
+ * @db-write-via:user-mutation-service users
  * @db-write-via:market-lifecycle-service markets
  * @db-write-via:market-delegation-service market_operating_assignments, assignment_capability_ceiling, market_delegation_audit
  * @db-write-via:market-delegation-team-service market_team_invitations, assignment_memberships, membership_capabilities
  * @db-write-via:market-cash-control-policy-service market_cash_control_policies
- * @db-write-via:market-payment-provider-config-service market_payment_providers
+ * @db-write-via:market-payment-provider-config-service market_payment_providers, market_central_collection_modes
  * @db-write-via:relais-mutation-service relais
  * @db-write-via:economic-cost-reference-service economic_cost_centers, economic_cost_families
  * @db-txn        caller-owned
@@ -24,23 +25,98 @@
  */
 'use strict';
 
-const { createProvisioningMarket, loadProvisioningMarket, transitionMarketLifecycle } = require('./market-lifecycle-service');
+const { createProvisioningMarket, loadProvisioningMarket, transitionMarketLifecycle, validateProvisioningCurrency, validateBusinessTimezone, completeProvisioningTimezone } = require('./market-lifecycle-service');
 const delegation = require('./market-delegation-service');
 const { targetCapabilitiesForScope } = require('./market-operator-provisioning');
 const { inviteTeamMember } = require('./market-delegation-team-service');
 const { projectAssignment } = require('./market-scope-projector');
 const { initializeProvisioningCashPolicy } = require('./market-cash-control-policy-service');
-const { configureProvisioningProvider } = require('./market-payment-provider-config-service');
+const { configureProvisioningProvider, configureCentralCollectionModes } = require('./market-payment-provider-config-service');
 const relaisMutation = require('./relais-mutation-service');
 const centralAuthority = require('./central-authority');
 const controlPlane = require('./market-control-plane');
 const {provisionCostReferences}=require('./economic-cost-reference-service');
+const { createAdminUser } = require('./user-mutation-service');
+const { normalizePhone } = require('../utils/phone');
+const { randomBytes } = require('crypto');
+const bcrypt = require('bcryptjs');
 
 function provisionError(code, message, status = 400) {
   const error = new Error(message);
   error.code = code;
   error.status = status;
   return error;
+}
+
+// New named-lead contract. Historical invitation callers remain compatible until
+// their UI has migrated; email is never accepted as authority for the named path.
+function normalizeProfessionalLead(lead) {
+  function namePart(raw) {
+    if (typeof raw !== 'string' || !raw.trim() || raw.trim().length > 100) {
+      throw provisionError('LEAD_NAME_REQUIRED', 'Nom et prénom du responsable requis.');
+    }
+    const display = raw.trim().replace(/\s+/g, ' ');
+    const local = display.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase().replace(/œ/g, 'oe').replace(/æ/g, 'ae')
+      .replace(/[\s'’\-]+/g, '-');
+    if (!/^[a-z]+(?:-[a-z]+)*$/.test(local)) {
+      throw provisionError('LEAD_NAME_INVALID', 'Nom ou prénom incompatible avec la convention email Komerce.');
+    }
+    return { display, local };
+  }
+  const last = namePart(lead?.last_name);
+  const first = namePart(lead?.first_name);
+  const local = last.local + '.' + first.local;
+  if (local.length > 64) throw provisionError('LEAD_EMAIL_TOO_LONG', 'Identifiant professionnel trop long.');
+  const rawPhone = lead?.phone;
+  const phone = typeof rawPhone === 'string' && /^(?:\+|00)[0-9\s().-]+$/.test(rawPhone.trim())
+    ? normalizePhone(rawPhone) : null;
+  if (!phone) throw provisionError('LEAD_PHONE_INVALID', 'Téléphone international requis (E.164).');
+  const email = local + '@komerce.co';
+  if (lead.email != null && String(lead.email).trim().toLowerCase() !== email) {
+    throw provisionError('LEAD_EMAIL_MISMATCH', 'L’email doit être généré à partir du nom et du prénom.');
+  }
+  return { fullName: last.display + ' ' + first.display, email, phone };
+}
+
+async function ensureProfessionalLead(executor, { identity, assignmentId, currency }) {
+  // Consider both identifiers and the legacy WhatsApp alias used by OTP lookup.
+  // Never pick the first match, change an existing person's identity or role, or
+  // silently extend a manager's perimeter to another market.
+  const { rows } = await executor.query(
+    `SELECT u.id, u.full_name, u.email, u.phone, u.role,
+            u.account_activation_required,
+            EXISTS (SELECT 1 FROM assignment_memberships am
+              WHERE am.user_id=u.id AND am.status='ACTIVE' AND am.assignment_id<>$3::uuid) AS other_market
+       FROM users u
+      WHERE lower(u.email)=$1 OR u.phone=$2 OR u.whatsapp_phone=$2
+      FOR UPDATE OF u`, [identity.email, identity.phone, assignmentId]);
+  if (rows.length) {
+    const u = rows[0];
+    if (rows.length !== 1 || String(u.email || '').toLowerCase() !== identity.email ||
+        u.phone !== identity.phone || u.role !== 'market_operator' || u.other_market ||
+        u.account_activation_required) {
+      throw provisionError('LEAD_IDENTITY_CONFLICT',
+        'Email ou téléphone déjà utilisé, identité ou habilitation incompatible. Vérifier le compte avant de poursuivre.', 409);
+    }
+    return u;
+  }
+  try {
+    // No mailbox or shared password is required. The unknown random password
+    // cannot be used to sign in; the existing verified phone OTP flow remains.
+    const passwordHash = await bcrypt.hash(randomBytes(32).toString('hex'), 12);
+    const result = await createAdminUser(executor, {
+      fullName: identity.fullName, email: identity.email, phone: identity.phone,
+      role: 'market_operator', currencyPref: currency, passwordHash,
+    });
+    if (!result.rows[0]) throw provisionError('LEAD_ACCOUNT_NOT_CREATED', 'Création du responsable impossible.', 409);
+    return result.rows[0];
+  } catch (error) {
+    if (error.code === '23505') {
+      throw provisionError('LEAD_IDENTITY_CONFLICT', 'Email ou téléphone déjà utilisé. Vérifier le compte avant de poursuivre.', 409);
+    }
+    throw error;
+  }
 }
 
 async function assertCentralReferent(executor, userId) {
@@ -66,6 +142,7 @@ async function configureProvisioningMarket(executor, {
   financialLimits = {},
   lead = {},
   paymentProvider = null,
+  centralCollectionModes = null,
   cashPolicy = null,
   initialRelais = null,
   correlationId = null,
@@ -77,7 +154,7 @@ async function configureProvisioningMarket(executor, {
     actorUserId,
     marketId: market.id,
     action: 'MARKET_PROVISIONING_STARTED',
-    after: { code: market.code, currency: market.currency, lifecycle_status: market.lifecycle_status },
+    after: { code: market.code, currency: market.currency, lifecycle_status: market.lifecycle_status, business_timezone: market.business_timezone ?? null },
     correlationId,
   });
 
@@ -109,20 +186,31 @@ async function configureProvisioningMarket(executor, {
     scope: 'manager',
   });
 
+  const namedLead = Object.prototype.hasOwnProperty.call(lead, 'last_name') ||
+    Object.prototype.hasOwnProperty.call(lead, 'first_name');
+  const identity = namedLead ? normalizeProfessionalLead(lead) : null;
+  if (identity) {
+    await ensureProfessionalLead(executor, { identity, assignmentId: assignment.id, currency: market.currency });
+  }
   const leadResult = await inviteTeamMember(executor, {
     assignmentId: assignment.id,
     actorUserId,
     actorMembershipId: null,
     actorIsCentral: true,
-    email: lead.email || null,
-    phone: lead.phone || null,
-    channel: lead.channel || (lead.phone ? 'WHATSAPP' : 'EMAIL'),
+    email: identity ? identity.email : lead.email || null,
+    phone: identity ? identity.phone : lead.phone || null,
+    channel: identity ? 'WHATSAPP' : lead.channel || (lead.phone ? 'WHATSAPP' : 'EMAIL'),
+    strictIdentity: Boolean(identity),
     grantsOperatingLead: true,
     capabilities,
     capabilityLimits: financialLimits,
     correlationId,
   });
 
+  const initialCentralModes = centralCollectionModes == null ? [] :
+    await configureCentralCollectionModes(executor, {
+      marketId: market.id, actorUserId, modes: centralCollectionModes,
+    });
   const initialPaymentProvider = paymentProvider
     ? await configureProvisioningProvider(executor, {
         marketId: market.id,
@@ -178,6 +266,7 @@ async function configureProvisioningMarket(executor, {
     central_referent_user_id: centralReferentUserId,
     lead: leadResult,
     initial_payment_provider: initialPaymentProvider,
+    initial_central_collection_modes: initialCentralModes,
     initial_cash_policy: initialCashPolicy,
     initial_relais: initialRelay,
     economic_references: economicReferences,
@@ -191,41 +280,62 @@ async function provisionMarket(executor, {
   code,
   name,
   currency,
-  minorUnit = 0,
+  minorUnit,
+  businessTimezone = null,
   storefrontTexts = {},
   centralReferentUserId,
   financialLimits = {},
   lead = {},
   paymentProvider = null,
+  centralCollectionModes = null,
   cashPolicy = null,
   initialRelais = null,
   correlationId = null,
 }) {
+  const named = lead.last_name != null || lead.first_name != null;
+  const canonicalUnit = named ? validateProvisioningCurrency(currency,minorUnit) : minorUnit;
+  const timezone = validateBusinessTimezone(businessTimezone,{required:named});
   const market = await createProvisioningMarket(executor, {
-    code, name, currency, minorUnit, storefrontTexts, actorUserId, correlationId,
+    code, name, currency, minorUnit:canonicalUnit, businessTimezone:timezone, storefrontTexts, actorUserId, correlationId,
   });
   return configureProvisioningMarket(executor, {
     market, actorUserId, centralReferentUserId, financialLimits, lead,
-    paymentProvider, cashPolicy, initialRelais, correlationId,
+    paymentProvider, centralCollectionModes, cashPolicy, initialRelais, correlationId,
   });
 }
 
 async function reprovisionMarket(executor, {
   actorUserId,
   marketCode,
+  businessTimezone = null,
   centralReferentUserId,
   financialLimits = {},
   lead = {},
   paymentProvider = null,
+  centralCollectionModes = null,
   cashPolicy = null,
   initialRelais = null,
   correlationId = null,
 }) {
-  const market = await loadProvisioningMarket(executor, { marketCode });
+  let market = await loadProvisioningMarket(executor, { marketCode });
+  const named = lead.last_name != null || lead.first_name != null;
+  if(named)validateProvisioningCurrency(market.currency,market.minor_unit);
+  if(businessTimezone != null || (named && !market.business_timezone)){
+    const edit = await completeMarketTimezone(executor,{marketCode,businessTimezone,actorUserId,correlationId});
+    market = {...market,business_timezone:edit.market.business_timezone};
+  }
   return configureProvisioningMarket(executor, {
     market, actorUserId, centralReferentUserId, financialLimits, lead,
-    paymentProvider, cashPolicy, initialRelais, correlationId,
+    paymentProvider, centralCollectionModes, cashPolicy, initialRelais, correlationId,
   });
+}
+
+async function completeMarketTimezone(executor,{marketCode,businessTimezone,actorUserId,correlationId=null}) {
+  const edit=await completeProvisioningTimezone(executor,{marketCode,businessTimezone});
+  if(edit.changed)await delegation.audit(executor,{actorUserId,marketId:edit.before.id,
+    action:'MARKET_BUSINESS_TIMEZONE_COMPLETED',before:{business_timezone:edit.before.business_timezone},
+    after:{business_timezone:edit.after.business_timezone},correlationId});
+  return {changed:edit.changed,market:edit.after};
 }
 
 async function setMarketLifecycle(executor, {
@@ -312,4 +422,4 @@ async function setAssignmentLifecycle(executor, {
   return { changed: true, assignment_id: assignment.id, status: target, previous_status: assignment.status };
 }
 
-module.exports = { assertCentralReferent, configureProvisioningMarket, provisionMarket, reprovisionMarket, setMarketLifecycle, setAssignmentLifecycle };
+module.exports = { normalizeProfessionalLead, ensureProfessionalLead, assertCentralReferent, configureProvisioningMarket, provisionMarket, reprovisionMarket, completeMarketTimezone, setMarketLifecycle, setAssignmentLifecycle };

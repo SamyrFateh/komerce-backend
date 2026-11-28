@@ -66,6 +66,28 @@ test('dossier lié à une expédition : « Déclarer »/« Corriger » ancienne 
   expect(source).toMatch(/row\.status === 'declared' && row\.is_active && !row\.journey_reference/);
 });
 
+test('rechargement concurrent : une réponse ancienne est ignorée avant toute projection ou rendu',async()=>{
+  const workspace=require('../../public/dashboards/canonical/js/shipping-customs-workspace');
+  let firstResolve;
+  const first=new Promise(resolve=>{firstResolve=resolve;});
+  let refresh;
+  const previous=globalThis.KomerceDashboardFreshness;
+  globalThis.KomerceDashboardFreshness={watch:opts=>{refresh=opts.refresh;}};
+  try{
+    const fetch=jest.fn().mockReturnValueOnce(first).mockResolvedValueOnce({ok:false,status:403,json:async()=>({error:'refus'})});
+    const notice={setAttribute:jest.fn()};
+    const root={replaceChildren:jest.fn(),appendChild:jest.fn(),removeAttribute:jest.fn()};
+    const mounting=workspace.mount({root,document:{createElement:()=>notice},ui:{},fetch,
+      contextContract:{resolveMarketView:()=>({marketCode:'CM'})},user:{role:'admin'}});
+    await expect(refresh()).rejects.toMatchObject({status:403});
+    firstResolve({ok:true,json:async()=>({})});
+    await expect(mounting).resolves.toEqual({stale:true});
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(root.replaceChildren).toHaveBeenCalledTimes(1);
+    expect(root.appendChild).toHaveBeenCalledWith(notice);
+  }finally{globalThis.KomerceDashboardFreshness=previous;}
+});
+
 test('le workspace capture avant le remplacement DOM et restaure après le rendu du panneau',()=>{
   const body=source.slice(source.indexOf('function renderPayload'),source.indexOf('async function mount'));
   expect(body).toMatch(/panel\?\.capture[\s\S]+rootNode\.replaceChildren\(\)[\s\S]+panel\.render\([\s\S]+panel\.restore\(section, tasks\)/);

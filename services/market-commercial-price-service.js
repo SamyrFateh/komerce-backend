@@ -105,6 +105,23 @@ function projectDecision(row, market) {
   };
 }
 
+// Preparation evidence only; a positive draft is not economic authorization
+// and is never an offer available for sale.
+async function getPricePreparation(executor, market) {
+  requireMarket(market);
+  const { rows } = await executor.query(
+    `SELECT COUNT(*) FILTER (WHERE d.status = $3)::int AS drafts,
+            COUNT(*) FILTER (WHERE d.status = $4)::int AS authorized,
+            COUNT(*) FILTER (WHERE d.status = $5)::int AS active
+       FROM product_market_price_drafts d
+       JOIN products p ON p.id=d.product_id AND p.is_active=TRUE
+      WHERE d.market_id=$1::uuid AND d.currency=$2 AND d.amount>0`,
+    [market.id,market.currency,PRICE_STATUSES.DRAFT,PRICE_STATUSES.AUTHORIZED,PRICE_STATUSES.ACTIVE]
+  );
+  const counts=rows[0] || {};
+  return {drafts:Number(counts.drafts||0),authorized:Number(counts.authorized||0),active:Number(counts.active||0)};
+}
+
 async function listMarketPriceDrafts(market) {
   requireMarket(market);
   const { rows } = await db.query(
@@ -460,6 +477,7 @@ module.exports = {
   MarketCommercialPriceError,
   normalizeAmount,
   normalizeReason,
+  getPricePreparation,
   listMarketPriceDrafts,
   getMarketPriceDecision,
   setMarketPriceDraft,

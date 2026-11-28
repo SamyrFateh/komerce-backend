@@ -78,6 +78,18 @@ describe('dispute-mutation-service (orders write boundary)', () => {
     expect(result.after.status).toBe('resolved');
   });
 
+  test('verrou de dossier, preuve de contrôle et rejeu sans nouvelle écriture',async()=>{
+    const db=executor();
+    db.query.mockResolvedValueOnce({rows:[{id:'d1',market_id:'mkt-cm',status:'processing',resolution:null}]});
+    await expect(disputeMutation.updateDisputeWorkflow('d1','mkt-cm',{status:'resolved'},'u1',db)).rejects.toMatchObject({code:'DISPUTE_RESOLUTION_REQUIRED'});
+    expect(db.query.mock.calls[0][0]).toContain('FOR UPDATE OF d');
+    expect(db.query).toHaveBeenCalledTimes(1);
+    db.query.mockClear();
+    db.query.mockResolvedValueOnce({rows:[{id:'d1',market_id:'mkt-cm',status:'resolved',resolution:'Contrôle reçu'}]});
+    await expect(disputeMutation.updateDisputeWorkflow('d1','mkt-cm',{status:'resolved',resolution:'Contrôle reçu'},'u1',db)).resolves.toMatchObject({changed:false});
+    expect(db.query).toHaveBeenCalledTimes(1);
+  });
+
   test('le module ne contient aucune écriture SQL sur refund_kmf/refund_eur', () => {
     const fs = require('fs');
     const path = require('path');

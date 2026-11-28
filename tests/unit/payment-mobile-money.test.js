@@ -12,6 +12,7 @@ const mockDb = {
 };
 const mockAdapter = {
   name: 'orange_money',
+  marketCode: 'CM',
   label: 'Orange Money',
   requiresMsisdn: false,
   isConfigured: jest.fn(() => true),
@@ -106,6 +107,12 @@ describe('getAvailability', () => {
     });
   });
 
+  test('a provider from another market is never advertised even in the same currency',async()=>{
+    mockDb.query.mockResolvedValueOnce({rows:[{market_code:'CG',market_currency:'XAF',provider:'orange_money',payment_currency:'XAF'}]});
+    await expect(mobileMoney.getAvailability('CG')).resolves.toMatchObject({available:false,reason:'provider_market_mismatch'});
+    expect(mockDb.query.mock.calls[0][0]).toContain("m.lifecycle_status = 'ACTIVE'");
+  });
+
   test('provider activé en DB mais secrets absents = fail-closed', async () => {
     mockAdapter.isConfigured.mockReturnValue(false);
     mockDb.query.mockResolvedValueOnce({ rows: [{
@@ -128,6 +135,14 @@ describe('initiateMobileMoney', () => {
     fx_snapshot: { market: { currency: 'XAF', amount: 13334.1, amount_text: '13334.1', minor_unit: 0 } },
     market_code: 'CM', market_currency: 'XAF', market_minor_unit: 0,
   };
+
+  test('a cross-market provider cannot initiate a payment',async()=>{
+    mockDb.query.mockImplementationOnce(()=>q([{...order,market_code:'CG',market_id:'market-cg'}]))
+      .mockImplementationOnce(()=>q([{provider:'orange_money',currency:'XAF',market_code:'CG',market_currency:'XAF',minor_unit:0}]));
+    await expect(mobileMoney.initiateMobileMoney({orderReference:order.reference})).rejects.toMatchObject({code:'mobile_money_provider_market_mismatch',statusCode:409});
+    expect(mockAdapter.initiate).not.toHaveBeenCalled();
+    expect(mockDb.query).toHaveBeenCalledTimes(2);
+  });
 
   test('projette côté serveur puis fige le montant avant appel provider', async () => {
     mockAdapter.initiate.mockResolvedValueOnce({

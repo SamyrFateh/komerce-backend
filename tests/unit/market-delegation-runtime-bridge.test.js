@@ -96,6 +96,7 @@ describe('market-delegation runtime compatibility bridge', () => {
 
     const [sql, params] = fakeDb.query.mock.calls[0];
     expect(sql).toContain('unnest($2::text[])');
+    expect(sql).toContain("m.lifecycle_status <> 'PROVISIONING'");
     expect(sql).toContain("registry.status = 'LIVE'");
     expect(sql).toContain("registry.class = 'DELEGATION'");
     expect(sql).toContain("registry.authority_scope = 'MARKET'");

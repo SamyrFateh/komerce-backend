@@ -50,8 +50,10 @@ jest.mock('../../db', () => ({ query: (...args) => mockQuery(...args) }));
 
 jest.mock('../../services/dashboard-pilotage-market', () => ({ buildMarketPilotage: jest.fn() }));
 const mockBuildCommerce = jest.fn();
+const mockBuildBuyerDrill = jest.fn();
 jest.mock('../../services/dashboard-commerce', () => ({
   buildCommerce: (...args) => mockBuildCommerce(...args),
+  buildBuyerDrill: (...args) => mockBuildBuyerDrill(...args),
 }));
 
 jest.mock('../../utils/logger', () => ({
@@ -91,6 +93,14 @@ beforeEach(() => {
 });
 
 describe('routes Commerce Canonical', () => {
+  test('un scope recette invalide ne retombe pas sur les données réelles',async()=>{
+    for(const suffix of ['simulation_scope=bad','simulation_scope=RCT1&simulation_scope=RCT2']) {
+      const res=await request(app()).get('/api/admin/dashboard/commerce/market/CM?'+suffix);
+      expect(res.status).toBe(400);
+    }
+    expect(mockBuildCommerce).not.toHaveBeenCalled();
+    expect(mockBuildBuyerDrill).not.toHaveBeenCalled();
+  });
   test('opérateur CM lit Commerce CM et le market est résolu côté serveur', async () => {
     const res = await request(app()).get('/api/admin/dashboard/commerce/market/cm?period=30');
 
@@ -119,6 +129,8 @@ describe('routes Commerce Canonical', () => {
       kpis: [{ key: 'ca_encaisse', label: 'Ventes payées', value: 4919.6775, unit: 'KMF' }],
       top_products: [{ product_ref: 'PRD-1', revenue_kmf: 4919.6775, quantity: 2 }],
       categories: [{ category: 'Maison', revenue_kmf: 4919.6775 }],
+      sales_series:[{day:'2026-10-20',sales_kmf:4919.6775,orders:2}],
+      sales_by_market:[{market_code:'CM',sales_kmf:4919.6775,share_pct:100}],
     };
     mockBuildCommerce.mockResolvedValue(source);
     const res = await request(app()).get('/api/admin/dashboard/commerce/market/CM?simulation_scope=RCT1');
@@ -129,11 +141,41 @@ describe('routes Commerce Canonical', () => {
       revenue_display: { value: Math.round(6559.57), unit: 'XAF', base_currency: 'KMF' },
     });
     expect(res.body.categories[0].revenue_display.unit).toBe('XAF');
+    expect(res.body.sales_series[0]).toMatchObject({sales_kmf:4919.6775,sales_display:{value:Math.round(6559.57),unit:'XAF'}});
+    expect(res.body.sales_by_market[0].sales_display.unit).toBe('XAF');
+    mockActorRole='admin';
+    const group=await request(app()).get('/api/admin/dashboard/commerce');
+    expect(group.status).toBe(200);
+    expect(group.body.kpis[0]).toMatchObject({unit:'EUR',value:10});
+    expect(group.body.sales_series[0].sales_display).toMatchObject({unit:'EUR',value:10,minor_unit:2});
     expect(res.body.simulation.scope).toBe('RCT1');
     expect(mockBuildCommerce).toHaveBeenCalledWith(expect.objectContaining({ simulation_scope: 'RCT1' }),
       { market: expect.objectContaining({ code: 'CM' }) });
     expect(source.kpis[0].unit).toBe('KMF');
     expect(source.top_products[0].revenue_display).toBeUndefined();
+  });
+
+  test('drill acheteurs reprend exactement les gardes Commerce marché et global', async () => {
+    mockBuildBuyerDrill.mockResolvedValue({kind:'paid_buyers',pagination:{total:1},accounts:[{paid_orders:2,latest_order_reference:'K-TEST'}]});
+    const query='?period=7&buyer_drill=paid_buyers&as_of=2026-10-20T12%3A00%3A00.000Z&page=1';
+    let res=await request(app()).get('/api/admin/dashboard/commerce/market/CM'+query);
+    expect(res.status).toBe(200);
+    expect(res.headers['cache-control']).toContain('no-store');
+    expect(mockBuildBuyerDrill).toHaveBeenCalledWith(expect.objectContaining({buyer_drill:'paid_buyers',period:'7',page:'1'}),
+      {market:expect.objectContaining({id:'market-cm-id',code:'CM'})});
+    expect(mockBuildCommerce).not.toHaveBeenCalled();
+    mockBuildBuyerDrill.mockClear();
+    res=await request(app()).get('/api/admin/dashboard/commerce/market/CG'+query);
+    expect(res.status).toBe(403);
+    res=await request(app()).get('/api/admin/dashboard/commerce/market/CM'+query+'&market_id=market-cg-id');
+    expect(res.status).toBe(400);
+    res=await request(app()).get('/api/admin/dashboard/commerce'+query);
+    expect(res.status).toBe(403);
+    expect(mockBuildBuyerDrill).not.toHaveBeenCalled();
+    mockActorRole='admin';
+    res=await request(app()).get('/api/admin/dashboard/commerce'+query);
+    expect(res.status).toBe(200);
+    expect(mockBuildBuyerDrill).toHaveBeenCalledTimes(1);
   });
 
   test('opérateur CM ne peut pas lire Commerce CG', async () => {

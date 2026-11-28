@@ -257,6 +257,7 @@ module.exports = {
       'POST /api/admin/workspaces/shipping-customs/market/:marketCode/parcels/:reference/confirm-transit',
     ],
     consumes: [
+      'market-control-plane (projection de préparation du responsable, après autorisation de sa membership exacte)',
       'shared-cart (suppression des paniers utilisateur via API interne lifecycle-owned)',
       'incident-management (incident persistence via incident-write-service)','orders (lecture commandes)',
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',

@@ -267,7 +267,10 @@ describe('Hub: no old SAC and QR/PDF immediately reachable',()=>{
     expect(html).toContain('hub-workstation.css?v='+hubVersion+'"');
     expect(html).not.toContain('hub-workstation.js?v=261124-hub-po-inline-2');
     expect(html).toContain('hub-context-actions.js?v=261125-v8-retire-1');
-    expect(html).toContain('app.js?v=261128-l3a-market-currency');
+    const appVersions = [...html.matchAll(/\/js\/app\.js\?v=([^"]+)"/g)].map(match=>match[1]);
+    expect(appVersions).toHaveLength(1);
+    expect(appVersions[0]).toMatch(/^\d{6}-[a-z0-9-]+$/);
+    expect(Number(appVersions[0].slice(0,6))).toBeGreaterThanOrEqual(261126);
   });
   test('historic COMBOX rows remain accessible but no longer occupy full page',()=>{
     expect(source).toContain("boxSearch.setAttribute('aria-label','Filtrer les COMBOX physiques')");

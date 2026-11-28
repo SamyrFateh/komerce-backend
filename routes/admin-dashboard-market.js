@@ -67,7 +67,7 @@ async function resolveRequestedMarket(req, res, next) {
 
   try {
     const { rows } = await db.query(
-      `SELECT id, code, name, currency, minor_unit
+      `SELECT id, code, name, currency, minor_unit, business_timezone
        FROM markets
        WHERE code = $1 AND is_active = TRUE
        LIMIT 1`,
@@ -186,8 +186,10 @@ router.get(
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
+      if (req.query.simulation_scope !== undefined && !isValidScope(req.query.simulation_scope)) return res.status(400).json({error:'invalid_simulation_scope'});
       const filters = parseFilters(req);
-      const payload = await projectMarketPayload(await pilotage.buildMarketPilotage(filters, req.dashboardMarket, req.user), req.dashboardMarket);
+      const flowPeriod = req.query.period === undefined ? null : commerce.buildPeriodFilters(req.query, req.dashboardMarket.id, new Date(), req.dashboardMarket);
+      const payload = await projectMarketPayload(await pilotage.buildMarketPilotage(filters, req.dashboardMarket, req.user, flowPeriod), req.dashboardMarket);
       res.json(payload);
     } catch (err) {
       log.error({ err, market: req.dashboardMarket && req.dashboardMarket.code }, '[admin-dashboard-market] unified market error');
@@ -207,9 +209,13 @@ router.get(
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
-      const payload = await projectCommerceMarketPayload(await commerce.buildCommerce(req.query, { market: req.dashboardMarket }), req.dashboardMarket);
+      if (req.query.simulation_scope !== undefined && !isValidScope(req.query.simulation_scope)) return res.status(400).json({error:'invalid_simulation_scope'});
+      const payload = Object.prototype.hasOwnProperty.call(req.query,'buyer_drill')
+        ? await commerce.buildBuyerDrill(req.query,{market:req.dashboardMarket})
+        : await projectCommerceMarketPayload(await commerce.buildCommerce(req.query, { market: req.dashboardMarket }), req.dashboardMarket);
       res.json(payload);
     } catch (err) {
+      if ([400,409].includes(err.status) && ['invalid_buyer_drill','buyer_drill_population_changed'].includes(err.code)) return res.status(err.status).json({error:err.code,code:err.code});
       log.error({ err, market: req.dashboardMarket && req.dashboardMarket.code }, '[admin-dashboard-market] commerce market error');
       next(err);
     }
@@ -227,9 +233,13 @@ router.get(
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
-      const payload = await projectMarketPayload(await operations.buildOperations({ market: req.dashboardMarket }), req.dashboardMarket);
+      if (req.query.simulation_scope !== undefined && !isValidScope(req.query.simulation_scope)) return res.status(400).json({error:'invalid_simulation_scope'});
+      const payload = Object.prototype.hasOwnProperty.call(req.query,'chain_drill')
+        ? await operations.buildControlChainDrill(req.query,{market:req.dashboardMarket})
+        : await projectMarketPayload(await operations.buildOperations({ market: req.dashboardMarket, ...(req.query.simulation_scope ? {simulationScope:req.query.simulation_scope} : {}) }), req.dashboardMarket);
       res.json(payload);
     } catch (err) {
+      if ([400,409].includes(err.status) && ['invalid_control_chain_drill','control_chain_population_changed'].includes(err.code)) return res.status(err.status).json({error:err.code,code:err.code});
       log.error({ err, market: req.dashboardMarket && req.dashboardMarket.code }, '[admin-dashboard-market] operations market error');
       next(err);
     }
@@ -313,9 +323,13 @@ router.get(
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
-      const payload = await commerce.buildCommerce(req.query);
+      if (req.query.simulation_scope !== undefined && !isValidScope(req.query.simulation_scope)) return res.status(400).json({error:'invalid_simulation_scope'});
+      const payload = Object.prototype.hasOwnProperty.call(req.query,'buyer_drill')
+        ? await commerce.buildBuyerDrill(req.query)
+        : await projectCommerceMarketPayload(await commerce.buildCommerce(req.query),null);
       res.json(payload);
     } catch (err) {
+      if ([400,409].includes(err.status) && ['invalid_buyer_drill','buyer_drill_population_changed'].includes(err.code)) return res.status(err.status).json({error:err.code,code:err.code});
       log.error({ err }, '[admin-dashboard-market] commerce global error');
       next(err);
     }
@@ -328,9 +342,13 @@ router.get(
   async (req, res, next) => {
     try {
       res.set('Cache-Control', 'private, no-store');
-      const payload = await operations.buildOperations();
+      if (req.query.simulation_scope !== undefined && !isValidScope(req.query.simulation_scope)) return res.status(400).json({error:'invalid_simulation_scope'});
+      const payload = Object.prototype.hasOwnProperty.call(req.query,'chain_drill')
+        ? await operations.buildControlChainDrill(req.query)
+        : await (req.query.simulation_scope ? operations.buildOperations({simulationScope:req.query.simulation_scope}) : operations.buildOperations());
       res.json(payload);
     } catch (err) {
+      if ([400,409].includes(err.status) && ['invalid_control_chain_drill','control_chain_population_changed'].includes(err.code)) return res.status(err.status).json({error:err.code,code:err.code});
       log.error({ err }, '[admin-dashboard-market] operations global error');
       next(err);
     }

@@ -100,6 +100,56 @@ describeE2E('Commerce — journée commerciale du marché', ({ db }) => {
     expect(JSON.stringify(km.buyer_cohort)).not.toContain(userId);
   });
 
+  it('drill des acheteurs : population exacte, récurrence, bornes et scope', async () => {
+    const query={period:'7',as_of:now.toISOString(),buyer_drill:'paid_buyers'};
+    for(const [id,code] of [[marketId,'KM'],[marketId,'CM'],[otherMarketId,'KM']]){
+      const market={id,code,name:'E2E bd',currency:'KMF'};
+      const summary=await view(code,'7',id);
+      for(const kind of ['paid_buyers','repeat_paid_buyers']){
+        const detail=await commerce.buildBuyerDrill({...query,buyer_drill:kind,population_token:summary.buyer_cohort.population_token},{market,now});
+        expect(detail.pagination.total).toBe(summary.buyer_cohort[kind]);
+        expect(detail.accounts).toHaveLength(summary.buyer_cohort[kind]);
+        expect(detail.period_definition).toEqual(summary.period_definition);
+        expect(JSON.stringify(detail)).not.toContain(userId);
+        if(detail.accounts.length) expect(detail.accounts[0].paid_orders).toBe(summary.buyer_cohort.paid_orders);
+      }
+    }
+    const emptyId=uuid();
+    const emptySummary=await view('KM','7',emptyId);
+    const empty=await commerce.buildBuyerDrill({...query,population_token:emptySummary.buyer_cohort.population_token},{market:{id:emptyId,code:'KM'},now});
+    expect(empty.pagination.total).toBe(0);
+    expect(empty.accounts).toEqual([]);
+    const summary=await view('KM');
+    const beyond=await commerce.buildBuyerDrill({...query,page:'2',population_token:summary.buyer_cohort.population_token},{market:{id:marketId,code:'KM'},now});
+    expect(beyond.pagination.total).toBe(1);
+    expect(beyond.accounts).toEqual([]);
+  });
+
+  it('drill refuse un changement de composition à cardinalité constante',async()=>{
+    const market={id:marketId,code:'KM'};
+    const summary=await view('KM');
+    const {rows:[old]}=await db.query("SELECT id,reference FROM orders WHERE market_id=$1 AND created_at=$2",[marketId,'2026-10-17T22:45:00Z']);
+    await db.query('UPDATE orders SET reference=$1 WHERE id=$2',[old.reference+'-CHANGED',old.id]);
+    try {
+      const changed=await view('KM');
+      expect(changed.buyer_cohort.paid_buyers).toBe(summary.buyer_cohort.paid_buyers);
+      expect(changed.buyer_cohort.population_token).not.toBe(summary.buyer_cohort.population_token);
+      await expect(commerce.buildBuyerDrill({period:'7',as_of:now.toISOString(),buyer_drill:'paid_buyers',population_token:summary.buyer_cohort.population_token},{market,now})).rejects.toMatchObject({status:409});
+    } finally { await db.query('UPDATE orders SET reference=$1 WHERE id=$2',[old.reference,old.id]); }
+  });
+
+  it('Pilotage et Commerce partagent les mêmes ventes payées et le même effectif en KMF',async()=>{
+    const market={id:marketId,code:'KM',currency:'KMF'};
+    const {filters}=commerce.buildPeriodFilters({period:'7'},marketId,now,market);
+    const summary=await view('KM');
+    const pilotage=await commerce.getPilotagePaidSales(filters,market);
+    const sales=summary.kpis.find(k=>k.key==='ca_encaisse');
+    expect(pilotage.value).toBe(sales.value);
+    expect(pilotage.data_quality.items_total).toBe(sales.data_quality.items_total);
+    expect(pilotage.data_quality.metric_id).toBe('commerce.paid_sales_wallet_included');
+    expect(pilotage.drill_to).toBeNull();
+  });
+
   it('autre marché : aucune fuite entre périmètres', async () => {
     const r = await view('KM', '7', otherMarketId);
     expect(r.sales_series).toEqual([{ day: '2026-10-18', sales_kmf: 7777, orders: 1 }]);

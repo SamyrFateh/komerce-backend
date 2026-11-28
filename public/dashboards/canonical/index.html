@@ -10,7 +10,7 @@
   <link rel="stylesheet" href="/dashboards/canonical/css/tokens.css?v=1" />
   <link rel="stylesheet" href="/dashboards/canonical/css/navigation.css?v=261010-2" />
   <link rel="stylesheet" href="/dashboards/canonical/css/renderer.css" />
-  <link rel="stylesheet" href="/dashboards/canonical/css/decision-visual.css?v=261031-dossier-column-1" />
+  <link rel="stylesheet" href="/dashboards/canonical/css/decision-visual.css?v=261128-l3b-buyer-drill" />
   <link rel="stylesheet" href="/dashboards/canonical/css/decision-controls.css?v=261010-9" />
   <link rel="stylesheet" href="/dashboards/canonical/css/entity-360.css?v=261108-quality-hold-1" />
   <link rel="stylesheet" href="/dashboards/canonical/css/operations-workspace.css?v=261126-hub-workshops-c1" />
@@ -74,19 +74,19 @@
 
   <noscript>JavaScript est requis pour l’admin Komerce.</noscript>
   <script src="/dashboards/canonical/js/primitives.js?v=1204"></script>
-  <script src="/dashboards/canonical/js/decision-primitives.js?v=261019-1"></script>
+  <script src="/dashboards/canonical/js/decision-primitives.js?v=261128-v54-decision-period"></script>
   <script src="/dashboards/canonical/js/cockpit-pattern.js?v=260929-1"></script>
   <script src="/dashboards/canonical/js/dashboard-schema.js"></script>
   <script src="/dashboards/canonical/js/dashboard-renderer.js"></script>
   <script src="/dashboards/canonical/js/admin-context.js?v=261128-l3a-market-currency"></script>
   <script src="/dashboards/canonical/js/market-prompt.js?v=261023-1"></script>
-  <script src="/dashboards/canonical/js/pilotage.js"></script>
-  <script src="/dashboards/canonical/js/pilotage-decision.js?v=261021-2"></script>
-  <script src="/dashboards/canonical/js/commerce.js?v=261125-spa-stage-1"></script>
+  <script src="/dashboards/canonical/js/pilotage.js?v=261128-v54-simulation-isolation"></script>
+  <script src="/dashboards/canonical/js/pilotage-decision.js?v=261128-v54-simulation-isolation"></script>
+  <script src="/dashboards/canonical/js/commerce.js?v=261128-v54-display-currency"></script>
   <script src="/dashboards/canonical/js/orders.js?v=261125-market-load-timeout-1"></script>
-  <script src="/dashboards/canonical/js/commerce-decision.js?v=261125-commerce-stale-mount-1"></script>
-  <script src="/dashboards/canonical/js/operations.js?v=261125-market-cash-currency-1"></script>
-  <script src="/dashboards/canonical/js/operations-decision.js?v=261128-l3b-compact"></script>
+  <script src="/dashboards/canonical/js/commerce-decision.js?v=261128-v54-display-currency"></script>
+  <script src="/dashboards/canonical/js/operations.js?v=261128-v54-simulation-isolation"></script>
+  <script src="/dashboards/canonical/js/operations-decision.js?v=261128-v54-chain-simulation"></script>
   <script src="/dashboards/canonical/js/finance.js?v=261021-1"></script>
   <script src="/dashboards/canonical/js/finance-decision.js?v=261021-5"></script>
   <script src="/dashboards/canonical/js/hub-live-cockpit.js?v=261126-hub-workshops-c"></script>
@@ -94,9 +94,9 @@
   <script src="/dashboards/canonical/js/operations-workspace.js?v=261126-hub-workshops-c1"></script>
   <script src="/dashboards/canonical/js/operations-workspace-decision.js?v=261009-2h"></script>
   <script src="/dashboards/canonical/js/international-journey-panel.js?v=261126-hub-workshops-c"></script>
-  <script src="/dashboards/canonical/js/shipping-customs-workspace.js?v=261101-journey-1"></script>
+  <script src="/dashboards/canonical/js/shipping-customs-workspace.js?v=261128-v54-execution-3"></script>
   <script src="/dashboards/canonical/js/shipping-customs-workspace-decision.js?v=261009-2"></script>
-  <script src="/dashboards/canonical/js/catalog-workspace.js?v=261126-canon-market-4"></script>
+  <script src="/dashboards/canonical/js/catalog-workspace.js?v=261128-v54-execution-4"></script>
   <script src="/dashboards/canonical/js/catalog-workspace-decision.js?v=261028-1"></script>
   <script src="/dashboards/canonical/js/catalog-control-tower.js?v=260929-2"></script>
   <script src="/dashboards/canonical/js/finance-accounting-workspace.js"></script>
@@ -111,7 +111,7 @@
   <script src="/dashboards/canonical/js/import-runtime.js?v=261031-tabs-1"></script>
   <script src="/dashboards/canonical/js/live-kit.js?v=261105-sim"></script>
   <script src="/dashboards/canonical/js/hub-live.js?v=261105-sim"></script>
-  <script src="/dashboards/canonical/js/relay-live.js?v=261126-canon-market-final"></script>
+  <script src="/dashboards/canonical/js/relay-live.js?v=261128-v54-execution-4"></script>
   <script src="/dashboards/canonical/js/pricing-workspace.js?v=261019-1"></script>
   <script src="/dashboards/canonical/js/pricing-workspace-presentation.js?v=261125-centers-1"></script>
   <script src="/dashboards/canonical/js/pricing-equilibrium-panel.js?v=1303"></script>
@@ -122,7 +122,7 @@
   <script src="/dashboards/canonical/js/pricing-workspace-decision.js?v=261126-v7v6-1"></script>
   <script src="/dashboards/canonical/js/pricing-product-focus.js?v=261126-v7v6-1"></script>
   <script src="/dashboards/canonical/js/pricing-atelier-views.js?v=261127-product-forecast-1"></script>
-  <script src="/dashboards/canonical/js/action-center.js?v=261010-4"></script>
+  <script src="/dashboards/canonical/js/action-center.js?v=261128-v54-execution-3"></script>
   <script src="/dashboards/canonical/js/business-date.js?v=261023-1"></script>
   <script src="/dashboards/canonical/js/order-360.js?v=261031-360link-1"></script>
   <script src="/dashboards/canonical/js/client-index.js?v=261031-360link-1"></script>
@@ -141,7 +141,7 @@
   <script src="/dashboards/canonical/js/market-team.js?v=261126-canon-market-4"></script>
   <script src="/dashboards/canonical/js/market-network.js?v=261126-canon-market-4"></script>
   <script src="/dashboards/canonical/js/market-local-offer.js?v=261127-receipt-sku-1"></script>
-  <script src="/dashboards/canonical/js/market-client-case.js?v=261126-canon-market-4"></script>
+  <script src="/dashboards/canonical/js/market-client-case.js?v=261128-v54-execution-5"></script>
   <script src="/dashboards/canonical/js/market-settlement.js?v=261126-canon-market-4"></script>
   <script src="/dashboards/canonical/js/market-readonly-views.js?v=261127-hub-rubrics-1"></script>
   <script src="/dashboards/canonical/js/market-catalog.js?v=261126-canon-market-4"></script>

@@ -75,6 +75,7 @@ module.exports = {
       'scripts/cm-cg-market-full-reset.js',
     ],
     migrations: [
+      'migrations/455_market_business_timezone.sql',
       'migrations/311_fx_chain_eur_usd_djf.sql',
       'migrations/312_fx_chain_hardening.sql',
       'migrations/314_fx_authority_foundation.sql',

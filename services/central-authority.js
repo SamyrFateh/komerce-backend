@@ -8,7 +8,7 @@
  * @outputs       central(user, domain) boolean and the read-only overview of active central grants
  * @depends       config/market-delegation-capabilities.js, middleware/require-dashboard-global-authority.js, middleware/require-catalog-global-authority.js, middleware/require-decision-signal-global-authority.js, middleware/require-pricing-global-authority.js, middleware/require-sourcing-global-authority.js
  * @used-by       services/market-control-plane.js
- * @db-read       dashboard_global_access_grants, catalog_global_access_grants, decision_signal_global_access_grants, pricing_global_access_grants, sourcing_global_access_grants
+ * @db-read       users, dashboard_global_access_grants, catalog_global_access_grants, decision_signal_global_access_grants, pricing_global_access_grants, sourcing_global_access_grants
  * @db-write      none
  * @db-txn        none
  * @doctrine      central_authority_is_explicit_grant, admin_role_never_implies_canonical_authority, no_second_authorization_engine
@@ -56,7 +56,7 @@ async function overview(executor) {
   for (const domain of domains()) {
     const { table, guard } = CENTRAL_AUTHORITY[domain];
     const { rows } = await executor.query(
-      `SELECT user_id, granted_at, reason FROM ${table} WHERE revoked_at IS NULL ORDER BY granted_at, user_id`
+      `SELECT g.user_id, g.granted_at, g.reason, u.full_name, u.email FROM ${table} g LEFT JOIN users u ON u.id=g.user_id WHERE g.revoked_at IS NULL ORDER BY g.granted_at, g.user_id`
     );
     result.push({ domain, table, guard, holders: rows, count: rows.length });
   }

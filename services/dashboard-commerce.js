@@ -84,15 +84,26 @@ function buildPeriodFilters(query = {}, marketId = null, now = new Date(), marke
 
 // Commerce business-sale basis: paid orders, before wallet tender; discounts already frozen
 // in total_kmf. Unlike Finance's cash-oriented projection this is NOT a cash receipt.
+// Prédicat unique partagé par le KPI et le drill. Les bornes et le marché
+// sont résolus par le serveur, jamais par un UUID fourni par le navigateur.
+function paidOrdersFrom(where) {
+  return `FROM orders o
+      WHERE ${where}
+        AND o.payment_status = 'paid'
+        AND o.status NOT IN ('cancelled', 'refunded')`;
+}
+
+// Empreinte opaque de la population payée complète. L'UUID reste dans SQL ;
+ // ce jeton de cohérence n'est ni une identité client ni une autorisation.
+const PAID_POPULATION_TOKEN_SQL = `(SELECT md5(COALESCE(string_agg(
+  jsonb_build_array(id,user_id,reference,created_at)::text, ',' ORDER BY id), '')) FROM paid)`;
+
 async function getCommercePaidSales(filters) {
   const { where, params } = buildFiltersClause(filters);
   const { rows } = await db.query(`
     WITH paid AS (
-      SELECT o.user_id, o.total_kmf, o.wallet_applied_kmf
-      FROM orders o
-      WHERE ${where}
-        AND o.payment_status = 'paid'
-        AND o.status NOT IN ('cancelled', 'refunded')
+      SELECT o.id, o.user_id, o.reference, o.created_at, o.total_kmf, o.wallet_applied_kmf
+      ${paidOrdersFrom(where)}
     ), buyers AS (
       SELECT user_id, COUNT(*) AS order_count
       FROM paid WHERE user_id IS NOT NULL GROUP BY user_id
@@ -102,7 +113,8 @@ async function getCommercePaidSales(filters) {
            COUNT(*)::int AS items_total,
            COUNT(*) FILTER (WHERE o.user_id IS NULL)::int AS unidentified_orders,
            (SELECT COUNT(*)::int FROM buyers) AS paid_buyers,
-           (SELECT COUNT(*)::int FROM buyers WHERE order_count >= 2) AS repeat_paid_buyers
+           (SELECT COUNT(*)::int FROM buyers WHERE order_count >= 2) AS repeat_paid_buyers,
+           ${PAID_POPULATION_TOKEN_SQL} AS population_token
     FROM paid o
   `, params);
 
@@ -129,6 +141,7 @@ async function getCommercePaidSales(filters) {
     unidentified_paid_orders: valid ? unidentified : null,
     paid_orders: valid ? paidOrders : null,
     completeness: !valid ? 'unknown' : unidentified > 0 ? 'partial' : 'complete',
+    population_token: valid && typeof row.population_token==='string' && /^[a-f0-9]{32}$/.test(row.population_token) ? row.population_token : null,
   });
   return {
     buyerCohort,
@@ -142,6 +155,27 @@ async function getCommercePaidSales(filters) {
         extra: basis, drillTo: '/admin/operations',
       }),
   };
+}
+
+// Same business-sale projection as Commerce; only the display currency differs.
+async function getPilotagePaidSales(filters, market = null, project = require('./dashboard-metrics/market-currency').projectMarketPayload) {
+  const sales = await getCommercePaidSales(filters);
+  const source = sales.ca;
+  // Same display boundary (including minor-unit rounding) as Commerce.
+  const displayMarket = market || {currency:'EUR',minor_unit:2};
+  const target = displayMarket.currency;
+  const base = {...source,unit:target || null,base_currency:'KMF',drill_to:null};
+  const quality = {...source.data_quality,display_basis:'KMF_reporting_projection'};
+  const available = Number.isSafeInteger(source.value) && Number.isSafeInteger(sales.buyerCohort.paid_orders);
+  if (!available || !target) return {...base,value:null,data_quality:{...quality,completeness:'provisional',fx_status:'UNAVAILABLE',warning:'Ventes payées non déterminées'}};
+  if (target === 'KMF') return {...base,data_quality:{...quality,fx_status:'IDENTITY'}};
+  try {
+    const result = await project({...source,drill_to:null},displayMarket);
+    if (result?.value == null || !Number.isFinite(Number(result.value)) || result.unit !== target) throw new Error('invalid_fx_projection');
+    return {...base,value:result.value,data_quality:{...quality,fx_status:'GOVERNED_KMF_PROJECTION'}};
+  } catch (_error) {
+    return {...base,value:null,data_quality:{...quality,completeness:'provisional',fx_status:'UNAVAILABLE',warning:'Conversion en devise d’affichage indisponible'}};
+  }
 }
 
 async function getTopProducts(filters) {
@@ -664,6 +698,78 @@ async function getCollectedFromJournal(filters, market) {
   }
 }
 
+const BUYER_DRILL_PAGE_SIZE = 25;
+const BUYER_DRILL_TYPES = Object.freeze(['paid_buyers', 'repeat_paid_buyers']);
+
+function invalidBuyerDrill() {
+  return Object.assign(new Error('Paramètres de consultation des acheteurs invalides'), {status:400,code:'invalid_buyer_drill'});
+}
+
+async function buildBuyerDrill(query = {}, options = {}) {
+  const kind = query.buyer_drill;
+  const pageText = query.page === undefined ? '1' : query.page;
+  const page = Number(pageText);
+  const serverNow = new Date(options.now || Date.now());
+  const anchor = typeof query.as_of === 'string' ? new Date(query.as_of) : new Date(NaN);
+  if (!BUYER_DRILL_TYPES.includes(kind) || typeof pageText !== 'string' || !/^[1-9][0-9]*$/.test(pageText)
+      || typeof query.population_token !== 'string' || !/^[a-f0-9]{32}$/.test(query.population_token)
+      || typeof query.period !== 'string'
+      || !Number.isSafeInteger(page) || page > 1000000
+      || !Number.isFinite(anchor.getTime()) || anchor.toISOString() !== query.as_of
+      || anchor > serverNow || !ALLOWED_PERIODS.includes(Number(query.period))
+      || (query.simulation_scope !== undefined && !isValidScope(query.simulation_scope))) {
+    throw invalidBuyerDrill();
+  }
+  const market = options.market || null;
+  // Fige les bornes du KPI cliqué, y compris au changement de jour civil.
+  // Il s'agit d'une nouvelle lecture des statuts courants, pas d'un historique.
+  const {period,filters,timezone,timezone_source:timezoneSource} =
+    buildPeriodFilters(query,market && market.id,anchor,market);
+  const {where,params} = buildFiltersClause(filters);
+  const limitIndex = params.push(BUYER_DRILL_PAGE_SIZE);
+  const offsetIndex = params.push((page - 1) * BUYER_DRILL_PAGE_SIZE);
+  const minOrders = kind === 'repeat_paid_buyers' ? 2 : 1;
+  const {rows} = await db.query(`
+    WITH paid AS (
+      SELECT o.id, o.user_id, o.reference, o.created_at
+      ${paidOrdersFrom(where)}
+    ), buyers AS (
+      SELECT user_id, COUNT(*)::int AS order_count,
+             (ARRAY_AGG(reference ORDER BY created_at DESC,id DESC))[1] AS latest_order_reference
+      FROM paid WHERE user_id IS NOT NULL GROUP BY user_id
+      HAVING COUNT(*) >= ${minOrders}
+    )
+    SELECT totals.total, ${PAID_POPULATION_TOKEN_SQL} AS population_token, selected.order_count, selected.latest_order_reference
+      FROM (SELECT COUNT(*)::int AS total FROM buyers) totals
+      LEFT JOIN LATERAL (
+        SELECT user_id, order_count, latest_order_reference
+        FROM buyers ORDER BY order_count DESC,user_id
+        LIMIT $${limitIndex} OFFSET $${offsetIndex}
+      ) selected ON TRUE
+      ORDER BY selected.order_count DESC,selected.user_id
+  `,params);
+  if (!rows.length || rows.some(row=>row.population_token!==query.population_token)) {
+    throw Object.assign(new Error('Population acheteurs modifiée'),{status:409,code:'buyer_drill_population_changed'});
+  }
+  const total = rows[0]?.total == null ? NaN : Number(rows[0].total);
+  const accounts = rows.filter(row=>row.order_count != null).map(row=>Object.freeze({
+    paid_orders:Number(row.order_count),
+    latest_order_reference:row.latest_order_reference,
+  }));
+  // Aucun UUID, téléphone, nom ou identifiant compte brut exposé.
+  if (!Number.isSafeInteger(total) || total < 0 || accounts.length !== Math.min(BUYER_DRILL_PAGE_SIZE,Math.max(0,total-(page-1)*BUYER_DRILL_PAGE_SIZE))
+      || accounts.some(row=>!Number.isSafeInteger(row.paid_orders)||row.paid_orders<minOrders||typeof row.latest_order_reference!=='string'||!row.latest_order_reference)) {
+    throw new Error('buyer_drill_population_inconsistent');
+  }
+  return Object.freeze({
+    kind, scope:publicScope(market), simulation:SIMULATION_VIEW(query), period,
+    population_token:query.population_token,
+    period_definition:Object.freeze({kind:'civil_days_including_today',days:period,timezone,timezone_source:timezoneSource,from:filters.from,to:filters.to}),
+    pagination:Object.freeze({page,page_size:BUYER_DRILL_PAGE_SIZE,total,total_pages:Math.ceil(total/BUYER_DRILL_PAGE_SIZE)}),
+    accounts:Object.freeze(accounts),
+  });
+}
+
 async function buildCommerce(query = {}, options = {}) {
   const market = options.market || null;
   const { period, filters, timezone, timezone_source: timezoneSource } = buildPeriodFilters(query, market && market.id, options.now || new Date(), market);
@@ -681,7 +787,12 @@ async function buildCommerce(query = {}, options = {}) {
     getPaidSalesByMarket(filters),
     getRecentOrders(filters, 5, timezone),
   ]);
-  const [viability, availability] = await Promise.all([
+  // Les référentiels de prix et le stock local ne portent pas un scope de recette.
+  // Ne jamais faire passer une observation réelle pour une preuve simulée.
+  const unavailableCatalog = code => Object.freeze({items:Object.freeze([]),warnings:Object.freeze([{code,message:'Source réelle non projetée dans le périmètre de recette.'}])});
+  const [viability, availability] = filters.simulation_scope && market
+    ? [unavailableCatalog('commerce_simulation_viability_unavailable'),unavailableCatalog('commerce_simulation_availability_unavailable')]
+    : await Promise.all([
     getTopProductViability(topProducts, market, {
       buildMarketCorridor: options.buildMarketCorridor,
     }),
@@ -746,8 +857,8 @@ async function buildCommerce(query = {}, options = {}) {
       commercial_sales_basis: 'orders_paid_created_in_period_total_plus_wallet_excluding_cancelled_refunded',
       cash_basis: false,
       product_real_margin_basis: 'actual_cost_orders_only',
-      product_viability_basis: market ? 'market_price_corridor_local_evidence' : 'not_applicable_global',
-      product_availability_basis: market ? 'local_stock_exposure_and_active_allocations' : 'not_applicable_global',
+      product_viability_basis: market ? (filters.simulation_scope?'simulation_unavailable':'market_price_corridor_local_evidence') : 'not_applicable_global',
+      product_availability_basis: market ? (filters.simulation_scope?'simulation_unavailable':'local_stock_exposure_and_active_allocations') : 'not_applicable_global',
       decision_authority: 'server',
       decision_signal_contract: 'decision_signals_projection_only_v1',
       warnings,
@@ -771,6 +882,7 @@ module.exports = {
   normalizePeriod,
   buildPeriodFilters,
   getCommercePaidSales,
+  getPilotagePaidSales,
   getTopProducts,
   getCollectedFromJournal,
   publicTopProduct,
@@ -785,4 +897,5 @@ module.exports = {
   availabilitySignal,
   buildDecisionSignals,
   buildCommerce,
+  buildBuyerDrill,
 };

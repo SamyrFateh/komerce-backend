@@ -66,7 +66,7 @@
     metrics: {
       source: 'pilotage.metrics',
       pick: [
-        { key: 'ca-encaisse', label: 'Commandes payées — part hors avoir' },
+        { key: 'ca-encaisse', label: 'Ventes payées (avoir inclus)' },
         { key: 'commandes-actives', label: 'Commandes actives' },
         { key: 'economic-period-result', label: 'Résultat économique mensuel' },
         { key: 'alertes-critiques', label: 'Alertes critiques' },
@@ -266,6 +266,17 @@
       options.requestedMarket
     );
 
+    const nav = globalThis.KomerceCanonicalNavigation;
+    const search = options.location?.search ?? globalThis.location?.search ?? '';
+    const query = new URLSearchParams(search);
+    const context = nav?.readContext?.(search) || {};
+    const requestedPeriod = options.period ?? context.period ?? query.get('period');
+    const period = requestedPeriod == null ? null : (['7','30','90'].includes(String(requestedPeriod)) ? String(requestedPeriod) : '30');
+    const params = new URLSearchParams();
+    if (period) params.set('period', period);
+    query.getAll('simulation_scope').forEach(scope=>params.append('simulation_scope',scope));
+    const requestUrl = params.size ? `${endpoint}?${params}` : endpoint;
+
     if (!rootNode) throw new Error('canonical_pilotage_root_missing');
     if (!rendererContract || typeof rendererContract.createRenderer !== 'function') {
       throw new Error('canonical_pilotage_renderer_missing');
@@ -279,14 +290,17 @@
     let hasData = false;
     async function readFresh() {
       try {
-        const payload = await jsonRequest(fetchFn, endpoint);
-        if (rootNode.isConnected === false || rootNode.__dashboardViewIdentity !== identity) return {};
-        const result = renderer.render(rootNode, PILOTAGE_SCHEMA, { data: resolveSources(payload) });
+        const payload = await jsonRequest(fetchFn, requestUrl);
+        if (rootNode.__dashboardViewIdentity !== identity) return {stale:true};
+        const result = typeof options.onPayload === 'function'
+          ? options.onPayload(payload, period)
+          : renderer.render(rootNode, PILOTAGE_SCHEMA, { data: resolveSources(payload) });
+        if (period && !options.location) nav?.syncContext?.({period});
         hasData = true;
         rootNode.removeAttribute?.('data-dashboard-stale');
-        return Object.freeze({ payload, result, endpoint });
+        return Object.freeze({ payload, result, endpoint, period });
       } catch (error) {
-        if (rootNode.isConnected === false || rootNode.__dashboardViewIdentity !== identity) return {};
+        if (rootNode.__dashboardViewIdentity !== identity) return {stale:true};
         // Une révocation de session/droit efface le dernier instantané sensible.
         // Seules les pannes réseau/5xx conservent des valeurs marquées périmées.
         if (error.status === 401 || error.status === 403) {

@@ -602,6 +602,32 @@
   --sand-gradient-0:       rgba(244,241,236,0);
 }
 
+/* Accents visuels uniquement : le marché est résolu par market-hydration. */
+[data-market-code="KM"] .k-hero {
+  --hero-market-accent: #176247;
+  --hero-market-stripe: linear-gradient(90deg, #15945b 0 20%, #ffc82d 20% 40%, #fff 40% 60%, #df2739 60% 80%, #3155a4 80%);
+}
+
+[data-market-code="CM"] .k-hero {
+  --hero-market-accent: #155239;
+  --hero-market-stripe: linear-gradient(90deg, #007a5e 0 33.33%, #ce1126 33.33% 66.67%, #fcd116 66.67%);
+}
+
+[data-market-code="CG"] .k-hero {
+  --hero-market-accent: #9d2536;
+  --hero-market-stripe: linear-gradient(110deg, #009543 0 33.33%, #fbde4a 33.33% 66.67%, #dc241f 66.67%);
+}
+
+[data-market-code="DJ"] .k-hero {
+  --hero-market-accent: #185779;
+  --hero-market-stripe: linear-gradient(90deg, #6ab2e7 0 45%, #77c35c 45% 90%, #d72738 90%);
+}
+
+[data-market-code="YT"] .k-hero {
+  --hero-market-accent: #233e74;
+  --hero-market-stripe: linear-gradient(90deg, #264b9b 0 33.33%, #fff 33.33% 66.67%, #e53743 66.67%);
+}
+
 
 /* ── reset.css ───────────────────────────────────────────── */
 /* ═══════════════════════════════════════════════════════════════
@@ -1953,6 +1979,16 @@ body:has(#k-page-scroll.k-pager-active) {
 .k-hero { position: relative; background: var(--hero-bg); overflow: clip; } /* POLISH — fond hero via token */
 .k-hero-inner { display: flex; flex-direction: column; max-width: var(--container); margin: 0 auto; }
 
+.k-hero::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 4px;
+  background: var(--hero-market-stripe, transparent);
+  pointer-events: none;
+}
+
+
 /* ── MOBILE : image arrondie ────────────────────────────────── */
 .k-hero-media {
   position: relative;
@@ -1994,7 +2030,7 @@ body:has(#k-page-scroll.k-pager-active) {
   font-family: var(--font-display);
   font-size: clamp(18px, 4.8vw, 24px);
   font-weight: 900;
-  color: var(--ocean, var(--ocean));
+  color: var(--hero-market-accent, var(--ocean));
   line-height: 1.05;
   text-shadow: 0 0 12px var(--white), 0 0 24px var(--surface-white-92);
 }
@@ -2354,8 +2390,8 @@ body:has(#k-page-scroll.k-pager-active) {
     display: inline-block;
     padding: 4px 10px;
     border-radius: 999px;
-    background: color-mix(in srgb, var(--white) 88%, transparent);
-    color: var(--text);
+    background: color-mix(in srgb, var(--white) 89%, var(--hero-market-accent, transparent));
+    color: var(--hero-market-accent, var(--text));
     font-size: 10px;
     font-weight: 700;
     letter-spacing: .04em;
@@ -2631,7 +2667,11 @@ body:has(#k-page-scroll.k-pager-active) {
     font-weight: 700;
     letter-spacing: .12em;
     text-transform: uppercase;
-    color: var(--green-text);
+    color: var(--hero-market-accent, var(--green-text));
+    background: color-mix(in srgb, var(--hero-market-accent, transparent) 10%, transparent);
+    align-self: flex-start;
+    padding: 2px 7px;
+    border-radius: 999px;
     margin-bottom: 4px;
   }
   html.k-home-premium-v1 .k-hero-badge::before {
@@ -2639,7 +2679,7 @@ body:has(#k-page-scroll.k-pager-active) {
     display: inline-block;
     width: 18px;
     height: 2px;
-    background: var(--green-text);
+    background: var(--hero-market-stripe, var(--green-text));
     border-radius: 2px;
     flex-shrink: 0;
   }
@@ -2688,7 +2728,7 @@ body:has(#k-page-scroll.k-pager-active) {
   }
 
   html.k-home-premium-v1 .k-hero-cta-primary {
-    background: var(--coral);
+    background: var(--hero-market-accent, var(--coral));
     color: var(--white);
     border: none;
     min-height: 40px;
@@ -2698,13 +2738,13 @@ body:has(#k-page-scroll.k-pager-active) {
     font-size: 13px;
     font-weight: 700;
     cursor: pointer;
-    box-shadow: 0 2px 8px rgba(200,92,45,.28);
+    box-shadow: 0 2px 8px color-mix(in srgb, var(--hero-market-accent, var(--coral)) 28%, transparent);
     transition: background .15s, box-shadow .15s;
     white-space: nowrap;
   }
   html.k-home-premium-v1 .k-hero-cta-primary:hover {
-    background: var(--coral-dark);
-    box-shadow: 0 4px 14px rgba(200,92,45,.38);
+    background: color-mix(in srgb, var(--hero-market-accent, var(--coral-dark)) 86%, black);
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--hero-market-accent, var(--coral)) 38%, transparent);
   }
 
   html.k-home-premium-v1 .k-hero-cta-ghost {

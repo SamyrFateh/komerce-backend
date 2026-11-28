@@ -299,3 +299,31 @@ describe('LOT 2C-CANON — Pilotage vivant', () => {
     }));
   });
 });
+
+test('Pilotage V5.4 distingue les trois horloges et ne confond pas hors avoir et encaissement',()=>{
+  const p={kpis_global:[{key:'cmds_actives',value:12,unit:'count'},{key:'ca_encaisse',value:8000,unit:'KMF'},{key:'economic_period_result',value:null,unit:'EUR'}]};
+  p.decision_clocks={stock:{basis:'current_active_orders',observed_at:'2026-11-28T07:00:00.000Z'},
+    flow:{basis:'orders.created_at',from:'2026-11-01',to:'2026-11-28',metric_id:'commerce.paid_order_nonwallet'},
+    economic:{basis:'utc_calendar_month',period_start:'2026-11-01',metric_id:'eco.period_result'}};
+  const items=pilotageDecision.clockItems(p,pilotage);
+  expect(items.map(i=>i.key)).toEqual(['stock','flow','economic']);
+  expect(items[0].helper).toContain('toutes dates de création');
+  expect(items[1].helper).toContain('2026-11-01');
+  expect(items[1].helper).toContain('ni ventes totales ni encaissements');
+  expect(items[2].helper).toContain('2026-11 UTC');
+  expect(pilotageDecision.decisionItems(p,pilotage).some(i=>i.key==='active-orders')).toBe(false);
+  p.kpis_global=[];
+  expect(pilotageDecision.clockItems(p,pilotage).map(i=>i.value)).toEqual(['—','—','—']);
+});
+
+test('Pilotage V5.4 : ventes wallet incluses, devise affichée et FX indisponible',()=>{
+  const payload={kpis_global:[{key:'ca_encaisse',value:12.34,unit:'EUR',data_quality:{metric_id:'commerce.paid_sales_wallet_included'}}],
+    decision_clocks:{stock:{},flow:{metric_id:'commerce.paid_sales_wallet_included'},economic:{}}};
+  const item=pilotageDecision.clockItems(payload,pilotage)[1];
+  expect(item.label).toBe('Ventes payées · avoir inclus');
+  expect(item.value).toContain('€');
+  expect(item.helper).toContain('pas un encaissement de caisse');
+  payload.kpis_global[0].value=null;
+  payload.kpis_global[0].data_quality.warning='Conversion en devise d’affichage indisponible';
+  expect(pilotageDecision.clockItems(payload,pilotage)[1]).toMatchObject({value:'—',tone:'warning',helper:expect.stringContaining('Conversion en devise')});
+});

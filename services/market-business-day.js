@@ -19,7 +19,8 @@
 'use strict';
 
 // Journée commerciale = jour civil du MARCHÉ (décision métier), jamais celui du navigateur ni du
-// serveur. Vue globale consolidée : UTC explicite. Aucune migration : table de décision fermée.
+// serveur. Vue globale consolidée : UTC explicite. Le référentiel markets porte le choix IANA.
+// La table historique reste uniquement un repli de compatibilité pour les anciens appelants.
 const MARKET_TIMEZONES = Object.freeze({
   KM: 'Indian/Comoro',
   CM: 'Africa/Douala',
@@ -36,6 +37,10 @@ function isValidIana(tz) {
 // jamais un fuseau inventé.
 function resolveBusinessTimezone(market) {
   if (!market) return { timezone: GLOBAL_TIMEZONE, source: 'global_utc' };
+  if (market.business_timezone != null) {
+    if (typeof market.business_timezone === 'string' && isValidIana(market.business_timezone)) return { timezone: market.business_timezone, source: 'market' };
+    return { timezone: GLOBAL_TIMEZONE, source: 'unmapped_market_utc' };
+  }
   const tz = MARKET_TIMEZONES[String(market.code || '').toUpperCase()];
   if (tz && isValidIana(tz)) return { timezone: tz, source: 'market' };
   return { timezone: GLOBAL_TIMEZONE, source: 'unmapped_market_utc' };
