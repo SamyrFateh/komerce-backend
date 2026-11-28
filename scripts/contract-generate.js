@@ -500,6 +500,18 @@ const KNOWN_RESPONSES = {
   '/api/market-delegation/markets/{marketCode}/config': {
     get: { fields: ['market_code','name','created_at'], source: 'test' }
   },
+  '/api/client-requests': {"get":{"fields":["requests"],"source":"route-read"},"post":{"fields":["request","message"],"source":"route-read"}},
+  '/api/client-requests/{ref}': {"get":{"fields":["request","messages"],"source":"service-read"}},
+  '/api/client-requests/{ref}/messages': {"post":{"fields":["request","message"],"source":"route-read"}},
+  '/api/markets/{code}/client-requests': {"get":{"fields":["requests"],"source":"route-read"}},
+  '/api/markets/{code}/client-requests/{ref}': {"get":{"fields":["request","messages"],"source":"service-read"}},
+  '/api/markets/{code}/client-requests/{ref}/messages': {"post":{"fields":["request","message"],"source":"route-read"}},
+  '/api/hub/client-requests': {"get":{"fields":["requests"],"source":"route-read"}},
+  '/api/hub/client-requests/{ref}': {"get":{"fields":["request","messages"],"source":"service-read"}},
+  '/api/hub/client-requests/{ref}/messages': {"post":{"fields":["request","message"],"source":"route-read"}},
+  '/api/markets/{code}/client-requests/{ref}/close': {"post":{"fields":["request"],"source":"route-read"}},
+  '/api/markets/{code}/client-requests/{ref}/reopen': {"post":{"fields":["request"],"source":"route-read"}},
+  '/api/markets/{code}/client-requests/{ref}/hub-share': {"post":{"fields":["request","changed"],"source":"service-read"},"delete":{"fields":["request","changed"],"source":"service-read"}},
   '/api/market-delegation/markets/{marketCode}/client-cases/disputes': {
     get: { fields: ['market','assignment_id','actor_capabilities','disputes'], source: 'route-read' }
   },
