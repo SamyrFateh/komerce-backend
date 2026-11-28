@@ -336,7 +336,7 @@ router.get(
         cmdsAujourdhui, colisEnTransit, disponiblesRelais, retardsCritiques, tauxCompletudeScans,
         topAlerts, pointsAttention, controlChainProjection, marketsSupervision,
       ] = await Promise.all([
-        metrics.getCAEncaisse(filters),
+        require('../services/dashboard-commerce').getPilotagePaidSales(filters),
         metrics.getCmdsActives(pilotageStockFilters(filters)),
         periodResultKpi(req.user,filters),
         metrics.getAlertesCritiques(filters),

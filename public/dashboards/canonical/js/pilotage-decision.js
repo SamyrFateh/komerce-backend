@@ -254,11 +254,15 @@
       ? 'Création : '+(dates.from||'sans borne de début')+' → '+(dates.to||'sans borne de fin')
       : 'Historique sans filtre de date de création';
     const stamp=clocks.stock?.observed_at;
+    const canonicalSales=clocks.flow?.metric_id==='commerce.paid_sales_wallet_included'
+      && flow?.data_quality?.metric_id==='commerce.paid_sales_wallet_included';
     return [
       {key:'stock',label:'Stock opérationnel · instantané',value:display(base,stock),tone:'neutral',
         helper:'Commandes actives toutes dates de création'+(stamp?' · lecture '+stamp:'')},
-      {key:'flow',label:'Flux commercial · hors avoir',value:display(base,flow),tone:'neutral',
-        helper:bounds+' · commandes payées, hors wallet · ni ventes totales ni encaissements'},
+      {key:'flow',label:canonicalSales?'Ventes payées · avoir inclus':'Flux commercial · hors avoir',
+        value:display(base,flow),tone:canonicalSales&&flow.value==null?'warning':'neutral',
+        helper:bounds+(canonicalSales?' · hors annulées/remboursées · pas un encaissement de caisse'+(flow.data_quality.warning?' · '+flow.data_quality.warning:'')
+          :' · commandes payées, hors wallet · ni ventes totales ni encaissements')},
       {key:'economic',label:'Résultat ECO · mois UTC',value:display(base,eco),tone:eco?.data_quality?.status==='CLOSED'?'neutral':'warning',
         helper:(clocks.economic?.period_start?.slice(0,7)||'Mois non déterminé')+' UTC · '+(states[eco?.data_quality?.status]||'Non certifié')},
     ];

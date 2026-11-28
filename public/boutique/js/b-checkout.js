@@ -1019,12 +1019,17 @@ function _renderCheckoutCollectionModes(od) {
     if(radio)radio.disabled=!allowed;
     if(chip){
       chip.classList.toggle('ck-pay-chip--off',!allowed);
+      chip.classList.toggle('ck-pay-chip--active',allowed&&radio?.checked===true);
       chip.title=allowed?'':od.mobileMoneyAvailability?'Indisponible pour ce point relais':'Vérification des moyens de paiement…';
       if(mode==='paypal_eur')chip.style.display=allowed||od.payment_mode===mode?'':'none';
     }
   }
   const ppWrap=document.getElementById('paypal-wrap');
-  if(ppWrap && !checkoutModeAvailable(od.mobileMoneyAvailability,'paypal_eur'))ppWrap.classList.remove('is-visible');
+  if(ppWrap && !checkoutModeAvailable(od.mobileMoneyAvailability,'paypal_eur')){
+    ppWrap.classList.remove('is-visible');
+    const confirm=document.getElementById('btn-confirm-order');
+    if(confirm)confirm.style.display='';
+  }
   const stripeWrap=document.getElementById('stripe-card-wrap');
   if(stripeWrap && !checkoutModeAvailable(od.mobileMoneyAvailability,'stripe_eur'))stripeWrap.classList.remove('is-visible');
 }
@@ -1048,6 +1053,10 @@ async function _refreshMobileMoneyAvailability(od = state.orderData || {}) {
     console.warn('[checkout] Mobile Money availability:', error);
   }
   _renderMobileMoneyAvailability(od);
+  const selected=document.querySelector('#ck-pay-grid input[name="payment_mode"]:checked');
+  if(selected && checkoutModeAvailable(od.mobileMoneyAvailability,selected.value)){
+    selected.dispatchEvent(new Event('change',{bubbles:true}));
+  }
   refreshCheckoutComputedUI();
 }
 
@@ -2641,7 +2650,7 @@ export async function submitOrder(btn) {
   }
   const acceptedTotalKmf = acceptedQuote.total;
 
-  if(!checkoutModeAvailable(od.mobileMoneyAvailability,od.payment_mode)){
+  if(!checkoutModeAvailable(od.mobileMoneyAvailability,od.payment_mode||'cash_relais')){
     showToast('Ce moyen de paiement est indisponible pour ce point relais.', 'error');
     return;
   }

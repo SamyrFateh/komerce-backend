@@ -89,7 +89,7 @@ async function buildMarketPilotage(filters, market, actor=null) {
     topAlerts,
     controlChainProjection,
   ] = await Promise.all([
-    metrics.getCAEncaisse(filters),
+    require('./dashboard-commerce').getPilotagePaidSales(filters,market),
     metrics.getCmdsActives(pilotageStockFilters(filters)),
     metrics.getAlertesCritiques(filters),
     metrics.getTauxCompletudeCouts(filters),
