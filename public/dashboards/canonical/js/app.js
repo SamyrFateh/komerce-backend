@@ -718,10 +718,10 @@
   }
 
   // Mini-app intégrée : deux branches, writers existants, même coque Canonical.
-  function renderHubWorkstation(root, user, adminContext) {
+  async function renderHubWorkstation(root, user, adminContext) {
     const moduleApi = global.KomerceCanonicalHubWorkstation;
     if (!moduleApi) throw new Error('canonical_hub_workstation_module_missing');
-    return moduleApi.mount({
+    const result = await moduleApi.mount({
       root, user, document: global.document, location: global.location,
       history: global.history, fetch: global.fetch.bind(global), adminContext,
       renderAdministrative: host => moduleApi.renderAdministrationBoard(host, {
@@ -731,6 +731,11 @@
         document: global.document, fetch: global.fetch.bind(global), user,
       }),
     });
+    if (root.isConnected && ['admin','agent_hub'].includes(user?.role) && global.KomerceClientRequests) {
+      const host=global.document.createElement('div'); host.className='kmc-workspace';
+      root.append(host); await global.KomerceClientRequests.mount({root:host,hub:true});
+    }
+    return result;
   }
 
   function renderHubLive(root, user, adminContext) {
@@ -840,7 +845,7 @@
         document: global.document, fetch: global.fetch.bind(global),
         ui: global.KomerceCanonicalUI,
       }),
-      [{ key: 'client-cases', api: global.KomerceMarketClientCase }]);
+      [{ key: 'client-cases', api: global.KomerceMarketClientCase }, { key: 'client-requests', api: global.KomerceClientRequests }]);
   }
 
   function renderClient360(root, user, adminContext) {
