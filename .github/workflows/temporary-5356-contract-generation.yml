@@ -30,6 +30,11 @@ jobs:
           export DATABASE_URL=postgres://unused:unused@127.0.0.1:5432/unused
           export PAYPAL_CLIENT_ID=contract_generation_dummy
           export PAYPAL_CLIENT_SECRET=contract_generation_dummy
+          export ADMIN_PASSWORD=ci-test-admin-password
+          export QR_SECRET=ci-test-qr-secret
+          export AUTHKEY_API_KEY=ci-test-authkey
+          export PAYPAL_WEBHOOK_ID=ci-test-paypal-webhook
+          export META_WA_APP_SECRET=ci-test-meta-secret
           npm run contract:generate
       - run: npm run contract:debt:check
       - name: Verify generated On Demand operations
