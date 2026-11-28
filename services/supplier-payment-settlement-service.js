@@ -8,7 +8,7 @@
  * @outputs       append_only_settlement_fact, settlement_list
  * @depends       services/cost-allocation/canonical-margin-writer.js (db injecté par l'appelant)
  * @used-by       routes/purchasing.js
- * @db-read       order_items, purchase_lines, supplier_execution_payments, supplier_payment_settlements
+ * @db-read       order_items, purchase_lines, purchase_order_authorizations, purchase_orders, suppliers, supplier_execution_payments, supplier_payment_settlements
  * @db-write      supplier_payment_settlements
  * @db-txn        recordSettlement (FOR UPDATE sur le paiement)
  * @doctrine      pricing_market_viability_cost_scope
