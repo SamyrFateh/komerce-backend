@@ -1168,3 +1168,8 @@ role: Rattachement explicite de la vente locale au lot clôturé, quantité et c
 -->
 
 La migration 454 (schéma visé, non live vérifié) étend la clé primaire de `local_stock_economic_lot_lines` à `(order_item_id, receipt_id)` pour permettre plusieurs lots par vente. Les sommes de quantités par lot et par vente sont plafonnées dans la transaction du writer.
+
+<!-- schema-pending: markets.business_timezone (migration 455, intended_migration_schema; not yet live) -->
+### Fuseau horaire métier du marché (migration 455 — intended_migration_schema)
+
+`markets.business_timezone` (TEXT, nullable) conserve le fuseau IANA explicitement choisi lors de l'initialisation du marché. Le writer canonique `services/market-lifecycle-service.js` valide le fuseau ; aucun droit ni prix n'en découle. Le backfill reprend seulement les décisions existantes KM, CM, CG et DJ. NULL signale une décision encore absente, pas un choix UTC implicite. La première ouverture d'un marché préparé est bloquée si la valeur manque. `services/market-business-day.js` demeure l'autorité de calcul des jours civils pour Commerce, Finance et les dossiers ; le contexte groupe reste UTC. Migration additive, aucune réécriture des commandes, dates ou droits historiques. État live non attesté avant déploiement et recette staging.
