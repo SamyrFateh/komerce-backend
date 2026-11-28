@@ -1,27 +1,56 @@
-name: 5356 integrated On Demand preflight
+name: 5356 On Demand isolated PostgreSQL proof
 on:
   push:
     branches: [test/5359-market-context-preflight]
 permissions:
   contents: read
 jobs:
-  preflight:
+  integration:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: komerce
+          POSTGRES_PASSWORD: komerce
+          POSTGRES_DB: komerce_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U komerce -d komerce_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
     env:
+      NODE_ENV: test
+      KOMERCE_ENV: test
       TZ: UTC
+      DATABASE_URL: postgres://komerce:komerce@localhost:5432/komerce_test
+      JWT_SECRET: ci-test-secret-not-for-prod
+      ADMIN_PASSWORD: ci-test-admin
+      STRIPE_SECRET_KEY: sk_test_dummy
+      STRIPE_WEBHOOK_SECRET: whsec_dummy
+      QR_SECRET: ci-test-qr-secret
+      AUTHKEY_API_KEY: ci-dummy
+      PAYPAL_CLIENT_ID: ci-dummy
+      PAYPAL_CLIENT_SECRET: ci-dummy
+      PAYPAL_WEBHOOK_ID: ci-dummy
+      META_WA_APP_SECRET: ci-dummy
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 9c24a68e70d475392c2c099900a2de25f66b003b
+          ref: c06f4779dcf1de6c214e6827d538fedc38dacc60
           fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: npm ci --prefix public/boutique --ignore-scripts --no-audit --no-fund
-      - name: Direct dashboard mounting tests
-        run: npx jest --config jest.unit.config.js --runInBand tests/unit/canonical-on-demand-app.test.js
-      - name: Canonical preflight on exact candidate
-        run: npm run pr:preflight -- --base 65bcc304359e078d12de268b2134120f9d885ce9
+      - name: Load canonical schema and pending migrations on disposable database
+        run: |
+          test "$(git rev-parse HEAD)" = "c06f4779dcf1de6c214e6827d538fedc38dacc60"
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f docs/db/railway-live-schema.sql
+          node scripts/ci-migrate.js
+      - name: Execute real PostgreSQL lifecycle, retention and scope checks
+        run: npm run test:integration -- --files=tests/integration/on-demand-conversations.test.js
