@@ -26,3 +26,11 @@ describe('reprovision lookup guard', () => {
     expect(source).toMatch(/market_operating_assignments/);
   });
 });
+
+test('minor units come from the canonical FX registry',()=>{
+  const {validateProvisioningCurrency}=require('../../services/market-lifecycle-service');
+  expect(validateProvisioningCurrency('eur',undefined)).toBe(2);
+  expect(validateProvisioningCurrency('DJF',0)).toBe(0);
+  expect(()=>validateProvisioningCurrency('XAF',2)).toThrow(/décimales/);
+  expect(()=>validateProvisioningCurrency('ZZZ',0)).toThrow(/non prise en charge/);
+});

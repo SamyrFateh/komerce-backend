@@ -163,7 +163,7 @@ describe('checkout — state machine relais', () => {
   test('relais loading (requête pendue) → Confirmer disabled + sous-texte chargement', async () => {
     apiGet.mockImplementation((path) => {
       if (path === '/api/relais') return new Promise(() => {}); // pend
-      return Promise.resolve({});
+      return Promise.resolve(path.startsWith('/api/payments/mobile-money/availability?')?{available:false,checkout_modes:{cash_relais:true}}:{});
     });
     await openCheckout();
     const btn = confirmBtn();
@@ -175,7 +175,7 @@ describe('checkout — state machine relais', () => {
   test('relais error (timeout) → Confirmer disabled + bouton Réessayer visible + pas de crash DOM', async () => {
     apiGet.mockImplementation((path) => {
       if (path === '/api/relais') return Promise.reject(timeoutError('/api/relais'));
-      return Promise.resolve({});
+      return Promise.resolve(path.startsWith('/api/payments/mobile-money/availability?')?{available:false,checkout_modes:{cash_relais:true}}:{});
     });
     await openCheckout();
     expect(state.orderData.relayStatus).toBe('error');
@@ -189,7 +189,7 @@ describe('checkout — state machine relais', () => {
   test('relais empty → Confirmer disabled + message "Aucun relais disponible"', async () => {
     apiGet.mockImplementation((path) => {
       if (path === '/api/relais') return Promise.resolve([]);
-      return Promise.resolve({});
+      return Promise.resolve(path.startsWith('/api/payments/mobile-money/availability?')?{available:false,checkout_modes:{cash_relais:true}}:{});
     });
     await openCheckout();
     expect(state.orderData.relayStatus).toBe('empty');
@@ -202,7 +202,7 @@ describe('checkout — state machine relais', () => {
       if (path === '/api/relais') {
         return Promise.resolve([{ id: 42, name: 'Relais Moroni', island: 'Grande Comore' }]);
       }
-      return Promise.resolve({});
+      return Promise.resolve(path.startsWith('/api/payments/mobile-money/availability?')?{available:false,checkout_modes:{cash_relais:true}}:{});
     });
     await openCheckout();
     expect(state.orderData.relayStatus).toBe('ready');
@@ -219,7 +219,7 @@ describe('checkout — state machine relais', () => {
           ? Promise.reject(timeoutError('/api/relais'))
           : Promise.resolve([{ id: 7, name: 'Relais Mutsamudu', island: 'Anjouan' }]);
       }
-      return Promise.resolve({});
+      return Promise.resolve(path.startsWith('/api/payments/mobile-money/availability?')?{available:false,checkout_modes:{cash_relais:true}}:{});
     });
     await openCheckout();
     const cartBefore = state.cart;

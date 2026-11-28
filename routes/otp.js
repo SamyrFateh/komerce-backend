@@ -8,7 +8,7 @@
  * @outputs       kmrc_jwt_cookie, lightweight_user, otp_state
  * @depends       services/notification-service.js, services/otp-test-mode.js, utils/phone.js, db.js
  * @used-by       bootstrap/api-routes.js, public/boutique/js/b-identity.js, public/boutique/js/b-tracking.js, checkout
- * @db-read       otp_codes, users
+ * @db-read       otp_codes, users, assignment_memberships, market_operating_assignments, markets
  * @db-write      otp_codes, users
  * @db-txn        otp_single_use, test_mode_never_prod, phone_normalization
  * @doctrine      otp_une_fois, session_client_legere, test_mode_never_prod, phone_normalization
@@ -40,7 +40,9 @@ const OTP_WINDOW_MIN = 15;
 const MAX_REQUESTS_PER_WINDOW = 3;
 const OTP_BCRYPT_ROUNDS = 8;
 
+const INTERNAL_MARKET_LOGIN = 'internal_market_login';
 const ALLOWED_PURPOSES = new Set([
+  INTERNAL_MARKET_LOGIN,
   'login',
   'checkout',
   'shared_cart_access',
@@ -126,6 +128,63 @@ async function issueVerifiedSession(res, phone, name) {
   return { user, created };
 }
 
+
+// Internal bootstrap authenticates an already provisioned lead only.
+// It is not a user writer and does not determine dashboard permissions.
+// Reject ambiguity even if only one of the matched accounts is a lead.
+async function findInternalMarketLead(phone) {
+  const { rows } = await pool.query(
+    `SELECT u.id, u.full_name, u.phone, u.email, u.role,
+            u.account_activation_required,
+            EXISTS (
+              SELECT 1 FROM assignment_memberships am
+              JOIN market_operating_assignments a ON a.id=am.assignment_id
+              JOIN markets m ON m.id=a.market_id
+              WHERE am.user_id=u.id AND am.status='ACTIVE' AND am.is_operating_lead=TRUE
+                AND a.status='ACTIVE' AND m.lifecycle_status IN ('PROVISIONING','ACTIVE','SUSPENDED')
+            ) AS eligible_lead
+       FROM users u WHERE u.phone=$1 OR u.whatsapp_phone=$1 LIMIT 2`,
+    [phone]
+  );
+  const u = rows[0];
+  return rows.length === 1 && u.role === 'market_operator' &&
+    u.phone === phone && !u.account_activation_required && u.eligible_lead === true &&
+    /^[a-z]+(?:-[a-z]+)*\.[a-z]+(?:-[a-z]+)*@komerce\.co$/.test(String(u.email || ''))
+    ? u : null;
+}
+
+function internalOtpPurpose(user) {
+  // Tie the challenge to the specific account, not just a reusable phone.
+  return INTERNAL_MARKET_LOGIN + ':' + user.id;
+}
+function internalOtpDenied(res) {
+  return res.status(401).json({ok:false,success:false,error:'Code expiré ou invalide. Redemandez un code.'});
+}
+
+async function verifyInternalMarketLogin(res, phone, code) {
+  const user = await findInternalMarketLead(phone);
+  if (!user) return internalOtpDenied(res);
+  const purpose = internalOtpPurpose(user);
+  // Reserve one attempt atomically. Concurrent attempts cannot bypass the cap.
+  const attempt = await pool.query(
+    `UPDATE otp_codes SET attempts=attempts+1
+      WHERE id=(SELECT id FROM otp_codes WHERE phone=$1 AND purpose=$2
+        AND verified=FALSE AND expires_at>NOW() ORDER BY created_at DESC LIMIT 1)
+      AND verified=FALSE AND expires_at>NOW() AND attempts<$3
+      RETURNING id,code`, [phone,purpose,MAX_ATTEMPTS]);
+  const otp = attempt.rows[0];
+  if (!otp || !(await bcrypt.compare(code, otp.code))) return internalOtpDenied(res);
+  // Only one successful verification may consume this challenge.
+  const consumed = await pool.query(
+    `UPDATE otp_codes SET verified=TRUE,consumed_at=NOW()
+      WHERE id=$1 AND verified=FALSE AND expires_at>NOW() RETURNING id`, [otp.id]);
+  if (!consumed.rows[0]) return internalOtpDenied(res);
+  const current = await findInternalMarketLead(phone);
+  if (!current || current.id !== user.id) return internalOtpDenied(res);
+  setAuthCookie(res, signKomerceJwt(current, phone));
+  return res.json({ok:true,success:true,message:'Numéro vérifié',created:false,user:buildUserPayload(current,phone)});
+}
+
 /**
  * POST /api/auth/otp/request
  *
@@ -143,8 +202,8 @@ router.post('/request', async (req, res, next) => {
       });
     }
 
-    phone = normalizePhone(phone);
     purpose = normalizePurpose(purpose);
+    phone = purpose === INTERNAL_MARKET_LOGIN ? _normalizePhoneUtil(phone) : normalizePhone(phone);
 
     if (!/^\+\d{8,15}$/.test(phone)) {
       return res.status(400).json({
@@ -162,36 +221,45 @@ router.post('/request', async (req, res, next) => {
       });
     }
 
-    // G6 owner-provisioned buyer: the canonical OTP is already bcrypt-hashed
-    // in otp_codes by a protected staging-only runner. Never call WhatsApp,
-    // never echo its code, never fall through to the global test mode.
-    const g6 = await hasPreparedG6BuyerOtp(pool, {phone,purpose});
-    if (g6) {
-      if (!g6.prepared) return res.status(409).json({
-        ok:false,success:false,code:'G6_OTP_FIXTURE_MISSING',
-        error:'Code de recette absent ou expiré',
-      });
-      return res.json({
-        ok:true,success:true,message:'Code de recette préparé (aucun envoi externe)',
-        expiresIn:600,retryAfter:0,
-      });
-    }
+    const internal = purpose === INTERNAL_MARKET_LOGIN;
+    const internalUser = internal ? await findInternalMarketLead(phone) : null;
+    // Same outward response for absent, ambiguous and ineligible accounts.
+    if (internal && !internalUser) return res.json({ok:true,success:true,message:'Code envoyé',expiresIn:OTP_EXPIRY_MIN*60,retryAfter:OTP_RESEND_COOLDOWN_SEC});
+    if (internal) purpose = internalOtpPurpose(internalUser);
 
-    // ── TEST MODE : court-circuit, pas d'envoi WhatsApp, code maître ──
-    // Renvoie immédiatement le code maître pour que le test l'utilise.
-    // (jamais atteint en production : isOtpTestMode() y est toujours false)
-    if (isOtpTestMode()) {
-      log.warn(`[OTP][TEST] /request court-circuité pour ${phone} (code maître)`);
-      return res.json({
-        ok: true,
-        success: true,
-        message: 'Code envoyé (TEST MODE)',
-        expiresIn: OTP_EXPIRY_MIN * 60,
-        retryAfter: 0,
-        _test: { mode: true, code: getMasterCode() },
-      });
+    // Keep the historical buyer path intact and unreachable for internal challenges.
+    if (!internal) {
+      // G6 owner-provisioned buyer: the canonical OTP is already bcrypt-hashed
+      // in otp_codes by a protected staging-only runner. Never call WhatsApp,
+      // never echo its code, never fall through to the global test mode.
+      const g6 = await hasPreparedG6BuyerOtp(pool, {phone,purpose});
+      if (g6) {
+        if (!g6.prepared) return res.status(409).json({
+          ok:false,success:false,code:'G6_OTP_FIXTURE_MISSING',
+          error:'Code de recette absent ou expiré',
+        });
+        return res.json({
+          ok:true,success:true,message:'Code de recette préparé (aucun envoi externe)',
+          expiresIn:600,retryAfter:0,
+        });
+      }
+
+      // ── TEST MODE : court-circuit, pas d'envoi WhatsApp, code maître ──
+      // Renvoie immédiatement le code maître pour que le test l'utilise.
+      // (jamais atteint en production : isOtpTestMode() y est toujours false)
+      if (isOtpTestMode()) {
+        log.warn(`[OTP][TEST] /request court-circuité pour ${phone} (code maître)`);
+        return res.json({
+          ok: true,
+          success: true,
+          message: 'Code envoyé (TEST MODE)',
+          expiresIn: OTP_EXPIRY_MIN * 60,
+          retryAfter: 0,
+          _test: { mode: true, code: getMasterCode() },
+        });
+      }
+      // ── /TEST MODE ────────────────────────────────────────────────────
     }
-    // ── /TEST MODE ────────────────────────────────────────────────────
 
     const recentOtp = await pool.query(
       `SELECT created_at
@@ -259,7 +327,10 @@ router.post('/request', async (req, res, next) => {
       [phone, codeHash, purpose, expiresAt]
     );
 
-    const existingUser = await findUserByPhone(phone);
+    // Internal staging tests exercise the real hashed, single-use challenge.
+    // The global master code is never accepted for this purpose.
+    if (internal && isOtpTestMode()) return res.json({ok:true,success:true,message:'Code envoyé (TEST MODE)',expiresIn:OTP_EXPIRY_MIN*60,retryAfter:OTP_RESEND_COOLDOWN_SEC,_test:{mode:true,code}});
+    const existingUser = internalUser || await findUserByPhone(phone);
     const customerName = existingUser?.full_name || 'Client Komerce';
 
     const waResult = await sendOtpMessage({
@@ -277,7 +348,7 @@ router.post('/request', async (req, res, next) => {
       message: 'Code envoyé',
       expiresIn: OTP_EXPIRY_MIN * 60,
       retryAfter: OTP_RESEND_COOLDOWN_SEC,
-      _dev: (process.env.NODE_ENV === 'development' && process.env.OTP_DEV_ECHO === 'true')
+      _dev: (!internal && process.env.NODE_ENV === 'development' && process.env.OTP_DEV_ECHO === 'true')
         ? { code, waResult: waResult.success }
         : undefined,
     });
@@ -301,9 +372,9 @@ router.post('/verify', async (req, res, next) => {
       });
     }
 
-    phone = normalizePhone(phone);
-    code = String(code).trim();
     purpose = normalizePurpose(purpose);
+    phone = purpose === INTERNAL_MARKET_LOGIN ? _normalizePhoneUtil(phone) : normalizePhone(phone);
+    code = String(code).trim();
 
     if (!/^\d{6}$/.test(code)) {
       return res.status(400).json({
@@ -319,6 +390,11 @@ router.post('/verify', async (req, res, next) => {
         success: false,
         error: 'Usage OTP invalide',
       });
+    }
+
+    if (purpose === INTERNAL_MARKET_LOGIN) {
+      if (!/^\+\d{8,15}$/.test(phone || '')) return internalOtpDenied(res);
+      return await verifyInternalMarketLogin(res, phone, code);
     }
 
     // ── TEST MODE : le code maître valide pour n'importe quel numéro ──

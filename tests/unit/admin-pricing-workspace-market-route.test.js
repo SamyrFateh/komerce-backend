@@ -648,3 +648,43 @@ describe('#3994 ME-04/ME-13 — audit économique marché authentifié, lecture 
     expect(db.query).not.toHaveBeenCalled();
   });
 });
+
+describe('market preparation draft editor #4370',()=>{
+  beforeEach(()=>{
+    db.query.mockImplementation(async (sql,params)=>{
+      if(String(sql).includes('SELECT role FROM users'))return {rows:[{role:mockRole}]};
+      return {rows:[{id:params[0]==='CM'?'market-cm':'market-cg',code:params[0],name:params[0],currency:'XAF',lifecycle_status:'PROVISIONING'}]};
+    });
+  });
+  const base='/api/admin/workspaces/pricing/market/CM';
+  test('existing editor loads a restricted preparation projection and saves a draft',async()=>{
+    const read=await request(app()).get(base);
+    expect(read.status).toBe(200);
+    expect(read.body).toMatchObject({preparation_only:true,capabilities:{local_price_drafts:true,local_price_activation:false,local_price_buyer_activation:false}});
+    expect(mockWorkspace.buildMarketWorkspace).not.toHaveBeenCalled();
+    const res=await request(app()).post(base+'/products/KPR-1/local-price').send({amount:1000,reason:'Prix initial'});
+    expect(res.status).toBe(200);
+    expect(mockCommercialPrice.setMarketPriceDraft).toHaveBeenCalledTimes(1);
+    expect(mockActivation.activateLocalPrice).not.toHaveBeenCalled();
+    expect(require('../../services/market-delegation-service').resolveAuthorization).toHaveBeenCalledWith(expect.anything(),expect.objectContaining({requiredCapability:'pricing.decide',allowPreparationPricing:true}));
+  });
+  test.each(['/products/KPR-1/local-price/activate','/cost-components/freight/update','/structure-events','/cost-centers/posts/p/commitments'])('commercial or operational write remains blocked: %s',async suffix=>{
+    const res=await request(app()).post(base+suffix).send({});
+    expect(res.status).toBe(409);
+    expect(mockActivation.activateLocalPrice).not.toHaveBeenCalled();
+    expect(mockWorkspace.updateMarketCostComponent).not.toHaveBeenCalled();
+  });
+  test('other market denied despite preparation mode',async()=>{
+    const res=await request(app()).get('/api/admin/workspaces/pricing/market/CG/commercial-prices');
+    expect(res.status).toBe(403);
+  });
+});
+
+test('preparation economic planning writes never unlock actuals or commitments',async()=>{
+  db.query.mockImplementation(async (sql,params)=>({rows:[{id:'market-cm',code:params[0],name:'CM',currency:'XAF',lifecycle_status:'PROVISIONING'}]}));
+  for(const path of ['/posts/p/actuals','/posts/p/commitments','/commitments/c/movements']){
+    const res=await request(app()).post('/api/admin/workspaces/pricing/market/CM/cost-centers'+path).send({});
+    expect(res.status).toBe(409);
+  }
+  expect(require('../../services/market-delegation-service').resolveAuthorization).not.toHaveBeenCalled();
+});

@@ -188,11 +188,20 @@ function setCheckoutTotal(total) {
   };
 }
 
+// Fixture explicite du nouveau contrat serveur, sans changer le garde produit.
+function authorizedPaymentProjection() {
+  return {available:false,checkout_modes:{cash_relais:true,stripe_eur:true,paypal_eur:true,mobile_money:false}};
+}
+function paymentAvailabilityForTest(path){
+  return path.startsWith('/api/payments/mobile-money/availability?')?authorizedPaymentProjection():{};
+}
 // Les tests de paiement simulent un devis serveur accepté, non un total local.
 function setConfirmedCheckoutQuote(total = 20000) {
   const od = state.orderData;
   const items = od.checkoutSelection?.items || buildCheckoutSelection().items;
   od.serverQuote = { key: checkoutQuoteKey(od.selectedRelaisId, items), total_kmf: total, error: null };
+  od.payment_mode ||= 'cash_relais';
+  od.mobileMoneyAvailability = authorizedPaymentProjection();
 }
 
 function resetDom() {
@@ -826,6 +835,17 @@ describe('b-checkout', () => {
       expect(apiPost).not.toHaveBeenCalled();
     });
 
+    it('un mode absent de la projection serveur ne permet aucune commande',async()=>{
+      state.orderData={selectedRelaisId:7,payment_mode:'cash_relais',relayStatus:'ready'};
+      state.cart=[{product:{id:1},qty:1}];
+      setConfirmedCheckoutQuote();
+      state.orderData.mobileMoneyAvailability={available:false,checkout_modes:{cash_relais:false}};
+      await submitOrder(document.createElement('button'));
+      expect(requireIdentity).not.toHaveBeenCalled();
+      expect(apiPost).not.toHaveBeenCalled();
+      expect(showToast).toHaveBeenCalledWith(expect.stringContaining('indisponible'),'error');
+    });
+
     it('OTP annulé (requireIdentity résout null) → aucune commande créée, panier intact', async () => {
       state.orderData = { selectedRelaisId: 1, relayStatus: 'ready' };
       requireIdentity.mockResolvedValue(null);
@@ -1408,7 +1428,7 @@ describe('b-checkout', () => {
       state.orderData.selectedRelaisId = 1;
       apiGet.mockImplementation(path => path === '/api/relais'
         ? Promise.resolve([{ id: 1, name: 'Relais Moroni', island: 'Grande Comore' }])
-        : Promise.resolve({}));
+        : Promise.resolve(paymentAvailabilityForTest(path)));
       const verified = { full_name: 'Amina', phone: '+269123456' };
       apiPost.mockImplementation(path => {
         if (path !== '/api/orders/preview') return Promise.resolve({});
@@ -1650,13 +1670,15 @@ describe('b-checkout', () => {
       apiGet.mockImplementation(() => Promise.resolve({}));
     });
 
-    it('mode cash actif par défaut, chip Stripe/PayPal masqués/inactifs au départ', async () => {
+    it('cash présélectionné mais non autorisé avant réponse serveur', async () => {
       renderCheckout();
       await flush();
 
       let cashRadio = dom.orderBody.querySelector('input[value="cash_relais"]');
       expect(cashRadio.checked).toBe(true);
-      expect(dom.orderBody.querySelector('#ck-chip-cash').classList.contains('ck-pay-chip--active')).toBe(true);
+      expect(cashRadio.disabled).toBe(true);
+      expect(dom.orderBody.querySelector('input[value="stripe_eur"]').disabled).toBe(true);
+      expect(dom.orderBody.querySelector('input[value="paypal_eur"]').disabled).toBe(true);
     });
 
     it('bascule sur Stripe → révèle le bloc carte, affiche "Paiement carte indisponible" (Stripe non chargé en test)', async () => {
@@ -1669,6 +1691,7 @@ describe('b-checkout', () => {
       let originalStripe = window.Stripe;
       window.Stripe = function StripeStub() { return {}; };
 
+      state.orderData.mobileMoneyAvailability = authorizedPaymentProjection();
       let stripeRadio = dom.orderBody.querySelector('input[value="stripe_eur"]');
       stripeRadio.checked = true;
       stripeRadio.dispatchEvent(new Event('change', { bubbles: true }));
@@ -1688,6 +1711,7 @@ describe('b-checkout', () => {
       renderCheckout();
       await flush();
 
+      state.orderData.mobileMoneyAvailability = authorizedPaymentProjection();
       let paypalRadio = dom.orderBody.querySelector('input[value="paypal_eur"]');
       paypalRadio.checked = true;
       paypalRadio.dispatchEvent(new Event('change', { bubbles: true }));
@@ -1704,13 +1728,14 @@ describe('b-checkout', () => {
       expect(document.getElementById('btn-confirm-order').style.display).toBe('none');
     });
 
-    it('chip PayPal masquée par défaut, révélée si isPayPalEnabled() résout true', async () => {
-      isPayPalEnabled.mockResolvedValueOnce(true);
+    it('PayPal n’est révélé que par la projection du relais, jamais par un booléen global', async () => {
+      apiGet.mockImplementation(path=>Promise.resolve(path==='/api/relais'?[{id:7,name:'Relais Moroni',island:'Grande Comore'}]:paymentAvailabilityForTest(path)));
       renderCheckout();
       await flush();
-
       expect(document.getElementById('ck-chip-paypal').style.display).toBe('');
-      expect(ensurePayPalSDK).toHaveBeenCalledTimes(1);
+      expect(document.querySelector('input[value="paypal_eur"]').disabled).toBe(false);
+      expect(isPayPalEnabled).not.toHaveBeenCalled();
+      expect(ensurePayPalSDK).not.toHaveBeenCalled();
     });
 
     it('checkWalletBalance : solde 0 → section masquée, pas de crédit proposé (règle §3, simplification checkout final)', async () => {
@@ -1774,7 +1799,7 @@ describe('b-checkout', () => {
       // → on fait résoudre /api/relais pour passer par la vraie state machine.
       apiGet.mockImplementation((path) => {
         if (path === '/api/relais') return Promise.resolve([{ id: 1, name: 'Relais Moroni', island: 'Grande Comore' }]);
-        return Promise.resolve({});
+        return Promise.resolve(paymentAvailabilityForTest(path));
       });
       requireIdentity.mockResolvedValue(null); // on ne pousse pas jusqu'à l'appel API ici
       // Le bouton exige le devis serveur (total livraison comprise) : POST /api/orders/preview.
@@ -1905,6 +1930,7 @@ describe('b-checkout', () => {
     async function activatePaypalAndGetCallbacks() {
       renderCheckout();
       await flush();
+      state.orderData.mobileMoneyAvailability = authorizedPaymentProjection();
       let paypalRadio = dom.orderBody.querySelector('input[value="paypal_eur"]');
       paypalRadio.checked = true;
       paypalRadio.dispatchEvent(new Event('change', { bubbles: true }));

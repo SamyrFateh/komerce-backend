@@ -26,8 +26,8 @@ import { state, dom, $, $$, scroll }  from './b-store.js';
 import { fmt, sanitize, genIdempotencyKey, apiGet, apiPost, optimizeImgUrl } from './b-utils.js';
 import { fmtMarketAmount, fmtLocalProductPrice, fmtLocalLinesTotal } from './b-market-price-format.js';
 import { showToast, saveCart } from './b-cart-core.js';
-import { renderPayPalButton, isPayPalEnabled, ensurePayPalSDK } from './b-paypal.js'; // Migration 079
-import { getMobileMoneyAvailabilityForRelay, initiateMobileMoneyPayment, waitForMobileMoneyPayment } from './b-mobile-money.js'; // Migration 169
+import { renderPayPalButton, ensurePayPalSDK } from './b-paypal.js'; // Migration 079
+import { getMobileMoneyAvailabilityForRelay, checkoutModeAvailable, initiateMobileMoneyPayment, waitForMobileMoneyPayment } from './b-mobile-money.js'; // Migration 169
 import { openCart, closeCart, renderCart, clearCart, addToCart }  from './b-cart.js';
 import { getScrollY, scrollToPosition, scrollPageToTop } from './b-scroll-owner.js';
 import { requireIdentity, getCurrentIdentity, restoreIdentity, openIdentityModal }  from './b-identity.js';
@@ -991,7 +991,8 @@ function _renderMobileMoneyAvailability(od = state.orderData || {}) {
   const providerCurrency = document.getElementById('mobile-money-provider-currency');
   const status = document.getElementById('mobile-money-status');
   const selected = od.payment_mode === 'mobile_money';
-  const available = availability?.available === true;
+  const available = checkoutModeAvailable(availability,'mobile_money');
+  _renderCheckoutCollectionModes(od);
 
   if (chip) {
     chip.style.display = available || selected ? '' : 'none';
@@ -1010,23 +1011,52 @@ function _renderMobileMoneyAvailability(od = state.orderData || {}) {
   }
 }
 
+function _renderCheckoutCollectionModes(od) {
+  for(const [id,mode] of [['ck-chip-cash','cash_relais'],['ck-chip-stripe','stripe_eur'],['ck-chip-paypal','paypal_eur']]){
+    const chip=document.getElementById(id);
+    const radio=chip?.querySelector('input[name="payment_mode"]');
+    const allowed=checkoutModeAvailable(od.mobileMoneyAvailability,mode);
+    if(radio)radio.disabled=!allowed;
+    if(chip){
+      chip.classList.toggle('ck-pay-chip--off',!allowed);
+      chip.classList.toggle('ck-pay-chip--active',allowed&&radio?.checked===true);
+      chip.title=allowed?'':od.mobileMoneyAvailability?'Indisponible pour ce point relais':'Vérification des moyens de paiement…';
+      if(mode==='paypal_eur')chip.style.display=allowed||od.payment_mode===mode?'':'none';
+    }
+  }
+  const ppWrap=document.getElementById('paypal-wrap');
+  if(ppWrap && !checkoutModeAvailable(od.mobileMoneyAvailability,'paypal_eur')){
+    ppWrap.classList.remove('is-visible');
+    const confirm=document.getElementById('btn-confirm-order');
+    if(confirm)confirm.style.display='';
+  }
+  const stripeWrap=document.getElementById('stripe-card-wrap');
+  if(stripeWrap && !checkoutModeAvailable(od.mobileMoneyAvailability,'stripe_eur'))stripeWrap.classList.remove('is-visible');
+}
+
 async function _refreshMobileMoneyAvailability(od = state.orderData || {}) {
   const relayId = String(od.selectedRelaisId || '').trim();
+  const generation=(od.paymentAvailabilityGeneration||0)+1;
+  od.paymentAvailabilityGeneration=generation;
   od.mobileMoneyAvailability = null;
   _renderMobileMoneyAvailability(od);
   refreshCheckoutComputedUI();
   if (!relayId) return;
 
   try {
-    const availability = await getMobileMoneyAvailabilityForRelay(relayId);
-    if (String(od.selectedRelaisId || '').trim() !== relayId) return;
+    const availability = await getMobileMoneyAvailabilityForRelay(relayId,{checkout:true});
+    if (state.orderData!==od || od.paymentAvailabilityGeneration!==generation || String(od.selectedRelaisId || '').trim() !== relayId) return;
     od.mobileMoneyAvailability = availability || { available: false, reason: 'availability_invalid' };
   } catch (error) {
-    if (String(od.selectedRelaisId || '').trim() !== relayId) return;
+    if (state.orderData!==od || od.paymentAvailabilityGeneration!==generation || String(od.selectedRelaisId || '').trim() !== relayId) return;
     od.mobileMoneyAvailability = { available: false, reason: 'availability_unreachable' };
     console.warn('[checkout] Mobile Money availability:', error);
   }
   _renderMobileMoneyAvailability(od);
+  const selected=document.querySelector('#ck-pay-grid input[name="payment_mode"]:checked');
+  if(selected && checkoutModeAvailable(od.mobileMoneyAvailability,selected.value)){
+    selected.dispatchEvent(new Event('change',{bubbles:true}));
+  }
   refreshCheckoutComputedUI();
 }
 
@@ -1457,7 +1487,7 @@ function refreshCheckoutComputedUI() {
   // sont pas chargés (ready) et qu'aucun relais n'est sélectionné.
   const relayStatus = od.relayStatus || 'idle';
   const relayOk = relayStatus === 'ready' && !!od.selectedRelaisId;
-  const mobileMoneyOk = mode !== 'mobile_money' || od.mobileMoneyAvailability?.available === true;
+  const mobileMoneyOk = checkoutModeAvailable(od.mobileMoneyAvailability,mode);
   const hasCheckoutItems = _checkoutItems().length > 0;
 
   if (!hasCheckoutItems && btn_busy(confirmBtn) === false) {
@@ -1468,7 +1498,7 @@ function refreshCheckoutComputedUI() {
     else if (relayStatus === 'empty') subText = 'Aucun relais disponible';
     else subText = 'Choisissez un point relais';
   } else if (!mobileMoneyOk && btn_busy(confirmBtn) === false) {
-    subText = 'Mobile Money indisponible pour ce point relais';
+    subText = od.mobileMoneyAvailability ? 'Moyen de paiement indisponible pour ce point relais' : 'Vérification des moyens de paiement…';
   }
   const quoteError = od.serverQuote && od.serverQuote.error;
   if (relayOk && hasCheckoutItems && mobileMoneyOk && !quoteReady && btn_busy(confirmBtn) === false) {
@@ -2228,7 +2258,7 @@ export function renderCheckout() {
     payGrid.className = 'ck-pay-grid';
     payGrid.innerHTML =
       '<label class="ck-pay-chip" id="ck-chip-cash">'
-      + '<input type="radio" name="payment_mode" value="cash_relais" checked>'
+      + '<input type="radio" name="payment_mode" value="cash_relais" checked disabled>'
       + '<span class="ck-chip-icon">🏪</span><span class="ck-chip-lbl">Cash</span>'
       + '</label>'
       + '<label class="ck-pay-chip" id="ck-chip-mobile-money" style="display:none;">'
@@ -2237,11 +2267,11 @@ export function renderCheckout() {
       + '<span class="ck-chip-lbl"><span id="ck-mobile-money-label">Mobile Money</span><br><em id="ck-mobile-money-currency" class="ck-stripe-tag"></em></span>'
       + '</label>'
       + '<label class="ck-pay-chip" id="ck-chip-stripe">'
-      + '<input type="radio" name="payment_mode" value="stripe_eur">'
+      + '<input type="radio" name="payment_mode" value="stripe_eur" disabled>'
       + '<span class="ck-chip-icon">💳</span><span class="ck-chip-lbl">Carte<br><em class="ck-stripe-tag">Stripe</em></span>'
       + '</label>'
       + '<label class="ck-pay-chip" id="ck-chip-paypal" style="display:none;">' /* affiché si PayPal enabled */
-      + '<input type="radio" name="payment_mode" value="paypal_eur">'
+      + '<input type="radio" name="payment_mode" value="paypal_eur" disabled>'
       + '<span class="ck-chip-icon">🅿️</span><span class="ck-chip-lbl">PayPal<br><em class="ck-stripe-tag">4× possible</em></span>'
       + '</label>';
     checkoutAside.appendChild(payGrid);
@@ -2287,15 +2317,8 @@ export function renderCheckout() {
       + '<div id="paypal-error" class="k-paypal-error"></div>';
     checkoutAside.appendChild(paypalWrap);
 
-    /* Détection serveur PayPal activé → affiche la chip */
-    isPayPalEnabled().then(enabled => {
-      const chip = document.getElementById('ck-chip-paypal');
-      if (chip && enabled) {
-        chip.style.display = '';
-        ensurePayPalSDK().catch(() => {});
-      }
-    });
-
+    // Payment chips are projected from the selected relay's server availability.
+    _renderCheckoutCollectionModes(od);
 
     if (recipientBlock) checkoutAside.appendChild(recipientBlock);
     else checkoutAside.appendChild(secureNotice);
@@ -2348,8 +2371,8 @@ export function renderCheckout() {
  */
   function updatePaymentUI({ userInitiated = false } = {}) {
       const mode = document.querySelector('input[name="payment_mode"]:checked');
-      const isStripe = mode && mode.value === 'stripe_eur';
-      const isPaypal = mode && mode.value === 'paypal_eur';
+      const isStripe = mode && mode.value === 'stripe_eur' && checkoutModeAvailable(od.mobileMoneyAvailability,'stripe_eur');
+      const isPaypal = mode && mode.value === 'paypal_eur' && checkoutModeAvailable(od.mobileMoneyAvailability,'paypal_eur');
       const isMobileMoney = mode && mode.value === 'mobile_money';
       const nextPaymentMode = mode ? mode.value : 'cash_relais';
       if (userInitiated && od.payment_mode && od.payment_mode !== nextPaymentMode) _invalidateCheckoutPaymentAttempt();
@@ -2374,6 +2397,7 @@ export function renderCheckout() {
         ppWrap.classList.toggle('is-visible', isPaypal);
         if (isPaypal && !ppWrap.dataset.rendered) {
           ppWrap.dataset.rendered = '1';
+          ensurePayPalSDK().catch(() => {});
           renderPayPalButton('paypal-button-container', {
             validateBeforeClick: () => _validateCheckoutForm(),
             prepareKomerceOrder: () => _createKomerceOrderForPayPal(),
@@ -2626,6 +2650,10 @@ export async function submitOrder(btn) {
   }
   const acceptedTotalKmf = acceptedQuote.total;
 
+  if(!checkoutModeAvailable(od.mobileMoneyAvailability,od.payment_mode||'cash_relais')){
+    showToast('Ce moyen de paiement est indisponible pour ce point relais.', 'error');
+    return;
+  }
   const isMobileMoney = od.payment_mode === 'mobile_money';
   const mobileMoneyAvailability = od.mobileMoneyAvailability || null;
   const mobileMoneyMsisdn = String(document.getElementById('mobile-money-msisdn')?.value || '').trim();
@@ -2877,6 +2905,10 @@ export function renderOrderSuccess(order, recipientName, clientEmail, fullResult
  */
 async function _validateCheckoutForm() {
   const od = state.orderData || {};
+  if(!checkoutModeAvailable(od.mobileMoneyAvailability,'paypal_eur')){
+    showToast('PayPal est indisponible pour ce point relais.', 'error');
+    return false;
+  }
 
   // 1. Identité du payeur
   const identity = getCurrentIdentity();
@@ -2907,6 +2939,7 @@ async function _validateCheckoutForm() {
  */
 async function _createKomerceOrderForPayPal() {
   const od = state.orderData || {};
+  if(!checkoutModeAvailable(od.mobileMoneyAvailability,'paypal_eur'))throw new Error('PayPal indisponible pour ce point relais.');
 
   // Idempotence : si on a déjà une ref PayPal pending, on la réutilise
   if (state.pendingPaypalOrderRef) {

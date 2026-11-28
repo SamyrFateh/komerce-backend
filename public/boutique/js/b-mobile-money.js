@@ -22,12 +22,20 @@ export function isMobileMoneyFinalStatus(status) {
   return FINAL_STATUSES.has(String(status || '').toLowerCase());
 }
 
-export async function getMobileMoneyAvailabilityForRelay(relayId) {
+export async function getMobileMoneyAvailabilityForRelay(relayId, {checkout=false}={}) {
   if (!relayId) return { available: false, reason: 'relay_required' };
-  return apiGet(`/api/payments/mobile-money/availability?relais_id=${encodeURIComponent(relayId)}`, {
+  return apiGet(`/api/payments/mobile-money/availability?relais_id=${encodeURIComponent(relayId)}${checkout?'&checkout=1':''}`, {
     retries: 0,
     timeoutMs: 6000,
   });
+}
+
+// Never infer eligibility from the browsing market, provider brand, or the
+// selected radio. Missing, stale or malformed server projection fails closed.
+export function checkoutModeAvailable(availability,mode) {
+  return ['cash_relais','stripe_eur','paypal_eur','mobile_money'].includes(mode) &&
+    availability?.checkout_modes?.[mode]===true &&
+    (mode!=='mobile_money'||availability.available===true);
 }
 
 export async function initiateMobileMoneyPayment(orderReference, msisdn) {

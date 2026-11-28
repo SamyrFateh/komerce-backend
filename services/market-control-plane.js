@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        canonical market code (server-validated), read-only DB executor
  * @outputs       per-market control view (assignment, team, ceiling, payment, cash policy, relais) and gap report
- * @depends       db.js, services/market-delegation-service.js, services/market-delivery-proof-service.js
+ * @depends       services/routing.js, services/fx-authority.js, services/economic-cost-reference-service.js, services/market-commercial-price-service.js, services/market-payment-provider-config-service.js, db.js, services/market-delegation-service.js, services/market-delivery-proof-service.js
  * @used-by       routes/admin-market-control-plane.js
  * @db-read       market_settlements, disputes, orders, markets, currency_parities, carriers, capability_registry, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, market_payment_providers, market_cash_control_policies, relais, market_delivery_attestations
  * @db-write      none
@@ -26,12 +26,19 @@
 
 const { delegationError, normalizeMarketCode } = require('./market-delegation-service');
 const { getDeliveryProof } = require('./market-delivery-proof-service');
+const { isRelaisRoutable } = require('./routing');
+const { convert, FxError, MINOR_UNITS } = require('./fx-authority');
+const { getCostReferenceReadiness } = require('./economic-cost-reference-service');
+const { getPricePreparation } = require('./market-commercial-price-service');
+const { listCentralCollectionModes, paymentOptions } = require('./market-payment-provider-config-service');
 
 const TEAM_GRANT = 'team.grant';
 
 const GAP_MESSAGES = Object.freeze({
   MARKET_INACTIVE: 'Le marché est inactif (is_active = false).',
-  NO_CURRENCY_PARITY: 'La devise du marché n’a pas de parité canonique vers EUR (currency_parities) : décision propriétaire requise.',
+  NO_CURRENCY_PARITY: 'La devise du marché n’a pas de conversion ni de parité canonique disponible vers EUR : décision propriétaire requise.',
+  NO_BUSINESS_TIMEZONE: 'Le fuseau horaire IANA du marché doit être renseigné avant ouverture.',
+  INVALID_CURRENCY_UNIT: 'Le nombre de décimales du marché ne correspond pas à celui de la devise canonique.',
   NO_ASSIGNMENT: 'Aucune affectation d’exploitation n’existe pour ce marché.',
   ASSIGNMENT_NOT_ACTIVE: 'L’affectation d’exploitation n’est pas ACTIVE.',
   EMPTY_CEILING: 'Le plafond de capacités de l’affectation est vide.',
@@ -40,9 +47,12 @@ const GAP_MESSAGES = Object.freeze({
   NO_OPERATING_LEAD: 'Aucun responsable opérationnel actif n’est désigné.',
   NO_CENTRAL_REFERENT: 'Aucun référent central n’est désigné.',
   MISSING_AMOUNT_LIMIT: 'Au moins une capability financière du nouveau marché n’a pas de plafond explicite.',
-  NO_PAYMENT_PROVIDER: 'Aucun fournisseur de paiement activé pour ce marché.',
+  NO_PAYMENT_PROVIDER: 'Aucun moyen de paiement admissible : activer le cash au relais ou configurer un fournisseur de paiement.',
   NO_CASH_POLICY: 'Aucune politique de contrôle de caisse n’est définie.',
   NO_RELAIS: 'Aucun relais actif n’est rattaché au marché.',
+  NO_ROUTABLE_RELAIS: 'Aucun relais actif ne possède une destination exploitable par le routage canonique. Compléter la ville/zone ou la destination du relais.',
+  NO_PREPARED_PRICE: 'Aucun prix local positif préparé pour un produit actif dans la devise du marché.',
+  NO_ECONOMIC_REFERENCES: 'Le référentiel économique initial du marché est incomplet.',
 });
 
 /** Pure : transforme un instantané en liste d'écarts ordonnée et stable. */
@@ -52,7 +62,8 @@ function computeGaps(snapshot) {
   if (!snapshot.market.is_active) add('MARKET_INACTIVE');
   // Devise sans parité canonique vers EUR (currency_parities) : aucun total affichable ni conversion fiable.
   // Explicite `=== false` : un snapshot sans l'information ne fabrique pas d'écart.
-  if (snapshot.market.has_currency_parity === false) add('NO_CURRENCY_PARITY');
+  if ((snapshot.market.fx_ready ?? snapshot.market.has_currency_parity) === false) add('NO_CURRENCY_PARITY');
+  if (snapshot.market.lifecycle_status === 'PROVISIONING' && snapshot.market.currency_unit_valid === false) add('INVALID_CURRENCY_UNIT');
   if (!snapshot.assignment) {
     add('NO_ASSIGNMENT');
   } else {
@@ -67,14 +78,32 @@ function computeGaps(snapshot) {
       if (!snapshot.team.some(member => member.is_operating_lead)) add('NO_OPERATING_LEAD');
     }
   }
-  if (!snapshot.paymentProviders.some(provider => provider.is_enabled)) add('NO_PAYMENT_PROVIDER');
+  // A documented cash-only market does not require an electronic provider.
+  const cashReady = snapshot.cashPolicy?.cash_enabled === true;
+  const electronicReady = snapshot.paymentAvailability
+    ? snapshot.paymentAvailability.some(mode => mode.ready)
+    : snapshot.paymentProviders.some(provider => provider.is_enabled);
+  if (!cashReady && !electronicReady) add('NO_PAYMENT_PROVIDER');
   if (!snapshot.cashPolicy) add('NO_CASH_POLICY');
   if (!snapshot.relaisActive) add('NO_RELAIS');
+  // New-market preparation is evaluated only for an initialized market.
+  // Existing active/suspended markets keep the established lifecycle rules.
+  if(snapshot.market.lifecycle_status==='PROVISIONING' && snapshot.preparation){
+    if(snapshot.market.business_timezone === null)add('NO_BUSINESS_TIMEZONE');
+    // Existing relay/routing authority, not a freight-cost attestation.
+    if(snapshot.relaisActive>0 && snapshot.preparation.routableRelays===0)add('NO_ROUTABLE_RELAIS');
+    const prices=snapshot.preparation.prices;
+    if(!prices || prices.drafts+prices.authorized+prices.active===0)add('NO_PREPARED_PRICE');
+    if(snapshot.preparation.economic?.ready!==true){
+      const missing=snapshot.preparation.economic?.missing||[];
+      gaps.push({code:'NO_ECONOMIC_REFERENCES',message:GAP_MESSAGES.NO_ECONOMIC_REFERENCES+(missing.length?' '+missing.join(' ; '):'')});
+    }
+  }
   return gaps;
 }
 
-const PLATFORM_BLOCKERS = new Set(['NO_CURRENCY_PARITY','NO_CENTRAL_REFERENT','EMPTY_CEILING','MISSING_AMOUNT_LIMIT','NO_PAYMENT_PROVIDER','NO_CASH_POLICY']);
-const OPERATIONS_BLOCKERS = new Set(['NO_ASSIGNMENT','ASSIGNMENT_NOT_ACTIVE','NO_ACTIVE_MEMBERSHIP','NO_TEAM_GRANT_HOLDER','NO_OPERATING_LEAD','NO_RELAIS']);
+const PLATFORM_BLOCKERS = new Set(['NO_BUSINESS_TIMEZONE','INVALID_CURRENCY_UNIT','NO_CURRENCY_PARITY','NO_CENTRAL_REFERENT','EMPTY_CEILING','MISSING_AMOUNT_LIMIT','NO_PAYMENT_PROVIDER','NO_CASH_POLICY','NO_ECONOMIC_REFERENCES']);
+const OPERATIONS_BLOCKERS = new Set(['NO_ASSIGNMENT','ASSIGNMENT_NOT_ACTIVE','NO_ACTIVE_MEMBERSHIP','NO_TEAM_GRANT_HOLDER','NO_OPERATING_LEAD','NO_RELAIS','NO_ROUTABLE_RELAIS','NO_PREPARED_PRICE']);
 
 function readinessFromGaps(gaps) {
   const platform = gaps.filter(gap => PLATFORM_BLOCKERS.has(gap.code));
@@ -96,7 +125,7 @@ function requireExecutor(executor) {
 async function listMarkets(executor) {
   const db = requireExecutor(executor);
   const { rows } = await db.query(
-    `SELECT m.code, m.name, m.currency, m.is_active, m.lifecycle_status,
+    `SELECT m.code, m.name, m.currency, m.minor_unit, m.business_timezone, m.is_active, m.lifecycle_status,
             a.status AS assignment_status,
             (SELECT COUNT(*)::int FROM assignment_memberships am
               WHERE am.assignment_id = a.id AND am.status = 'ACTIVE') AS active_members
@@ -112,17 +141,38 @@ async function listMarkets(executor) {
   return rows;
 }
 
+async function resolveCurrencyReadiness(executor, currency, minorUnit) {
+  const validUnit = Object.prototype.hasOwnProperty.call(MINOR_UNITS,currency) &&
+    Number(minorUnit) === MINOR_UNITS[currency];
+  try {
+    const quote = await convert({amount:1,from:'EUR',to:currency,client:executor,round:false});
+    return {fx_ready:quote.amount > 0, currency_unit_valid:validUnit};
+  } catch(error) {
+    // Infrastructure failures remain failures; only the canonical FX domain
+    // refusal is turned into an explicit readiness gap.
+    if (!(error instanceof FxError)) throw error;
+    return {fx_ready:false,currency_unit_valid:validUnit,fx_reason:error.code};
+  }
+}
+
+async function countRoutableRelays(executor,market) {
+  const {rows}=await executor.query(
+    'SELECT id,name,island,island_code,zone FROM relais WHERE market_id=$1 AND is_active',[market.id]);
+  return rows.filter(relay=>isRelaisRoutable(relay,{marketCode:market.code})).length;
+}
+
 async function getControlPlane(executor, marketCode) {
   const db = requireExecutor(executor);
   const code = normalizeMarketCode(marketCode);
   if (!code) throw delegationError('MARKET_CODE_INVALID', 'Code marché invalide.', 400);
 
   const market = (await db.query(
-    `SELECT id, code, name, currency, minor_unit, is_active, lifecycle_status, storefront_texts,
+    `SELECT id, code, name, currency, minor_unit, is_active, lifecycle_status, storefront_texts, business_timezone,
             EXISTS (SELECT 1 FROM currency_parities cp WHERE cp.currency = markets.currency) AS has_currency_parity
        FROM markets WHERE code = $1`, [code]
   )).rows[0];
   if (!market) throw delegationError('MARKET_NOT_FOUND', 'Marché introuvable.', 404);
+  Object.assign(market, await resolveCurrencyReadiness(db,market.currency,market.minor_unit));
 
   const assignment = (await db.query(
     `SELECT id, status, effective_from, effective_until, central_referent_user_id
@@ -171,7 +221,25 @@ async function getControlPlane(executor, marketCode) {
   )).rows[0].n;
 
   const deliveryProof = await getDeliveryProof(db, market.id);
-  const snapshot = { market, assignment, ceiling, team, paymentProviders, cashPolicy, relaisActive, deliveryProof };
+  const centralCollectionModes = await listCentralCollectionModes(db, market.id);
+  const options = paymentOptions();
+  const paymentAvailability = [
+    ...centralCollectionModes.map(mode => ({
+      mode: mode.payment_mode,
+      ready: options.central.some(option => option.mode === mode.payment_mode && option.configured),
+    })),
+    // Use the same first enabled provider as the checkout runtime.
+    ...paymentProviders.filter(provider => provider.is_enabled).slice(0, 1).map(provider => ({
+      mode: 'mobile_money', provider: provider.provider,
+      ready: provider.currency === market.currency && options.mobile.some(option =>
+        option.provider === provider.provider && option.market_code === market.code && option.configured),
+    })),
+  ];
+  const snapshot = { market, assignment, ceiling, team, paymentProviders, cashPolicy, relaisActive, deliveryProof, centralCollectionModes, paymentAvailability };
+  if(market.lifecycle_status==='PROVISIONING' && assignment?.status==='ACTIVE'){
+    const [economic,prices,routableRelays]=await Promise.all([getCostReferenceReadiness(db,market.id),getPricePreparation(db,market),countRoutableRelays(db,market)]);
+    snapshot.preparation={economic,prices,routableRelays};
+  }
   const gaps = computeGaps(snapshot);
   // Choix du transporteur pour l'attestation de livrabilité : fourni uniquement quand la preuve manque
   // (aucune nouvelle route, l'écran de gestion des marchés ne lit que /api/admin/markets).
@@ -227,4 +295,30 @@ async function getExitReadiness(executor, marketCode) {
   };
 }
 
-module.exports = { GAP_MESSAGES, computeGaps, readinessFromGaps, getControlPlane, getExitReadiness, listMarkets };
+// Projection for the authenticated operating lead only. The caller has
+// already resolved a canonical active membership; compare the exact scope
+// again against the current control-plane snapshot before exposing any item.
+async function getPreparationChecklist(executor, authorization) {
+  if (authorization?.lifecycle_status !== 'PROVISIONING' || !authorization.membership_id ||
+      !authorization.capabilities?.includes('team.read')) return null;
+  const control = await getControlPlane(executor, authorization.market_code);
+  if (control.market.lifecycle_status !== 'PROVISIONING' || control.market.id !== authorization.market_id ||
+      control.assignment?.id !== authorization.assignment_id || control.assignment.status !== 'ACTIVE' ||
+      !control.team.some(member => member.membership_id === authorization.membership_id && member.is_operating_lead)) return null;
+  function item(id, label, codes, owner) {
+    const blockers = control.gaps.filter(gap => codes.includes(gap.code)).map(gap => gap.message);
+    return { id, label, owner, status: blockers.length ? 'blocked' : 'ready', blockers };
+  }
+  return {
+    items: [
+      item('identity','Identité, devise, fuseau et mandat',['NO_BUSINESS_TIMEZONE','NO_CURRENCY_PARITY','INVALID_CURRENCY_UNIT','NO_ASSIGNMENT','ASSIGNMENT_NOT_ACTIVE','NO_CENTRAL_REFERENT','EMPTY_CEILING','MISSING_AMOUNT_LIMIT'],'central'),
+      item('team','Équipe locale',['NO_ACTIVE_MEMBERSHIP','NO_TEAM_GRANT_HOLDER','NO_OPERATING_LEAD'],'market'),
+      item('network','Réseau de relais et destination livrable',['NO_RELAIS','NO_ROUTABLE_RELAIS'],'market'),
+      item('payments','Moyens de paiement',['NO_PAYMENT_PROVIDER','NO_CASH_POLICY'],'central'),
+      item('commerce','Préparation des prix locaux (brouillons uniquement avant ouverture)',['NO_PREPARED_PRICE'],'market'),
+      item('economic','Raccordement des centres et familles de coûts',['NO_ECONOMIC_REFERENCES'],'central'),
+    ],
+  };
+}
+
+module.exports = { GAP_MESSAGES, computeGaps, readinessFromGaps, getControlPlane, getExitReadiness, listMarkets, getPreparationChecklist, resolveCurrencyReadiness, countRoutableRelays };

@@ -37,17 +37,17 @@ function parsePost(raw){
   if(raw.source==='STRUCTURE'&&(raw.economicNature!=='FIXED'||(raw.marketCode!==null&&raw.allocationPerimeter!=='DIRECT')||(raw.marketCode===null&&raw.allocationPerimeter!=='MUTUALIZED')))throw invalid('Périmètre de structure');
   return {marketCode:raw.marketCode,familyId:ref(raw.familyId,'Famille'),resourceId:raw.resourceId==null?null:ref(raw.resourceId,'Ressource'),code,label:str(raw.label,3,120,'Libellé'),economicNature:raw.economicNature,allocationPerimeter:raw.allocationPerimeter,allocationBasis:str(raw.allocationBasis,1,200,'Clé'),source:raw.source,reason:str(raw.reason,3,500,'Motif')};
 }
-async function createPost(actor,raw){
+async function createPost(actor,raw,{preparationOnly=false}={}){
   const x=parsePost(raw),central=await costAuthority.classifyActor(actor,x.marketCode),client=await db.getClient();
   try{
     await client.query('BEGIN');
     let marketId=null;
     if(x.marketCode!==null){
-      const {rows}=await client.query('SELECT id FROM markets WHERE code=$1 AND is_active=TRUE',[x.marketCode]);
+      const {rows}=await client.query(preparationOnly?"SELECT id FROM markets WHERE code=$1 AND lifecycle_status='PROVISIONING' FOR SHARE":'SELECT id FROM markets WHERE code=$1 AND is_active=TRUE',[x.marketCode]);
       if(!rows.length)throw fail('market_not_found',404,'Marché introuvable');
       marketId=rows[0].id;
     }
-    await costAuthority.check(client,actor,x.marketCode,marketId,central,'reference',{record:true});
+    await costAuthority.check(client,actor,x.marketCode,marketId,central,'reference',{record:true,preparationOnly});
     const {rows:families}=await client.query('SELECT f.id,f.center_id FROM economic_cost_families f JOIN economic_cost_centers c ON c.id=f.center_id WHERE f.id=$1 AND c.market_id IS NOT DISTINCT FROM $2::uuid FOR UPDATE OF f',[x.familyId,marketId]);
     if(!families.length)throw fail('economic_reference_family_not_found',404,'Famille introuvable dans ce périmètre');
     const centerId=families[0].center_id;
@@ -79,6 +79,23 @@ const GROUP_TEMPLATE=Object.freeze([
   {code:'HUB_CENTRAL',label:'Hub central',families:[['PERSONNEL','Personnel'],['LOCAUX','Locaux'],['EQUIPEMENTS','Équipements'],['CONSOMMABLES','Consommables']]},
   {code:'SERVICES_CENTRAUX',label:'Services centraux',families:[['PERSONNEL','Personnel'],['PLATEFORME','Plateforme'],['SERVICES','Services']]}
 ]);
+// Same template as provisioning; no assumption based on row counts alone.
+async function getCostReferenceReadiness(client,marketId){
+  if(!client?.query||!UUID.test(String(marketId)))throw invalid('Périmètre de préparation');
+  const {rows}=await client.query(
+    'SELECT c.code AS center_code,f.code AS family_code FROM economic_cost_centers c LEFT JOIN economic_cost_families f ON f.center_id=c.id WHERE c.market_id=$1::uuid',
+    [marketId]
+  );
+  const missing=[];
+  for(const definition of MARKET_TEMPLATE){
+    const families=rows.filter(row=>row.center_code===definition.code);
+    if(!families.length){missing.push(definition.label);continue;}
+    for(const [code,label] of definition.families){
+      if(!families.some(row=>row.family_code===code))missing.push(definition.label+' — '+label);
+    }
+  }
+  return {ready:missing.length===0,missing};
+}
 async function provisionCostReferences(client,{marketId,actorId}){
   if(!client?.query||!actorId||(marketId!==null&&!UUID.test(String(marketId))))throw invalid('Périmètre de provisioning');
   const template=marketId===null?GROUP_TEMPLATE:MARKET_TEMPLATE;
@@ -96,25 +113,25 @@ async function provisionCostReferences(client,{marketId,actorId}){
   if(created.centers||created.families)await audit(client,{actorUserId:actorId,marketId,action:'ECONOMIC_COST_REFERENCE_PROVISIONED',after:created});
   return created;
 }
-async function initializeCostReferences(actor,marketCode){
+async function initializeCostReferences(actor,marketCode,{preparationOnly=false}={}){
   if(marketCode!==null&&(typeof marketCode!=='string'||!/^[A-Z]{2}$/.test(marketCode)))throw invalid('Périmètre');
   const central=await costAuthority.classifyActor(actor,marketCode),client=await db.getClient();
   try{
     await client.query('BEGIN');
     let marketId=null;
     if(marketCode!==null){
-      const {rows}=await client.query('SELECT id FROM markets WHERE code=$1',[marketCode]);
+      const {rows}=await client.query(preparationOnly?"SELECT id FROM markets WHERE code=$1 AND lifecycle_status='PROVISIONING' FOR SHARE":'SELECT id FROM markets WHERE code=$1',[marketCode]);
       if(!rows.length)throw fail('market_not_found',404,'Marché introuvable');
       marketId=rows[0].id;
     }
-    await costAuthority.check(client,actor,marketCode,marketId,central,'reference',{record:true});
+    await costAuthority.check(client,actor,marketCode,marketId,central,'reference',{record:true,preparationOnly});
     const result=await provisionCostReferences(client,{marketId,actorId:actor.id});
     await client.query('COMMIT');return result;
   }catch(e){try{await client.query('ROLLBACK');}catch(_){}throw e;}finally{client.release();}
 }
 // Extend reference data without creating facts, and assign an eligible existing
 // user, not a new account or an implicit capability. All writes are audited.
-async function configureReference(actor,raw){
+async function configureReference(actor,raw,{preparationOnly=false}={}){
   if(!raw||(raw.marketCode!==null&&(typeof raw.marketCode!=='string'||!/^[A-Z]{2}$/.test(raw.marketCode))))throw invalid('Périmètre');
   const kind=raw.kind;
   if(!['CENTER','FAMILY','RESOURCE','RESPONSIBLE'].includes(kind))throw invalid('Type de référence');
@@ -133,11 +150,11 @@ async function configureReference(actor,raw){
     await client.query('BEGIN');
     let marketId=null;
     if(raw.marketCode!==null){
-      const {rows}=await client.query('SELECT id FROM markets WHERE code=$1 AND is_active=TRUE',[raw.marketCode]);
+      const {rows}=await client.query(preparationOnly?"SELECT id FROM markets WHERE code=$1 AND lifecycle_status='PROVISIONING' FOR SHARE":'SELECT id FROM markets WHERE code=$1 AND is_active=TRUE',[raw.marketCode]);
       if(!rows.length)throw fail('market_not_found',404,'Marché introuvable');
       marketId=rows[0].id;
     }
-    await costAuthority.check(client,actor,raw.marketCode,marketId,central,'reference',{record:true});
+    await costAuthority.check(client,actor,raw.marketCode,marketId,central,'reference',{record:true,preparationOnly});
     let center=null,reference=null,before=null;
     if(centerId){
       const {rows}=await client.query('SELECT * FROM economic_cost_centers WHERE id=$1 AND market_id IS NOT DISTINCT FROM $2::uuid FOR UPDATE',[centerId,marketId]);
@@ -153,7 +170,7 @@ async function configureReference(actor,raw){
           if(!rows.length)throw fail('economic_reference_owner_forbidden',403,'Responsable hors périmètre');
         }else{
           for(const capability of ['pricing.read','pricing.cost_component.update']){
-            const proof=await resolveAuthorization(client,{userId:responsibleId,marketCode:raw.marketCode,requiredCapability:capability});
+            const proof=await resolveAuthorization(client,{userId:responsibleId,marketCode:raw.marketCode,requiredCapability:capability,...(preparationOnly?{allowPreparationReference:true}:{})});
             if(String(proof.market_id)!==String(marketId))throw fail('economic_reference_owner_forbidden',403,'Responsable hors périmètre');
           }
         }
@@ -184,4 +201,4 @@ async function listResponsibleCandidates(client,marketId){
   if(marketId===null)return (await client.query("SELECT DISTINCT u.id,u.full_name AS label FROM users u JOIN pricing_global_access_grants g ON g.user_id=u.id WHERE u.role='admin' AND g.revoked_at IS NULL ORDER BY label,u.id")).rows;
   return (await client.query("SELECT DISTINCT u.id,u.full_name AS label FROM users u JOIN assignment_memberships am ON am.user_id=u.id AND am.status='ACTIVE' JOIN market_operating_assignments a ON a.id=am.assignment_id AND a.status='ACTIVE' WHERE a.market_id=$1 AND NOT EXISTS (SELECT 1 FROM unnest(ARRAY['pricing.read','pricing.cost_component.update']::text[]) AS required(capability) WHERE NOT EXISTS (SELECT 1 FROM membership_capabilities mc WHERE mc.membership_id=am.id AND mc.capability=required.capability AND mc.revoked_at IS NULL) OR NOT EXISTS (SELECT 1 FROM assignment_capability_ceiling acc WHERE acc.assignment_id=a.id AND acc.capability=required.capability AND acc.revoked_at IS NULL)) ORDER BY label,u.id",[marketId])).rows;
 }
-module.exports={createPost,parsePost,provisionCostReferences,initializeCostReferences,configureReference,listResponsibleCandidates};
+module.exports={createPost,parsePost,getCostReferenceReadiness,provisionCostReferences,initializeCostReferences,configureReference,listResponsibleCandidates};

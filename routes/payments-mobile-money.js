@@ -7,7 +7,7 @@
  * @inputs        market_code, order_reference, msisdn, provider_callback, provider_webhook
  * @outputs       availability, mobile_money_transaction
  * @depends       db.js, middleware/auth-guest.js, services/payment-mobile-money.js,
- *                services/mobile-money/registry.js
+ *                services/mobile-money/registry.js, services/market-payment-provider-config-service.js
  * @used-by       bootstrap/api-routes.js, boutique checkout, providers
  * @db-read       orders, markets, mobile_money_transactions, relais
  * @db-write      none
@@ -25,6 +25,7 @@ const db = require('../db');
 const log = require('../utils/logger').child({ module: 'payments-mobile-money' });
 const { authenticateOrCreateGuest } = require('../middleware/auth-guest');
 const { getAdapter } = require('../services/mobile-money/registry');
+const { checkoutPaymentModes } = require('../services/market-payment-provider-config-service');
 const {
   MobileMoneyError,
   getAvailability,
@@ -60,13 +61,14 @@ router.get('/availability', async (req, res, next) => {
   try {
     const relayId = String(req.query.relais_id || '').trim();
     let marketCode = String(req.query.market_code || '').trim().toUpperCase();
+    let marketId = null;
 
     if (relayId) {
       if (relayId.length > 80) {
         return res.status(400).json({ error: 'relais_id invalide' });
       }
       const { rows } = await db.query(
-        `SELECT m.code AS market_code
+        `SELECT m.code AS market_code, m.id AS market_id
  FROM relais r
  JOIN markets m ON m.id = r.market_id
 WHERE r.id = $1
@@ -79,12 +81,18 @@ LIMIT 1`,
         return res.json({ available: false, reason: 'relay_not_found' });
       }
       marketCode = rows[0].market_code;
+      marketId = rows[0].market_id;
     }
 
     if (!MARKET_CODE_RE.test(marketCode)) {
       return res.status(400).json({ error: 'market_code ou relais_id requis' });
     }
-    res.json(await getAvailability(marketCode));
+    const availability=await getAvailability(marketCode);
+    if(req.query.checkout==='1' && marketId){
+      res.set('Cache-Control','no-store');
+      return res.json({...availability,checkout_modes:await checkoutPaymentModes(db,marketId,availability.available)});
+    }
+    res.json(availability);
   } catch (err) { next(err); }
 });
 

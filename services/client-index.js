@@ -113,7 +113,8 @@ async function listClients(query = {}, options = {}) {
         o.total_kmf,
         o.status::text AS status,
         o.created_at,
-        m.code AS market_code
+        m.code AS market_code,
+        m.business_timezone AS market_timezone
       FROM orders o
       LEFT JOIN users u ON u.id = o.user_id
       LEFT JOIN recipients r ON r.id = o.recipient_id
@@ -132,7 +133,8 @@ async function listClients(query = {}, options = {}) {
         MAX(created_at) AS last_order_at,
         EXTRACT(DAY FROM NOW() - MAX(created_at))::int AS days_since_last_order,
         ARRAY_REMOVE(ARRAY_AGG(DISTINCT market_code), NULL) AS markets,
-        (ARRAY_AGG(market_code ORDER BY created_at DESC))[1] AS last_market_code
+        (ARRAY_AGG(market_code ORDER BY created_at DESC))[1] AS last_market_code,
+        (ARRAY_AGG(market_timezone ORDER BY created_at DESC))[1] AS last_market_timezone
       FROM scoped_orders
       GROUP BY phone
     ), filtered AS (
@@ -158,7 +160,7 @@ async function listClients(query = {}, options = {}) {
     last_order_at: row.last_order_at || null,
     days_since_last_order: row.days_since_last_order == null ? null : Number(row.days_since_last_order),
     markets: Object.freeze(Array.isArray(row.markets) ? row.markets.filter(Boolean) : []),
-    business_timezone: resolveBusinessTimezone({ code: row.last_market_code }).timezone,
+    business_timezone: resolveBusinessTimezone({ code: row.last_market_code, business_timezone: row.last_market_timezone }).timezone,
   }));
 
   return Object.freeze({

@@ -216,6 +216,7 @@ async function inviteTeamMember(executor, {
   phone = null,
   channel = 'EMAIL',
   grantsOperatingLead = false,
+  strictIdentity = false,
   actorIsCentral = false,
   capabilities,
   capabilityLimits = {},
@@ -248,12 +249,21 @@ async function inviteTeamMember(executor, {
     actorIsCentral,
   });
 
+  if (strictIdentity && (!actorIsCentral || !grantsOperatingLead || !emailNormalized || !phoneE164)) {
+    throw delegationError('LEAD_IDENTITY_INVALID', 'Identité professionnelle complète requise.', 400);
+  }
   const { rows: users } = await db.query(
-    normalizedChannel === 'EMAIL'
+    strictIdentity
+      ? `SELECT id, full_name, email, phone, role FROM users WHERE lower(email)=$1 OR phone=$2 OR whatsapp_phone=$2 FOR UPDATE`
+      : normalizedChannel === 'EMAIL'
       ? `SELECT id, full_name, email, phone, role FROM users WHERE lower(email)= $1 LIMIT 1`
       : `SELECT id, full_name, email, phone, role FROM users WHERE phone = $1 LIMIT 1`,
-    [normalizedChannel === 'EMAIL' ? emailNormalized : phoneE164]
+    strictIdentity ? [emailNormalized, phoneE164] : [normalizedChannel === 'EMAIL' ? emailNormalized : phoneE164]
   );
+  if (strictIdentity && (users.length !== 1 || String(users[0].email || '').toLowerCase() !== emailNormalized ||
+      users[0].phone !== phoneE164 || users[0].role !== 'market_operator')) {
+    throw delegationError('LEAD_IDENTITY_CONFLICT', 'Identité du responsable ambiguë ou incompatible.', 409);
+  }
   if (users[0]) {
     const membership = await addMembership(db, {
       assignmentId,

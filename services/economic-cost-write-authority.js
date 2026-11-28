@@ -33,23 +33,24 @@ async function classifyActor(actor,marketCode){
   if(marketCode==null)throw fail('pricing_global_access_denied',403,'Autorité globale requise');
   return false;
 }
-async function check(client,actor,marketCode,marketId,central,action,{record=false}={}){
+async function check(client,actor,marketCode,marketId,central,action,{record=false,preparationOnly=false}={}){
   const capabilities=ACTION_CAPABILITIES[action];
   if(!capabilities)throw new TypeError('Unknown economic cost action');
+  if(preparationOnly && !['reference','budget'].includes(action))throw fail('MARKET_NOT_ACTIVE',409,'Seuls les référentiels et budgets prévisionnels sont configurables en préparation.');
   if(central)return true;
   if(!marketCode||!marketId)throw fail('pricing_global_access_denied',403,'Autorité globale requise');
   let authz;
   for(const capability of ['pricing.read',...capabilities]){
-    authz=await resolveAuthorization(client,{userId:actor.id,marketCode,requiredCapability:capability});
+    authz=await resolveAuthorization(client,{userId:actor.id,marketCode,requiredCapability:capability,...(preparationOnly?{allowPreparationReference:true}:{})});
     if(String(authz.market_id)!==String(marketId))throw fail('MARKET_SCOPE_DENIED',403,'Marché hors périmètre');
   }
   if(record)await audit(client,{actorUserId:actor.id,marketId,assignmentId:authz.assignment_id,membershipId:authz.membership_id,capability:capabilities[0],action:'ECONOMIC_COST_WRITE_AUTHORIZED',after:{operation:action,capabilities}});
   return true;
 }
-async function project(client,actor,marketCode,marketId,central){
+async function project(client,actor,marketCode,marketId,central,{preparationOnly=false}={}){
   const out={};
   for(const action of Object.keys(ACTION_CAPABILITIES)){
-    try{out[action]=await check(client,actor,marketCode,marketId,central,action);}
+    try{out[action]=await check(client,actor,marketCode,marketId,central,action,{preparationOnly});}
     catch(e){if(e.status===403||e.status===409)out[action]=false;else throw e;}
   }
   return out;

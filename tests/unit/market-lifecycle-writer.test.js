@@ -32,3 +32,29 @@ describe('market lifecycle writer — provisioning', () => {
     expect(db.query).toHaveBeenCalledTimes(1);
   });
 });
+
+test('validates and persists an explicit IANA timezone; no default is invented', async () => {
+  expect(lifecycle.validateBusinessTimezone('Africa/Libreville',{required:true})).toBe('Africa/Libreville');
+  expect(lifecycle.validateBusinessTimezone('UTC',{required:true})).toBe('UTC');
+  expect(() => lifecycle.validateBusinessTimezone(null,{required:true})).toThrow(/requis/);
+  expect(() => lifecycle.validateBusinessTimezone('Africa/Inconnue')).toThrow(/inconnu/);
+  expect(() => lifecycle.validateBusinessTimezone('+01:00')).toThrow(/invalide/);
+  const db={query:jest.fn().mockResolvedValueOnce({rows:[]}).mockResolvedValueOnce({rows:[{code:'GA',business_timezone:'Africa/Libreville'}]})};
+  await expect(lifecycle.createProvisioningMarket(db,{code:'GA',name:'Gabon',currency:'XAF',minorUnit:0,businessTimezone:'Africa/Libreville'})).resolves.toMatchObject({business_timezone:'Africa/Libreville'});
+  expect(db.query.mock.calls[1][1][5]).toBe('Africa/Libreville');
+});
+
+test('complete missing timezone in place, idempotent and without touching any assignment',async()=>{
+  const before={id:'m1',code:'GA',is_active:false,lifecycle_status:'PROVISIONING',business_timezone:null};
+  const after={...before,business_timezone:'Africa/Libreville'};
+  const db={query:jest.fn().mockResolvedValueOnce({rows:[before]}).mockResolvedValueOnce({rows:[after]})};
+  await expect(lifecycle.completeProvisioningTimezone(db,{marketCode:'GA',businessTimezone:'Africa/Libreville'})).resolves.toEqual({before,after,changed:true});
+  expect(db.query.mock.calls[0][0]).toContain('FOR UPDATE');
+  expect(db.query.mock.calls[1][0]).toMatch(/^UPDATE markets SET business_timezone/);
+  db.query.mockReset().mockResolvedValue({rows:[after]});
+  await expect(lifecycle.completeProvisioningTimezone(db,{marketCode:'GA',businessTimezone:'Africa/Libreville'})).resolves.toMatchObject({changed:false});
+  await expect(lifecycle.completeProvisioningTimezone(db,{marketCode:'GA',businessTimezone:'Africa/Douala'})).rejects.toMatchObject({code:'MARKET_TIMEZONE_ALREADY_SET'});
+  expect(db.query).toHaveBeenCalledTimes(2);
+  db.query.mockResolvedValue({rows:[{...before,is_active:true,lifecycle_status:'ACTIVE'}]});
+  await expect(lifecycle.completeProvisioningTimezone(db,{marketCode:'GA',businessTimezone:'Africa/Libreville'})).rejects.toMatchObject({code:'MARKET_TIMEZONE_PREPARATION_ONLY'});
+});

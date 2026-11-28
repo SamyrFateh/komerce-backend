@@ -147,6 +147,7 @@ module.exports = {
     // déclare désormais. market-autonomy reste un CONSOMMATEUR de cette
     // interface (cf. contract.consumes ci-dessous), pas son propriétaire.
     exposes: [],
+    internalApi: [{ fn: 'getPricePreparation', file: 'services/market-commercial-price-service.js' }],
     consumes: [
       'market — référentiel markets, currency_parities et scope serveur operator_market_scopes',
       'economic-engine — CDR, politique marché et gate de couverture',

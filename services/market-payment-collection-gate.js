@@ -8,7 +8,7 @@
  * @outputs       allowed_boolean, PAYMENT_MODE_NOT_ALLOWED_FOR_MARKET
  * @depends       none
  * @used-by       services/order-checkout-service.js, routes/payments.js, routes/payments-paypal.js
- * @db-read       market_central_collection_modes
+ * @db-read       market_central_collection_modes, market_operating_assignments, market_cash_control_policies
  * @db-write      none
  * @db-txn        reads_in_caller_transaction
  * @doctrine      market_encaisse, fail_closed, no_country_branch
@@ -18,6 +18,16 @@
 'use strict';
 
 const CENTRAL_MODES = Object.freeze(['stripe_eur', 'paypal_eur']);
+
+// Same cash policy for the public availability projection and order creation.
+// The established historical default remains enabled in the absence of a
+// policy; first-opening readiness separately requires a documented policy.
+// The only bind is the server-resolved market UUID.
+const CASH_COLLECTION_ALLOWED_SQL = `COALESCE((
+  SELECT p.cash_enabled FROM market_cash_control_policies p
+  JOIN market_operating_assignments a ON a.id=p.assignment_id AND a.market_id=p.market_id
+  WHERE p.market_id=$1::uuid AND a.status='ACTIVE' LIMIT 1
+),TRUE)`;
 
 /**
  * Un moyen d'encaissement central (Stripe EUR / PayPal EUR) n'est accepté que si le marché de la
@@ -49,4 +59,4 @@ async function assertCentralCollectionAllowed(executor, marketId, paymentMode) {
   throw err;
 }
 
-module.exports = { CENTRAL_MODES, isCentralCollectionAllowed, assertCentralCollectionAllowed };
+module.exports = { CASH_COLLECTION_ALLOWED_SQL, CENTRAL_MODES, isCentralCollectionAllowed, assertCentralCollectionAllowed };

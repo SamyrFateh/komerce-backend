@@ -120,10 +120,29 @@
       }
       marketCurrencies = Object.freeze(Object.fromEntries(allowedMarkets.map(code => [code, rawCurrencies[code] ?? null])));
     }
+    const rawPreparation = raw.access.preparation ?? {};
+    if (!rawPreparation || typeof rawPreparation !== 'object' || Array.isArray(rawPreparation)) fail('access.preparation invalide');
+    const prepEntries = Object.entries(rawPreparation);
+    if (prepEntries.length && (mode !== 'market' || actor.role !== 'market_operator')) fail('préparation réservée au responsable marché');
+    const preparation = Object.freeze(Object.fromEntries(prepEntries.map(([code, value]) => {
+      if (!allowedMarkets.includes(code) || !value || !Array.isArray(value.items)) fail('préparation hors périmètre ou invalide');
+      const items = Object.freeze(value.items.map(item => {
+        if (!item || !['ready','blocked','pending'].includes(item.status) || !['central','market'].includes(item.owner)) fail('état de préparation invalide');
+        return Object.freeze({
+          id: requiredString(item.id,'preparation.id'),
+          label: requiredString(item.label,'preparation.label'),
+          owner: item.owner, status: item.status,
+          blockers: normalizeStringList(item.blockers,'preparation.blockers',requiredString),
+        });
+      }));
+      return [code,Object.freeze({items})];
+    })));
+
     return Object.freeze({
       actor,
       access: Object.freeze({ mode, allowedMarkets, defaultMarket, capabilities, delegatedCapabilities,
-        ...(marketCurrencies === undefined ? {} : { marketCurrencies }) }),
+        ...(marketCurrencies === undefined ? {} : { marketCurrencies }),
+        ...(prepEntries.length ? { preparation } : {}) }),
     });
   }
 
