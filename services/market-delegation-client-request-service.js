@@ -7,7 +7,7 @@
  * @inputs        authenticated actor, canonical market code, client request
  * @outputs       authorized dossier projections and auditable state transitions
  * @depends       services/market-delegation-service.js, services/market-delegation-read-authority.js, services/conversation-service.js
- * @db-read       client_requests, markets, products, product_skus
+ * @db-read       client_requests, markets, products, product_skus, users
  * @db-write      client_requests
  * @db-write-via:conversation-service conversation_messages, conversation_attachments
  * @db-txn        caller-owned
@@ -19,6 +19,7 @@ const {randomUUID}=require('node:crypto');
 const {resolveAuthorization,resolveActiveAssignmentByMarketCode}=require('./market-delegation-service');
 const {resolveCanonicalMarketRead}=require('./market-delegation-read-authority');
 const conversations=require('./conversation-service');
+const {normalizePhone}=require('../utils/phone');
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MOTIFS=new Set(['auto_parts','express','other']);
 function fail(code,status=400){throw Object.assign(new Error(code),{code,status});}
@@ -66,7 +67,15 @@ async function list(q,{actor,scope,market,before=null}){
 async function read(q,{actor,scope,market,ref,before=null}){
   const auth=await authority(q,actor,scope,market);
   const row=await find(q,auth,ref);
-  return {request:projection(row,scope),messages:await conversations.list(q,{requestId:row.id,scope,before})};
+  const request=projection(row,scope);
+  if(scope==='market'){
+    request.can_handle=Boolean(auth.canHandle);
+    if(auth.canHandle&&row.verified_callback_phone){
+      const {rows:[owner]}=await q.query('SELECT phone,whatsapp_phone FROM users WHERE id=$1',[row.user_id]);
+      if(owner&&[owner.phone,owner.whatsapp_phone].map(p=>normalizePhone(p)).includes(row.verified_callback_phone))request.callback_phone=row.verified_callback_phone;
+    }
+  }
+  return {request,messages:await conversations.list(q,{requestId:row.id,scope,before})};
 }
 async function create(q,{actor,market,motif,productId=null,skuId=null,body='',files=[]}){
   const auth=await authority(q,actor,'client');
@@ -84,7 +93,10 @@ async function create(q,{actor,market,motif,productId=null,skuId=null,body='',fi
     }
   }
   const reference='D-'+randomUUID().toUpperCase();
-  const {rows:[row]}=await q.query('INSERT INTO client_requests(reference,market_id,user_id,motif,product_id,sku_id) VALUES($1,$2,$3,$4,$5,$6) RETURNING *',[reference,m.id,auth.userId,motif,productId,skuId]);
+  const proof=normalizePhone(actor.verifiedOtpPhone);
+  let callback=null;
+  if(proof){const {rows:[owner]}=await q.query('SELECT phone,whatsapp_phone FROM users WHERE id=$1',[auth.userId]);if(owner&&[owner.phone,owner.whatsapp_phone].map(p=>normalizePhone(p)).includes(proof))callback=proof;}
+  const {rows:[row]}=await q.query('INSERT INTO client_requests(reference,market_id,user_id,motif,product_id,sku_id,verified_callback_phone) VALUES($1,$2,$3,$4,$5,$6,$7) RETURNING *',[reference,m.id,auth.userId,motif,productId,skuId,callback]);
   const message=await conversations.append(q,{request:row,actorId:auth.userId,scope:'client',visibility:'client',body,files});
   return {row,message,request:projection(row,'client')};
 }
