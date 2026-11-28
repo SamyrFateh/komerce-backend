@@ -230,7 +230,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 92
 - internal APIs: 0
 - dependencies (consumes): 28 — market-control-plane, shared-cart, incident-management, orders, infrastructure, payments, refunds, logistics, inventory, local-stock, economic-engine, wallet, auth, auth-identity, market-delegation, customs, documents, notifications, purchasing, supplier-connectivity, external-provider-contracts, business-rules, decision-signals, market, market-delegation, sourcing, catalog, market-autonomy
-- consumers: 9 — economic-engine, infrastructure, market-control-plane, market-delegation, market-operator-dashboard, orders, sourcing, admin-dashboard, decision-signals
+- consumers: 10 — economic-engine, infrastructure, market-control-plane, market-delegation, market-operator-dashboard, orders, purchasing, sourcing, admin-dashboard, decision-signals
 
 ### decision-signals _(piloting-capability)_
 
@@ -424,7 +424,7 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 - interfaces exposed: 0
 - internal APIs: 0
 - dependencies (consumes): 2 — infrastructure, notifications
-- consumers: 18 — catalog, customs, dashboard, economic-engine, infrastructure, local-stock, logistics, market-autonomy, market-control-plane, market-delegation, market-operator-dashboard, orders, payments, providers-services, recommendations, refunds, settlement, wallet
+- consumers: 19 — catalog, customs, dashboard, economic-engine, infrastructure, local-stock, logistics, market-autonomy, market-control-plane, market-delegation, market-operator-dashboard, orders, payments, providers-services, purchasing, recommendations, refunds, settlement, wallet
 
 ### market-autonomy _(business-feature)_
 
@@ -588,14 +588,14 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 
 - services: 53
 - routes: 1
-- migrations: 17
+- migrations: 18
 - scripts: 14
 - tests: 92
 - tables owned (lifecycle): 15 — `suppliers`, `purchase_lines`, `purchase_orders`, `product_suppliers`, `purchase_order_authorizations`, `hub_authorization_grants`, `supplier_execution_payments`, `supplier_payment_settlements`, `manual_purchase_executions`, `purchase_variance_decisions`, `supplier_execution_events`, `supplier_execution_fulfillments`, `supplier_execution_order_lines`, `supplier_execution_orders`, `supplier_execution_payment_proofs`
 - tables written: 15
 - interfaces exposed: 21
 - internal APIs: 14
-- dependencies (consumes): 12 — documents, supplier-connectivity, external-provider-contracts, sourcing, catalog, infrastructure, orders, auth, economic-engine, notifications, incident-management, logistics
+- dependencies (consumes): 14 — documents, supplier-connectivity, external-provider-contracts, sourcing, catalog, infrastructure, orders, auth, dashboard, market, economic-engine, notifications, incident-management, logistics
 - consumers: 9 — catalog, dashboard, logistics, orders, payments, platform-ops, refunds, sourcing, decision-signals
 
 ### recommendations _(business-feature)_
@@ -2209,6 +2209,8 @@ _dash_ : pas de Technical Architecture Graph propre au dépôt dash dans ce pipe
 | purchasing | infrastructure (`infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)`) | ✔ |
 | purchasing | orders (`orders (lecture : order_items, orders — le besoin d'achat et l'intention d'annulation naissent d'une commande client)`) | ✔ |
 | purchasing | auth (`auth (garde admin)`) | ✔ |
+| purchasing | dashboard (`dashboard (contrôle explicite de la portée centrale Finance par hasDashboardGlobalAuthority ; aucune délégation de writer ni extension de scope)`) | ✔ |
+| purchasing | market (`market (fx-authority : projection historique EUR/KMF des règlements natifs Finance, aucune contre-valeur saisie)`) | ✔ |
 | purchasing | economic-engine (`economic-engine (A8 : rafraîchissement transactionnel de la marge réelle canonique via canonical-margin-writer ; no-op si la règle CANONICAL_MARGIN_WRITER_ENABLED vaut 0)`) | ✔ |
 | purchasing | notifications (`notifications (notification fournisseur WhatsApp, via services/notification-service.js)`) | ✔ |
 | purchasing | incident-management (`incident-management (H1 : incident « rupture fournisseur » à la clôture d'une ligne sans reliquat, via createSupplierShortageIncident du boundary incident-write-service)`) | ✔ |
@@ -2703,6 +2705,7 @@ Meta Graph monté : oui.
 | providers-services | recommendations | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | auth | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | catalog | static-code, data-read | 21 | **DECLARED_AND_OBSERVED** |
+| purchasing | dashboard | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | decision-signals | static-code | 1 | **OBSERVED_UNDECLARED** |
 | purchasing | documents | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | economic-engine | static-code | 2 | **DECLARED_AND_OBSERVED** |
@@ -2710,6 +2713,7 @@ Meta Graph monté : oui.
 | purchasing | incident-management | static-code | 2 | **DECLARED_AND_OBSERVED** |
 | purchasing | infrastructure | static-code | 61 | **DECLARED_AND_OBSERVED** |
 | purchasing | logistics | static-code, data-read | 17 | **DECLARED_AND_OBSERVED** |
+| purchasing | market | static-code | 1 | **DECLARED_AND_OBSERVED** |
 | purchasing | notifications | static-code | 11 | **DECLARED_AND_OBSERVED** |
 | purchasing | orders | static-code, data-read | 5 | **DECLARED_AND_OBSERVED** |
 | purchasing | refunds | static-code | 1 | **OBSERVED_UNDECLARED** |

@@ -19465,6 +19465,13 @@
       {
         "feature": "purchasing",
         "category": "migrations",
+        "declared": "migrations/456_supplier_settlement_native_debit.sql",
+        "resolvedPath": "migrations/456_supplier_settlement_native_debit.sql",
+        "status": "resolved-on-disk-out-of-arch-scan-scope"
+      },
+      {
+        "feature": "purchasing",
+        "category": "migrations",
         "declared": "migrations/404_manual_purchase_executions.sql",
         "resolvedPath": "migrations/404_manual_purchase_executions.sql",
         "status": "resolved-on-disk-out-of-arch-scan-scope"
@@ -31539,6 +31546,18 @@
         "from": "purchasing",
         "to": "auth",
         "raw": "auth (garde admin)",
+        "resolved": true
+      },
+      {
+        "from": "purchasing",
+        "to": "dashboard",
+        "raw": "dashboard (contrôle explicite de la portée centrale Finance par hasDashboardGlobalAuthority ; aucune délégation de writer ni extension de scope)",
+        "resolved": true
+      },
+      {
+        "from": "purchasing",
+        "to": "market",
+        "raw": "market (fx-authority : projection historique EUR/KMF des règlements natifs Finance, aucune contre-valeur saisie)",
         "resolved": true
       },
       {
@@ -48762,6 +48781,22 @@
       },
       {
         "from": "purchasing",
+        "to": "dashboard",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "routes/purchasing.js",
+                "targetFile": "middleware/require-dashboard-global-authority.js"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "purchasing",
         "to": "decision-signals",
         "channels": [
           {
@@ -49183,6 +49218,22 @@
               {
                 "table": "relais",
                 "mode": "R"
+              }
+            ]
+          }
+        ],
+        "conformanceStatus": "DECLARED_AND_OBSERVED"
+      },
+      {
+        "from": "purchasing",
+        "to": "market",
+        "channels": [
+          {
+            "channel": "static-code",
+            "evidence": [
+              {
+                "sourceFileId": "services/supplier-payment-settlement-service.js",
+                "targetFile": "services/fx-authority.js"
               }
             ]
           }
