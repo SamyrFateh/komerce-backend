@@ -65,6 +65,20 @@ describe('staging reset classification : garde anti-derive', () => {
     }
   });
 
+  test('On Demand : dossiers de recette et photos suivent la purge contrôlée activité', () => {
+    expect(c.classOf('client_requests')).toBe('purge_root');
+    for (const t of ['conversation_messages', 'conversation_attachments']) {
+      expect(c.classOf(t)).toBe('purge_via_fk');
+    }
+    for (const scope of c.RESET_SCOPES) {
+      expect(c.rootsTruncate(scope)).toContain('client_requests');
+      for (const t of ['client_requests', 'conversation_messages', 'conversation_attachments']) {
+        expect(c.isPurgeClass(t, scope)).toBe(true);
+        expect(c.protectedSet(scope).has(t)).toBe(false);
+      }
+    }
+  });
+
   test('referentiels critiques et comptes : jamais purges', () => {
     for (const t of ['markets', 'finance_config', 'currency_parities', 'fx_pegs', 'schema_migrations', 'sourcing_sources', 'capability_registry']) {
       expect(c.classOf(t)).toBe('foundation');

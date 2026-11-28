@@ -39,7 +39,10 @@ const S = (name, why) => [name, 'fixture_scoped', why, {}];
 
 const ENTRIES = [
   // ── purge_root : racines metier (reprises de l'ancien ROOT_CANDIDATES) ──
-  R('orders', 'commandes'), R('purchase_orders', 'achats fournisseur'), 
+  R('orders', 'commandes'), R('purchase_orders', 'achats fournisseur'),
+  R('client_requests', 'dossiers On Demand de recette, activité client indépendante des commandes'),
+  V('conversation_messages', 'messages des dossiers On Demand de recette, enfants FK de client_requests'),
+  V('conversation_attachments', 'photos privées de recette, enfants FK de conversation_messages'), 
   
   R('refunds', 'remboursements'), R('invoices', 'factures'), R('transaction_documents', 'documents de transaction'),
   R('notification_log', 'journal notifications'), R('sms_log', 'journal SMS'),
