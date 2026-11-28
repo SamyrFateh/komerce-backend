@@ -248,13 +248,22 @@ jobs:
               const leadContext=await browser.newContext({viewport:{width:1440,height:900},baseURL:origin});
               try {
                 const leadPage=await leadContext.newPage();
-                await leadPage.route('**/*',route=>{
+                let verifyEvidence=null;
+                await leadPage.route('**/*',async route=>{
                   const req=route.request(),url=new URL(req.url());
                   if(url.origin!==origin)return route.abort();
                   if(['GET','HEAD','OPTIONS'].includes(req.method()))return route.continue();
                   if(req.method()==='POST'&&['/api/auth/otp/request','/api/auth/otp/verify'].includes(url.pathname)){
                     const data=req.postDataJSON();
-                    if(data.phone===phone&&data.purpose==='internal_market_login')return route.continue();
+                    if(data.phone===phone&&data.purpose==='internal_market_login'){
+                      if(url.pathname!=='/api/auth/otp/verify')return route.continue();
+                      // Capture the real server response before the browser's immediate
+                      // navigation can discard its network response body. No mock or retry.
+                      const response=await route.fetch({maxRedirects:0});
+                      const body=await response.json().catch(()=>({}));
+                      verifyEvidence={status:response.status(),created:body.created,userId:body.user?.id,role:body.user?.role};
+                      return route.fulfill({response});
+                    }
                   }
                   proof.blockedWrites.push({method:req.method(),path:url.pathname});
                   return route.abort();
@@ -279,9 +288,13 @@ jobs:
                 await leadPage.locator('#market-otp-verify').click();
                 const verified=await verifyResponse;
                 proof.otpVerifyHttp=verified.status();
-                const verifiedBody=await verified.json();
+                proof.stage='LEAD_VERIFY_EVIDENCE';
+                if(!verifyEvidence||verifyEvidence.status!==verified.status())throw Error('LEAD_VERIFY_RESPONSE_NOT_CAPTURED');
+                const verifiedBody={created:verifyEvidence.created,user:{id:verifyEvidence.userId,role:verifyEvidence.role}};
                 if(verified.status()!==200||verifiedBody.created!==false||verifiedBody.user?.id!==proof.leadId||verifiedBody.user?.role!=='market_operator')throw Error('LEAD_OTP_SESSION_MISMATCH');
+                proof.stage='LEAD_REDIRECT';
                 await leadPage.waitForURL(u=>u.pathname==='/admin/pilotage');
+                proof.stage='LEAD_OTP_CONSUMPTION';
                 const used=await db.query('SELECT verified,consumed_at FROM otp_codes WHERE id=$1',[storedOtp.rows[0].id]);
                 if(used.rowCount!==1||used.rows[0].verified!==true||!used.rows[0].consumed_at)throw Error('OTP_CONSUMPTION_NOT_PROVEN');
                 proof.otpSingleUse='CONSUMED';
