@@ -149,7 +149,16 @@ jobs:
               await expect(wizard.getByRole('button',{name:'Initialiser le marché',exact:true})).toBeVisible();
               await wizard.screenshot({path:output+'/wizard-review.png'});
               // Do not submit: no market fixture cleanup or isolated phone proof yet.
+              proof.stage = 'CLOSE_CONFIRMATION';
+              let closeConfirmed = false;
+              page.once('dialog', async dialog => {
+                if (dialog.type() === 'confirm' && dialog.message() === 'Fermer la création ? Les données non envoyées seront perdues.') {
+                  closeConfirmed = true;
+                  await dialog.accept();
+                } else await dialog.dismiss();
+              });
               await wizard.getByRole('button',{name:'Fermer',exact:true}).click();
+              if (!closeConfirmed) throw Error('CLOSE_CONFIRMATION_NOT_OBSERVED');
               await expect(wizard).toHaveCount(0);
               if(proof.blockedWrites.some(w=>w.method==='POST'&&w.path==='/api/admin/markets')) throw Error('UNEXPECTED_PROVISION_ATTEMPT');
               proof.stage = 'DONE';
