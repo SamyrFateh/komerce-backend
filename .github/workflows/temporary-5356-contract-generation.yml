@@ -1,0 +1,40 @@
+name: Temporary On Demand contract generation #5356
+on:
+  push:
+    branches: [diag/5356-contract-gen-5b0f667]
+permissions:
+  contents: write
+jobs:
+  generate:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+    env:
+      CI: 'true'
+      NODE_ENV: test
+      KOMERCE_DISABLE_CRONS: 'true'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: node scripts/gen-route-registry.js
+      - run: npm run contract:generate
+      - run: npm run contract:debt:check
+      - name: Verify generated On Demand operations
+        run: |
+          node -e 'const c=require("./docs/contract/openapi.json"); const n=Object.entries(c.paths).filter(([p])=>p.includes("/client-requests")).flatMap(([,o])=>Object.keys(o)).length; if(n!==17)throw Error("Expected 17 operations, got "+n); console.log(n+" operations")'
+      - name: Store only generated contract on diagnostic branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$GITHUB_REF_NAME" = "diag/5356-contract-gen-5b0f667"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/contract/openapi.json docs/contract/DEBT.md
+          git diff --cached --stat
+          git commit -m "chore: regenerate OpenAPI contract for #5356"
+          git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$GH_TOKEN" | base64 -w0)" push origin "HEAD:refs/heads/$GITHUB_REF_NAME"
