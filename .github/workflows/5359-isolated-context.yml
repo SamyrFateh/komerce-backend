@@ -1,4 +1,4 @@
-name: 5356 On Demand real staging read-only preflight
+name: V5.4 actual staging dashboard delivery and visible UI audit
 on:
   push:
     branches: [test/5359-market-context-preflight]
@@ -8,18 +8,16 @@ concurrency:
   group: komerce-g6-canonical-real-transaction
   cancel-in-progress: false
 jobs:
-  preflight:
+  verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 10
+    timeout-minutes: 14
     env:
-      NODE_ENV: test
-      KOMERCE_ENV: staging
-      KOMERCE_DISABLE_CRONS: 'true'
-      EXPECTED_RAILWAY_ENVIRONMENT: staging
-      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      STAGING_ORIGIN: https://komerce-backend-production.up.railway.app
       EXPECTED_SHA: c06f4779dcf1de6c214e6827d538fedc38dacc60
-      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
-      PGOPTIONS: '-c default_transaction_read_only=on'
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_MARKET_OPERATOR_CM_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_CM_EMAIL }}
+      E2E_MARKET_OPERATOR_CM_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_CM_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,48 +26,75 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Confirm deployed target, migration, capability registry and marked identities
+      - run: npm ci --prefix public/boutique --ignore-scripts --no-audit --no-fund
+      - run: cd public/boutique && npx playwright install --with-deps chromium
+      - name: Compare live dashboard files to exact deployed commit and inspect authenticated UI
         run: |
-          mkdir -p test-results/on-demand
+          mkdir -p test-results/dashboard-delivery
           node <<'JS'
-          const fs=require('node:fs'),assert=require('node:assert/strict');
-          const report={verdict:'NOT_PROVEN',checks:{}};
-          const db=require('./db');
-          const base=process.env.STAGING_BASE_URL;
-          async function get(p){const r=await fetch(base+p,{redirect:'error'});assert.equal(r.status,200);return r.json()}
+          const fs=require('node:fs'),crypto=require('node:crypto'),assert=require('node:assert/strict');
+          const {chromium}=require('./public/boutique/node_modules/@playwright/test');
+          const base=process.env.STAGING_ORIGIN,report={verdict:'NOT_PROVEN',assets:[],routes:[],roles:[]};
+          const digest=x=>crypto.createHash('sha256').update(x).digest('hex');
+          const get=async p=>{const r=await fetch(base+p,{redirect:'manual',cache:'no-store'});return r};
+          const routeSet=['/admin/pilotage','/admin/commerce','/admin/operations','/admin/finance','/admin/hub','/admin/workspaces/pricing','/admin/clients'];
+          const selectors={'/admin/pilotage':'[data-dashboard-id="pilotage"]','/admin/commerce':'[data-dashboard-id="commerce"]','/admin/operations':'[data-dashboard-id="operations"]'};
           (async()=>{
-            const version=await get('/health/version'),health=await get('/health');
-            assert.equal(version.commit,process.env.EXPECTED_SHA);assert.equal(health.komerce_env,'staging');
-            const target=await require('./scripts/recette/target-guard').confirmTarget({db});
-            assert.equal(target.confirmed,true);report.target={sha:version.commit,fingerprint:target.fingerprint};
-            const q=await db.getClient();
-            try{
-              await q.query('BEGIN READ ONLY');
-              assert.equal((await q.query('SHOW transaction_read_only')).rows[0].transaction_read_only,'on');
-              const schema=(await q.query("SELECT to_regclass('public.client_requests') IS NOT NULL AS requests,to_regclass('public.conversation_messages') IS NOT NULL AS messages,to_regclass('public.conversation_attachments') IS NOT NULL AS attachments")).rows[0];
-              report.checks.schema=schema;
-              assert.ok(Object.values(schema).every(Boolean),'MIGRATION_457_MISSING');
-              report.checks.capabilities=(await q.query("SELECT capability,status,effect FROM capability_registry WHERE capability IN ('client.read','client.case.handle') ORDER BY capability")).rows;
-              assert.equal(report.checks.capabilities.length,2,'CAPABILITY_REGISTRY_INCOMPLETE');
-              assert.ok(report.checks.capabilities.every(x=>x.status==='LIVE'),'CAPABILITY_NOT_LIVE');
-              report.checks.markedRoles=(await q.query("SELECT u.role::text AS role,count(*)::int AS n FROM e2e_test_accounts e JOIN users u ON u.id=e.user_id GROUP BY u.role ORDER BY u.role")).rows;
-              report.checks.marketActors=(await q.query("SELECT m.code, count(DISTINCT CASE WHEN mc.capability='client.read' THEN am.user_id END)::int AS readers,count(DISTINCT CASE WHEN mc.capability='client.case.handle' THEN am.user_id END)::int AS handlers FROM markets m JOIN market_operating_assignments a ON a.market_id=m.id AND a.status='ACTIVE' JOIN assignment_memberships am ON am.assignment_id=a.id AND am.status='ACTIVE' JOIN e2e_test_accounts e ON e.user_id=am.user_id JOIN membership_capabilities mc ON mc.membership_id=am.id AND mc.revoked_at IS NULL JOIN assignment_capability_ceiling acc ON acc.assignment_id=a.id AND acc.capability=mc.capability AND acc.revoked_at IS NULL WHERE m.is_active AND m.lifecycle_status='ACTIVE' GROUP BY m.code ORDER BY m.code")).rows;
-              report.checks.requestCount=(await q.query('SELECT count(*)::int AS n FROM client_requests')).rows[0].n;
-              await q.query('ROLLBACK');
-            }finally{q.release()}
-            report.checks.anonymous={};
-            for(const p of ['/api/client-requests','/api/markets/KM/client-requests','/api/hub/client-requests']){
-              const r=await fetch(base+p,{redirect:'error'});report.checks.anonymous[p]=r.status;assert.ok([401,403].includes(r.status),'ANONYMOUS_NOT_DENIED');
+            const v=await (await get('/health/version')).json(),h=await (await get('/health')).json();
+            assert.equal(v.commit,process.env.EXPECTED_SHA);assert.equal(h.komerce_env,'staging');report.target={sha:v.commit,fingerprint:h.target.db_fingerprint};
+            const index=fs.readFileSync('public/dashboards/canonical/index.html','utf8');
+            const paths=[...index.matchAll(/(?:src|href)="(\/dashboards\/canonical\/[^"]+)"/g)].map(m=>m[1]).filter(x=>/\.(js|css)(\?|$)/.test(x));
+            for(const p of paths){
+              const local='public'+p.split('?')[0];if(!fs.existsSync(local))continue;
+              const r=await get(p);const actual=digest(Buffer.from(await r.arrayBuffer())),expected=digest(fs.readFileSync(local));
+              report.assets.push({path:p,status:r.status,match:actual===expected,cache:r.headers.get('cache-control')});
             }
-            const end=await get('/health/version'),after=await get('/health');
-            assert.equal(end.commit,report.target.sha);assert.equal(after.target.db_fingerprint,report.target.fingerprint);
-            report.verdict='PASS_STAGING_PREFLIGHT_NOT_TRANSACTION_CERTIFICATION';
-          })().catch(e=>{report.failure=e.code||e.message?.slice(0,200);process.exitCode=1}).finally(async()=>{fs.writeFileSync('test-results/on-demand/report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));await db.pool.end()});
+            for(const p of routeSet){
+              const r=await get(p),body=await r.text();
+              report.routes.push({path:p,status:r.status,generation:r.headers.get('x-admin-generation'),canonical:body.includes('data-admin-generation="canonical"'),location:r.headers.get('location')});
+            }
+            const browser=await chromium.launch();
+            try{
+              for(const [role,prefix] of [['admin','E2E_ADMIN_'],['market_operator','E2E_MARKET_OPERATOR_CM_']]){
+                const result={role,pages:[],errors:0};report.roles.push(result);
+                if(!process.env[prefix+'EMAIL']||!process.env[prefix+'PASSWORD']){result.blocked='MISSING_TEST_CREDENTIALS';continue}
+                const ctx=await browser.newContext({viewport:{width:1440,height:900},serviceWorkers:'allow'});
+                try{
+                  const page=await ctx.newPage();page.on('pageerror',()=>result.errors++);
+                  await ctx.route('**/*',route=>{
+                    const req=route.request(),u=new URL(req.url());
+                    return ['GET','HEAD','OPTIONS'].includes(req.method())||(u.origin===base&&u.pathname==='/api/auth/login'&&req.method()==='POST')?route.continue():route.abort();
+                  });
+                  await page.goto(base+'/login.html?next='+encodeURIComponent('/admin/pilotage'),{waitUntil:'domcontentloaded'});
+                  await page.locator('#email').fill(process.env[prefix+'EMAIL']);await page.locator('#password').fill(process.env[prefix+'PASSWORD']);
+                  const resp=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/login'&&r.request().method()==='POST');
+                  await page.locator('#btn-submit').click();assert.equal((await resp).status(),200);
+                  await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:20000});
+                  const me=await page.request.get(base+'/api/auth/me');assert.equal(me.status(),200);
+                  const account=await me.json();assert.equal(account.user?.role||account.role,role);
+                  for(const p of routeSet){
+                    const item={path:p};result.pages.push(item);
+                    const reqs=[];const track=r=>{const u=new URL(r.url());if(u.origin===base&&u.pathname.startsWith('/api/'))reqs.push({path:u.pathname.replace(/[0-9a-f]{8}-[0-9a-f-]{27}/gi,':id'),status:r.status()})};
+                    page.on('response',track);
+                    try{
+                      await page.goto(base+p,{waitUntil:'domcontentloaded'});
+                      if(selectors[p])await page.locator(selectors[p]).waitFor({state:'visible',timeout:12000}).catch(()=>{});
+                      else await page.locator('[data-canonical-surface], [data-hub-director-todo], .kmc-client-requests').first().waitFor({state:'attached',timeout:12000}).catch(()=>{});
+                      item.view=await page.evaluate(()=>({generation:document.body.dataset.adminGeneration||null,route:location.pathname,hasNav:!!document.querySelector('#canonical-admin-navigation'),surfaces:[...new Set(Array.from(document.querySelectorAll('[data-canonical-surface]')).map(x=>x.dataset.canonicalSurface))],dashboards:[...new Set(Array.from(document.querySelectorAll('[data-dashboard-id]')).map(x=>x.dataset.dashboardId))],hubDirector:!!document.querySelector('[data-hub-director-todo]'),clientRequests:!!document.querySelector('[data-client-requests]'),period:!!document.querySelector('[data-pilotage-clocks]'),buyerDrill:!!document.querySelector('[data-buyer-cohort]'),operationsChain:!!document.querySelector('[data-process-source="control_chain"]')}));
+                      item.httpErrors=reqs.filter(x=>x.status>=400).slice(0,20);
+                    }catch(e){item.failure=String(e.name)}
+                    finally{page.off('response',track)}
+                  }
+                }catch(e){result.blocked=String(e.name)}finally{await ctx.close()}
+              }
+            }finally{await browser.close()}
+            const end=await (await get('/health/version')).json(),after=await (await get('/health')).json();assert.equal(end.commit,report.target.sha);assert.equal(after.target.db_fingerprint,report.target.fingerprint);
+            report.verdict='AUDIT_COMPLETE_NOT_CERTIFICATION';report.assetMismatch=report.assets.filter(x=>!x.match).length;
+          })().catch(e=>{report.failure=e.code||e.name;process.exitCode=1}).finally(()=>{fs.writeFileSync('test-results/dashboard-delivery/report.json',JSON.stringify(report,null,2));console.log(JSON.stringify({...report,assets:report.assets.filter(x=>!x.match),assetTotal:report.assets.length}))});
           JS
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: on-demand-staging-preflight
-          path: test-results/on-demand/report.json
+          name: v54-real-staging-dashboard-delivery
+          path: test-results/dashboard-delivery/report.json
           retention-days: 14
