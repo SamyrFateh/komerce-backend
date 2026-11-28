@@ -171,6 +171,7 @@ function assertFullHistory() {
 
 function buildPlan(scope, baseSha, headSha = 'HEAD', options = {}) {
   const before = options.treeSnapshot || null;
+  const quick = options.quick === true;
   const plan = [
     npmRun('Feature registry', 'feature:registry'),
     npmRun('Feature card schema', 'gate:schema'),
@@ -234,7 +235,7 @@ function buildPlan(scope, baseSha, headSha = 'HEAD', options = {}) {
       npmRun('Backend feature guard', 'feature:check'),
       nodeRun('Contract consumer check', 'scripts/contract-check.js'),
       npmRun('Security 360 freshness and ratchet', 'security:360:check'),
-      nodeRun('Related unit tests', 'scripts/run-staged-related-tests.js', ['--files', relatedFiles.join(',')])
+      ...(quick ? [] : [nodeRun('Related unit tests', 'scripts/run-staged-related-tests.js', ['--files', relatedFiles.join(',')])])
     );
   }
 
@@ -282,7 +283,7 @@ function buildPlan(scope, baseSha, headSha = 'HEAD', options = {}) {
 
   if (scope.boutique) {
     plan.push(
-      command('Boutique fast gates', npmBin, ['--prefix', 'public/boutique', 'run', 'check:fast']),
+      command(quick ? 'Boutique static gates' : 'Boutique fast gates', npmBin, ['--prefix', 'public/boutique', 'run', quick ? 'check:fast:static' : 'check:fast']),
       nodeRun('Boutique global ownership', 'scripts/boutique-ownership-full-check.js', ['--strict']),
       nodeRun('Boutique selector ownership', 'public/boutique/scripts/check-selector-ownership.js'),
       nodeRun('Boutique runtime CSS var ownership', 'public/boutique/scripts/check-runtime-css-var-ownership.js'),
@@ -300,6 +301,14 @@ function buildPlan(scope, baseSha, headSha = 'HEAD', options = {}) {
     if (scope.boutiqueJs) {
       plan.push(nodeRun('Sanitization on added front lines', 'scripts/arch-doctrine-sanitize-check.js', [`--diff=${baseSha}`]));
     }
+  }
+
+  // Le prévol de publication conserve tous les gates structurels et les tests
+  // ciblés ajoutés/modifiés. Les suites larges (y compris migration -> suite
+  // complète) restent au preflight intégral officiel sur le SHA publié.
+  if (quick) {
+    const directTests = list(scope.changedFiles).filter(f => /^(?:tests\/(?:unit|invariants|contract|notifications)\/|public\/boutique\/tests\/unit\/).+\.(?:test|spec)\.(?:js|cjs|mjs|ts)$/i.test(f));
+    if (directTests.length) plan.push(nodeRun('Changed unit tests', 'scripts/run-staged-related-tests.js', ['--files', directTests.join(',')]));
   }
 
   // Fail-fast inter-scope : en présence de code backend ET gouvernance, les
@@ -371,7 +380,8 @@ function main() {
   const headSha = git(['rev-parse', headRef]);
   const scope = classifyDiff(baseSha, headSha);
   const treeSnapshot = trackedChanges();
-  const plan = buildPlan(scope, baseSha, headSha, { treeSnapshot });
+  const quick = has('--quick');
+  const plan = buildPlan(scope, baseSha, headSha, { treeSnapshot, quick });
   const dryRun = has('--dry-run');
   require('./setup-hooks-runner').ensureInstalled();
   const markGreen = () => {
@@ -385,10 +395,10 @@ function main() {
       actualSha: git(['rev-parse', 'HEAD']),
       trackedDirtyCount: trackedChanges().size,
     });
-    stamp.writeGreen({ sha: headSha, gitPath: name => git(['rev-parse', '--git-path', name]) });
+    (quick ? stamp.writeReady : stamp.writeGreen)({ sha: headSha, gitPath: name => git(['rev-parse', '--git-path', name]) });
   };
 
-  console.log('\nKOMERCE — GREEN BEFORE PR');
+  console.log(quick ? '\nKOMERCE — PREVOL RAPIDE AVANT PR (CI COMPLETE REQUISE)' : '\nKOMERCE — PREFLIGHT INTEGRAL');
   console.log(`base: ${baseRef} (${baseSha.slice(0, 8)})`);
   console.log(`head: ${headSha.slice(0, 8)}`);
   console.log(`changed: ${scope.changedFiles.length}`);
@@ -403,11 +413,11 @@ function main() {
   const pending = runPlan(plan, dryRun) || [];
   markGreen();
   if (pending.length) {
-    console.log(`\n⚠ PRE-FLIGHT VERT SAUF ACCORD HUMAIN — ${pending.join(', ')}.`);
+    console.log(`\n⚠ ${quick ? 'PREVOL RAPIDE' : 'PRE-FLIGHT'} VERT SAUF ACCORD HUMAIN — ${pending.join(', ')}.`);
     console.log('  Publier ce SHA (push + PR) pour examen ; la CI reste bloquée tant que l’accord sur ce SHA exact manque.');
     return;
   }
-  console.log('\n✔ PRE-FLIGHT VERT — la PR peut maintenant servir de preuve indépendante.');
+  console.log(quick ? '\n✔ PREVOL RAPIDE VERT — publication autorisee, CI complete encore obligatoire.' : '\n✔ PRE-FLIGHT VERT — preuve integrale sur le SHA exact.');
 }
 
 if (require.main === module) {
