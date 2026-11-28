@@ -603,3 +603,12 @@ describe('clôture — aucun résidu d\'architecture sous-onglet', () => {
     expect(document.body.textContent).not.toContain('Vue d\'ensemble');
   });
 });
+
+test('Mon Komerce expose une entrée vers les conversations privées', async () => {
+  getCurrentIdentity.mockReturnValue({ id: 1 });
+  await openMonKomerce();
+  await flush();
+  const entry = document.querySelector('#k-komerce-view [data-on-demand]');
+  expect(entry).not.toBeNull();
+  expect(entry.textContent).toContain('conversations');
+});
