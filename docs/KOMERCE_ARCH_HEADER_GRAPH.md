@@ -6,19 +6,19 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 
 ## Totals
 
-- Scanned code files: 842
-- Files with full headers: 779
+- Scanned code files: 843
+- Files with full headers: 780
 - Files with lite headers: 63
-- Files with any headers: 842
+- Files with any headers: 843
 - Files without headers: 0
 - Files with misplaced headers (shebang/code before block): 0
 - Lite headers without owner: 0
-- Graph nodes: 2177
-- Edges: 10875
-- DB tables: 260
-- Doctrines: 862
+- Graph nodes: 2181
+- Edges: 10937
+- DB tables: 262
+- Doctrines: 863
 - Impact areas: 213
-- Unresolved code edges: 1016
+- Unresolved code edges: 1019
 - Tables multi-écrivains directs (>=2): 100
 - Avertissements db-write / db-write-via en chevauchement: 13
 
@@ -38,7 +38,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - dashboard: 34
 - decision-signals: 14
 - documents: 16
-- economic-engine: 76
+- economic-engine: 77
 - external-provider-contracts: 1
 - finance: 3
 - incident-management: 5
@@ -94,7 +94,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - route: 139
 - route-manifest: 1
 - schema: 1
-- service: 519
+- service: 520
 - service-policy: 1
 - state: 1
 - state-store: 1
@@ -445,6 +445,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - services/cost-allocation/cost-expectation.js — economic-engine-cost-expectation (economic-engine, high, full)
 - services/cost-allocation/cost-types.js — economic-engine-cost-type-classification (economic-engine, high, full)
 - services/cost-allocation/index.js — economic-engine-cost-allocation (economic-engine, high, full)
+- services/cost-allocation/local-stock-economic-lots.js — economic-engine-local-stock-receipt-lots (economic-engine, high, full)
 - services/cost-allocation/manual-cost-entry-service.js — manual-cost-entry (economic-engine, high, full)
 - services/cost-component-admin-service.js — economic-engine-cost-component-admin-service (economic-engine, high, full)
 - services/cost-component-market-service.js — economic-engine-market-cost-component-service (economic-engine, high, full)
@@ -993,6 +994,7 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE routes/market-delegation-cash-control.js -> market_cash_control_policies (via market-cash-control-policy-service)
 - WRITE services/market-provisioning-service.js -> market_cash_control_policies (via market-cash-control-policy-service)
 - WRITE routes/market-delegation-cash-control.js -> market_cash_destinations (via cash-custody-service)
+- WRITE services/market-provisioning-service.js -> market_central_collection_modes (via market-payment-provider-config-service)
 - WRITE routes/admin-action-center.js -> market_delegation_audit (via market-delegation-service)
 - WRITE routes/admin-market-control-plane.js -> market_delegation_audit (via market-delivery-proof-service)
 - WRITE routes/admin-market-control-plane.js -> market_delegation_audit (via market-transport-sale-rate-command)
@@ -1045,7 +1047,6 @@ This graph is generated from `@komerce-arch` and `@komerce-arch-lite` headers. D
 - WRITE services/market-provisioning-service.js -> market_team_invitations (via market-delegation-team-service)
 - WRITE routes/admin-market-control-plane.js -> market_transport_sale_rates (via market-transport-sale-rate-command)
 - WRITE routes/admin-market-control-plane.js -> markets (via market-provisioning-service)
-- WRITE routes/admin-market-control-plane.js -> markets (via market-lifecycle-service)
 
 ## Multi-Writer Tables (>=2 écrivains directs, hors délégations)
 

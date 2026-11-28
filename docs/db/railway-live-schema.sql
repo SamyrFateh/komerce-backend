@@ -1138,6 +1138,139 @@ $$;
 
 
 --
+-- Name: economic_cost_budget_guard_immutable(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.economic_cost_budget_guard_immutable() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'economic_cost_budget_revision_immutable' USING ERRCODE = '23514';
+END;
+$$;
+
+
+--
+-- Name: economic_cost_center_guard_scope(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.economic_cost_center_guard_scope() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF NEW.market_id IS DISTINCT FROM OLD.market_id THEN
+    RAISE EXCEPTION 'economic_cost_center_scope_immutable' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: economic_cost_commitment_guard_immutable(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.economic_cost_commitment_guard_immutable() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'economic_cost_commitment_immutable' USING ERRCODE = '23514';
+END;
+$$;
+
+
+--
+-- Name: economic_cost_commitment_guard_movement(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.economic_cost_commitment_guard_movement() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  c public.economic_cost_commitments%ROWTYPE;
+  fact public.economic_structure_cost_events%ROWTYPE;
+  charge uuid;
+  market uuid;
+  used_amount numeric;
+BEGIN
+  -- At READ COMMITTED each aggregate sees committed predecessors after row locks.
+  -- Reject other isolation modes until their concurrency contract is certified.
+  IF current_setting('transaction_isolation') <> 'read committed' THEN
+    RAISE EXCEPTION 'economic_commitment_isolation_unsupported' USING ERRCODE = '23514';
+  END IF;
+  SELECT * INTO STRICT c FROM public.economic_cost_commitments
+    WHERE id = NEW.commitment_id FOR UPDATE;
+  SELECT COALESCE(SUM(amount_native),0) INTO used_amount
+    FROM public.economic_cost_commitment_movements WHERE commitment_id = c.id;
+  IF used_amount + NEW.amount_native > c.amount_native THEN
+    RAISE EXCEPTION 'economic_commitment_overconsumption' USING ERRCODE = '23514';
+  END IF;
+  IF NEW.kind = 'CONSUME_STRUCTURE' THEN
+    SELECT * INTO STRICT fact FROM public.economic_structure_cost_events
+      WHERE id = NEW.structure_event_id FOR UPDATE;
+    SELECT p.structure_charge_id, cc.market_id INTO STRICT charge, market
+      FROM public.economic_cost_posts p JOIN public.economic_cost_centers cc ON cc.id=p.center_id
+      WHERE p.id=c.post_id FOR SHARE OF p, cc;
+    IF charge IS NULL OR fact.charge_id IS DISTINCT FROM charge
+      OR fact.market_id IS DISTINCT FROM market OR fact.currency <> c.currency
+      OR fact.event_kind <> 'ACCRUAL' OR fact.amount_original <= 0
+      OR fact.economic_from < (c.period_start::timestamp AT TIME ZONE 'UTC')
+      OR fact.economic_to > ((c.period_start + interval '1 month') AT TIME ZONE 'UTC')
+      OR EXISTS (SELECT 1 FROM public.economic_structure_cost_events e WHERE e.adjusts_event_id=fact.id) THEN
+      RAISE EXCEPTION 'economic_commitment_fact_mismatch_or_correction' USING ERRCODE = '23514';
+    END IF;
+    SELECT COALESCE(SUM(amount_native),0) INTO used_amount
+      FROM public.economic_cost_commitment_movements WHERE structure_event_id=fact.id;
+    IF used_amount + NEW.amount_native > fact.amount_original THEN
+      RAISE EXCEPTION 'economic_commitment_fact_overallocation' USING ERRCODE = '23514';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: economic_cost_post_guard_scope(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.economic_cost_post_guard_scope() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  center_market uuid;
+  charge_market uuid;
+BEGIN
+  IF NEW.structure_charge_id IS NULL THEN RETURN NEW; END IF;
+  SELECT market_id INTO STRICT center_market FROM public.economic_cost_centers WHERE id = NEW.center_id FOR SHARE;
+  SELECT market_owner_id INTO STRICT charge_market FROM public.charges WHERE id = NEW.structure_charge_id FOR SHARE;
+  IF center_market IS DISTINCT FROM charge_market THEN
+    RAISE EXCEPTION 'economic_cost_post_structure_scope_mismatch' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
+-- Name: economic_cost_reference_guard_charge_scope(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.economic_cost_reference_guard_charge_scope() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF NEW.market_owner_id IS DISTINCT FROM OLD.market_owner_id AND EXISTS (
+    SELECT 1 FROM public.economic_cost_posts p WHERE p.structure_charge_id = OLD.id
+  ) THEN
+    RAISE EXCEPTION 'economic_cost_reference_charge_scope_immutable' USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+--
 -- Name: enforce_assignment_ceiling_amount_limit(); Type: FUNCTION; Schema: public; Owner: -
 --
 
@@ -1707,6 +1840,27 @@ BEGIN
   END IF;
   RETURN NEW;
 END $$;
+
+
+--
+-- Name: guard_hub_internal_invoice(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.guard_hub_internal_invoice() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    RAISE EXCEPTION 'hub_internal_invoices cannot be deleted';
+  END IF;
+  IF OLD.paid_at IS NOT NULL OR NEW.paid_at IS NULL OR
+     (to_jsonb(OLD) - ARRAY['payment_reference','paid_by','paid_at']) <>
+     (to_jsonb(NEW) - ARRAY['payment_reference','paid_by','paid_at']) THEN
+    RAISE EXCEPTION 'hub_internal_invoices are immutable except for one settlement';
+  END IF;
+  RETURN NEW;
+END;
+$$;
 
 
 --
@@ -2823,6 +2977,38 @@ $$;
 --
 
 COMMENT ON FUNCTION public.hub_require_quarantine_incident() IS 'HUB-001 — toute quarantaine non destructive doit avoir un incident actif au COMMIT ; empêche les quarantaines orphelines même par SQL direct.';
+
+
+--
+-- Name: hub_supplier_check_immutable(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hub_supplier_check_immutable() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'HUB_SUPPLIER_CHECK_IMMUTABLE' USING ERRCODE='P0001';
+END $$;
+
+
+--
+-- Name: hub_supplier_return_quantity_guard(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.hub_supplier_return_quantity_guard() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE rejected integer; already_returned bigint;
+BEGIN
+  SELECT rejected_quantity INTO rejected FROM public.hub_supplier_receipt_check_lines
+  WHERE id=NEW.check_line_id FOR UPDATE;
+  SELECT COALESCE(SUM(quantity),0) INTO already_returned FROM public.hub_supplier_return_attestations
+  WHERE check_line_id=NEW.check_line_id;
+  IF rejected IS NULL OR already_returned + NEW.quantity > rejected THEN
+    RAISE EXCEPTION 'HUB_SUPPLIER_RETURN_EXCEEDS_REJECTED' USING ERRCODE='23514';
+  END IF;
+  RETURN NEW;
+END $$;
 
 
 --
@@ -4111,6 +4297,32 @@ BEGIN
       ELSE loyalty_since
     END
   WHERE id = p_user_id;
+END;
+$$;
+
+
+--
+-- Name: reject_economic_group_period_closure_mutation(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.reject_economic_group_period_closure_mutation() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'economic group period closures are append-only';
+END;
+$$;
+
+
+--
+-- Name: reject_economic_sku_rail_selection_mutation(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.reject_economic_sku_rail_selection_mutation() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RAISE EXCEPTION 'economic SKU rail selection events are append-only';
 END;
 $$;
 
@@ -6742,6 +6954,227 @@ COMMENT ON TABLE public.e2e_test_accounts IS 'Comptes de test E2E. Ecrit uniquem
 
 
 --
+-- Name: economic_cost_budget_revisions; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.economic_cost_budget_revisions (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    post_id uuid NOT NULL,
+    period_start date NOT NULL,
+    revision integer NOT NULL,
+    previous_revision integer,
+    currency text NOT NULL,
+    amount_native numeric(18,4) NOT NULL,
+    amount_eur numeric(18,2) NOT NULL,
+    fx_legs jsonb NOT NULL,
+    fx_as_of timestamp with time zone NOT NULL,
+    reason text NOT NULL,
+    idempotency_key text NOT NULL,
+    recorded_by uuid NOT NULL,
+    recorded_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT economic_budget_fx_shape CHECK ((((currency = 'EUR'::text) AND (fx_legs = '[]'::jsonb) AND (amount_native = amount_eur)) OR ((currency <> 'EUR'::text) AND (jsonb_array_length(fx_legs) > 0)))),
+    CONSTRAINT economic_budget_revision_chain CHECK ((((revision = 1) AND (previous_revision IS NULL)) OR ((revision > 1) AND (previous_revision IS NOT NULL) AND (previous_revision = (revision - 1))))),
+    CONSTRAINT economic_budget_zero_identity CHECK (((amount_native <> (0)::numeric) OR (amount_eur = (0)::numeric))),
+    CONSTRAINT economic_cost_budget_revisions_amount_eur_check CHECK (((amount_eur >= (0)::numeric) AND (amount_eur <> 'NaN'::numeric))),
+    CONSTRAINT economic_cost_budget_revisions_amount_native_check CHECK (((amount_native >= (0)::numeric) AND (amount_native <> 'NaN'::numeric))),
+    CONSTRAINT economic_cost_budget_revisions_currency_check CHECK ((currency ~ '^[A-Z]{3}$'::text)),
+    CONSTRAINT economic_cost_budget_revisions_fx_legs_check CHECK ((jsonb_typeof(fx_legs) = 'array'::text)),
+    CONSTRAINT economic_cost_budget_revisions_idempotency_key_check CHECK (((char_length(btrim(idempotency_key)) >= 8) AND (char_length(btrim(idempotency_key)) <= 200))),
+    CONSTRAINT economic_cost_budget_revisions_period_start_check CHECK ((EXTRACT(day FROM period_start) = (1)::numeric)),
+    CONSTRAINT economic_cost_budget_revisions_reason_check CHECK (((char_length(btrim(reason)) >= 3) AND (char_length(btrim(reason)) <= 1000))),
+    CONSTRAINT economic_cost_budget_revisions_revision_check CHECK ((revision >= 1))
+);
+
+
+--
+-- Name: TABLE economic_cost_budget_revisions; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.economic_cost_budget_revisions IS 'Planning only. Current budget = greatest revision per post and month, never sum of revisions. Center and longer periods derive from posts and months. No actual cost or financial movement is written.';
+
+
+--
+-- Name: economic_cost_centers; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.economic_cost_centers (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    market_id uuid,
+    code text NOT NULL,
+    label text NOT NULL,
+    responsible_user_id uuid,
+    is_active boolean DEFAULT false NOT NULL,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT economic_cost_center_active_owner CHECK (((NOT is_active) OR (responsible_user_id IS NOT NULL))),
+    CONSTRAINT economic_cost_centers_code_check CHECK ((code ~ '^[A-Z][A-Z0-9_]{1,63}$'::text)),
+    CONSTRAINT economic_cost_centers_label_check CHECK (((char_length(btrim(label)) >= 1) AND (char_length(btrim(label)) <= 200)))
+);
+
+
+--
+-- Name: COLUMN economic_cost_centers.market_id; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.economic_cost_centers.market_id IS 'NULL = group center; non-NULL = exact market. No implied mutation authorization.';
+
+
+--
+-- Name: economic_cost_commitment_movements; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.economic_cost_commitment_movements (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    commitment_id uuid NOT NULL,
+    kind text NOT NULL,
+    amount_native numeric(18,4) NOT NULL,
+    structure_event_id uuid,
+    evidence_ref text NOT NULL,
+    request_key text NOT NULL,
+    recorded_by uuid NOT NULL,
+    recorded_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT economic_cost_commitment_movements_amount_native_check CHECK (((amount_native > (0)::numeric) AND (amount_native <> 'NaN'::numeric))),
+    CONSTRAINT economic_cost_commitment_movements_check CHECK ((((kind = 'RELEASE'::text) AND (structure_event_id IS NULL)) OR ((kind = 'CONSUME_STRUCTURE'::text) AND (structure_event_id IS NOT NULL)))),
+    CONSTRAINT economic_cost_commitment_movements_evidence_ref_check CHECK (((char_length(btrim(evidence_ref)) >= 3) AND (char_length(btrim(evidence_ref)) <= 1000))),
+    CONSTRAINT economic_cost_commitment_movements_kind_check CHECK ((kind = ANY (ARRAY['RELEASE'::text, 'CONSUME_STRUCTURE'::text]))),
+    CONSTRAINT economic_cost_commitment_movements_request_key_check CHECK (((char_length(btrim(request_key)) >= 8) AND (char_length(btrim(request_key)) <= 200)))
+);
+
+
+--
+-- Name: TABLE economic_cost_commitment_movements; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.economic_cost_commitment_movements IS 'Partial release or consumption against canonical accrual. No additional realized cost. Corrected facts require reconciliation before any decision projection; service pending.';
+
+
+--
+-- Name: economic_cost_commitments; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.economic_cost_commitments (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    post_id uuid NOT NULL,
+    period_start date NOT NULL,
+    currency text NOT NULL,
+    amount_native numeric(18,4) NOT NULL,
+    amount_eur numeric(18,2) NOT NULL,
+    fx_legs jsonb NOT NULL,
+    fx_as_of timestamp with time zone NOT NULL,
+    evidence_ref text NOT NULL,
+    request_key text NOT NULL,
+    recorded_by uuid NOT NULL,
+    recorded_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT economic_cost_commitments_amount_eur_check CHECK (((amount_eur >= (0)::numeric) AND (amount_eur <> 'NaN'::numeric))),
+    CONSTRAINT economic_cost_commitments_amount_native_check CHECK (((amount_native > (0)::numeric) AND (amount_native <> 'NaN'::numeric))),
+    CONSTRAINT economic_cost_commitments_check CHECK ((((currency = 'EUR'::text) AND (fx_legs = '[]'::jsonb) AND (amount_native = amount_eur)) OR ((currency <> 'EUR'::text) AND (jsonb_array_length(fx_legs) > 0)))),
+    CONSTRAINT economic_cost_commitments_currency_check CHECK ((currency ~ '^[A-Z]{3}$'::text)),
+    CONSTRAINT economic_cost_commitments_evidence_ref_check CHECK (((char_length(btrim(evidence_ref)) >= 3) AND (char_length(btrim(evidence_ref)) <= 1000))),
+    CONSTRAINT economic_cost_commitments_fx_legs_check CHECK ((jsonb_typeof(fx_legs) = 'array'::text)),
+    CONSTRAINT economic_cost_commitments_period_start_check CHECK ((EXTRACT(day FROM period_start) = (1)::numeric)),
+    CONSTRAINT economic_cost_commitments_request_key_check CHECK (((char_length(btrim(request_key)) >= 8) AND (char_length(btrim(request_key)) <= 200)))
+);
+
+
+--
+-- Name: TABLE economic_cost_commitments; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.economic_cost_commitments IS 'Administrative commitments, not realized costs, payments or purchases. Opening amount and source FX frozen.';
+
+
+--
+-- Name: economic_cost_families; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.economic_cost_families (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    center_id uuid NOT NULL,
+    code text NOT NULL,
+    label text NOT NULL,
+    CONSTRAINT economic_cost_families_code_check CHECK ((code ~ '^[A-Z][A-Z0-9_]{1,63}$'::text)),
+    CONSTRAINT economic_cost_families_label_check CHECK (((char_length(btrim(label)) >= 1) AND (char_length(btrim(label)) <= 200)))
+);
+
+
+--
+-- Name: economic_cost_posts; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.economic_cost_posts (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    center_id uuid NOT NULL,
+    family_id uuid NOT NULL,
+    resource_id uuid,
+    code text NOT NULL,
+    label text NOT NULL,
+    economic_nature text NOT NULL,
+    allocation_perimeter text NOT NULL,
+    allocation_basis text NOT NULL,
+    structure_charge_id uuid,
+    CONSTRAINT economic_cost_post_structure_fixed CHECK (((structure_charge_id IS NULL) OR (economic_nature = 'FIXED'::text))),
+    CONSTRAINT economic_cost_posts_allocation_basis_check CHECK (((char_length(btrim(allocation_basis)) >= 1) AND (char_length(btrim(allocation_basis)) <= 200))),
+    CONSTRAINT economic_cost_posts_allocation_perimeter_check CHECK ((allocation_perimeter = ANY (ARRAY['DIRECT'::text, 'MUTUALIZED'::text]))),
+    CONSTRAINT economic_cost_posts_code_check CHECK ((code ~ '^[A-Z][A-Z0-9_]{1,63}$'::text)),
+    CONSTRAINT economic_cost_posts_economic_nature_check CHECK ((economic_nature = ANY (ARRAY['FIXED'::text, 'VARIABLE'::text, 'MIXED'::text]))),
+    CONSTRAINT economic_cost_posts_label_check CHECK (((char_length(btrim(label)) >= 1) AND (char_length(btrim(label)) <= 200)))
+);
+
+
+--
+-- Name: TABLE economic_cost_posts; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.economic_cost_posts IS 'Administrative metadata only; never a ledger of realized expenses. A structure link represents a fixed component; mixed components must be split at source before recognition.';
+
+
+--
+-- Name: economic_cost_resources; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.economic_cost_resources (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    center_id uuid NOT NULL,
+    code text NOT NULL,
+    label text NOT NULL,
+    resource_kind text NOT NULL,
+    CONSTRAINT economic_cost_resources_code_check CHECK ((code ~ '^[A-Z][A-Z0-9_]{1,63}$'::text)),
+    CONSTRAINT economic_cost_resources_label_check CHECK (((char_length(btrim(label)) >= 1) AND (char_length(btrim(label)) <= 200))),
+    CONSTRAINT economic_cost_resources_resource_kind_check CHECK (((char_length(btrim(resource_kind)) >= 1) AND (char_length(btrim(resource_kind)) <= 80)))
+);
+
+
+--
+-- Name: economic_group_period_closures; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.economic_group_period_closures (
+    id bigint NOT NULL,
+    period_start date NOT NULL,
+    evidence_hash text NOT NULL,
+    evidence_ref text NOT NULL,
+    actor_id uuid NOT NULL,
+    recorded_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT economic_group_period_closures_evidence_hash_check CHECK ((evidence_hash ~ '^[a-f0-9]{64}$'::text)),
+    CONSTRAINT economic_group_period_closures_evidence_ref_check CHECK (((length(btrim(evidence_ref)) >= 3) AND (length(btrim(evidence_ref)) <= 1000))),
+    CONSTRAINT economic_group_period_closures_period_start_check CHECK ((EXTRACT(day FROM period_start) = (1)::numeric))
+);
+
+
+--
+-- Name: economic_group_period_closures_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.economic_group_period_closures ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.economic_group_period_closures_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+--
 -- Name: economic_risk_cost_events; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -6828,6 +7261,44 @@ COMMENT ON TABLE public.economic_risk_watermark_events IS 'Certifications append
 --
 
 COMMENT ON COLUMN public.economic_risk_watermark_events.closed_through IS 'Borne exclusive de risque revue/certifiée. Toute écriture backdatée ultérieure dans une fenêtre déjà certifiée rend cette certification stale jusqu à une nouvelle revue.';
+
+
+--
+-- Name: economic_sku_rail_selection_events; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.economic_sku_rail_selection_events (
+    id bigint NOT NULL,
+    market_id uuid NOT NULL,
+    sku_id uuid NOT NULL,
+    rail text NOT NULL,
+    action text NOT NULL,
+    policy_version text NOT NULL,
+    evidence jsonb NOT NULL,
+    reason text NOT NULL,
+    actor_id uuid,
+    recorded_at timestamp with time zone DEFAULT now() NOT NULL,
+    decision_source text DEFAULT 'MANUAL'::text NOT NULL,
+    CONSTRAINT economic_selection_decision_source_check CHECK ((((decision_source = 'MANUAL'::text) AND (actor_id IS NOT NULL)) OR ((decision_source = 'POLICY_AUTOMATION'::text) AND (actor_id IS NULL) AND (action = 'WITHDRAW'::text)))),
+    CONSTRAINT economic_sku_rail_selection_events_action_check CHECK ((action = ANY (ARRAY['WITHDRAW'::text, 'RESTORE'::text]))),
+    CONSTRAINT economic_sku_rail_selection_events_evidence_check CHECK ((jsonb_typeof(evidence) = 'object'::text)),
+    CONSTRAINT economic_sku_rail_selection_events_rail_check CHECK ((rail = ANY (ARRAY['SEA_STANDARD'::text, 'AIR_EXPRESS'::text]))),
+    CONSTRAINT economic_sku_rail_selection_events_reason_check CHECK (((length(btrim(reason)) >= 3) AND (length(btrim(reason)) <= 1000)))
+);
+
+
+--
+-- Name: economic_sku_rail_selection_events_id_seq; Type: SEQUENCE; Schema: public; Owner: -
+--
+
+ALTER TABLE public.economic_sku_rail_selection_events ALTER COLUMN id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME public.economic_sku_rail_selection_events_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
 
 
 --
@@ -7433,6 +7904,31 @@ CREATE TABLE public.hub_box_bags (
 
 
 --
+-- Name: hub_box_custody_scans; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.hub_box_custody_scans (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    shipment_id uuid NOT NULL,
+    box_unit_id uuid NOT NULL,
+    label_id uuid NOT NULL,
+    event_type text NOT NULL,
+    actor_id uuid NOT NULL,
+    proof_ref text NOT NULL,
+    occurred_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT hub_box_custody_scans_event_type_check CHECK ((event_type = ANY (ARRAY['HUB_HANDOVER'::text, 'CARRIER_ACCEPTED'::text, 'CARRIER_LOADED'::text]))),
+    CONSTRAINT hub_box_custody_scans_proof_ref_check CHECK (((length(btrim(proof_ref)) >= 3) AND (length(btrim(proof_ref)) <= 240)))
+);
+
+
+--
+-- Name: TABLE hub_box_custody_scans; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.hub_box_custody_scans IS 'One authenticated, explicitly confirmed QR scan per COMBOX and custody event; not a shipment transition.';
+
+
+--
 -- Name: hub_physical_unit_placements; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -7554,6 +8050,31 @@ COMMENT ON TABLE public.hub_custody_events IS 'HUB-001 append-only custody/linea
 
 
 --
+-- Name: hub_internal_invoices; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.hub_internal_invoices (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    market_id uuid NOT NULL,
+    period_from date NOT NULL,
+    period_to date NOT NULL,
+    amount_kmf numeric(24,2) NOT NULL,
+    evidence_hash text NOT NULL,
+    statement_snapshot jsonb NOT NULL,
+    issued_by uuid NOT NULL,
+    issued_at timestamp with time zone DEFAULT now() NOT NULL,
+    payment_reference text,
+    paid_by uuid,
+    paid_at timestamp with time zone,
+    CONSTRAINT hub_internal_invoices_amount_kmf_check CHECK ((amount_kmf > (0)::numeric)),
+    CONSTRAINT hub_internal_invoices_check CHECK ((period_to > period_from)),
+    CONSTRAINT hub_internal_invoices_check1 CHECK ((((payment_reference IS NULL) AND (paid_by IS NULL) AND (paid_at IS NULL)) OR ((payment_reference IS NOT NULL) AND (paid_by IS NOT NULL) AND (paid_at IS NOT NULL)))),
+    CONSTRAINT hub_internal_invoices_evidence_hash_check CHECK ((evidence_hash ~ '^[a-f0-9]{64}$'::text)),
+    CONSTRAINT hub_internal_invoices_payment_reference_check CHECK (((length(btrim(payment_reference)) >= 3) AND (length(btrim(payment_reference)) <= 200)))
+);
+
+
+--
 -- Name: hub_purchase_allocations; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -7583,6 +8104,133 @@ CREATE TABLE public.hub_purchase_allocations (
 --
 
 COMMENT ON TABLE public.hub_purchase_allocations IS 'HUB-001 immutable economic snapshot: exact Purchase Order identity + order Market/destination. Hub cannot reassign it.';
+
+
+--
+-- Name: hub_scan_label_box_scans; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.hub_scan_label_box_scans (
+    label_id uuid NOT NULL,
+    allocation_id uuid NOT NULL,
+    from_unit_id uuid NOT NULL,
+    box_unit_id uuid NOT NULL,
+    actor_id uuid,
+    scanned_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+--
+-- Name: TABLE hub_scan_label_box_scans; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.hub_scan_label_box_scans IS 'Preuve unique de placement article en COMBOX ; doublon de QR refusé transactionnellement.';
+
+
+--
+-- Name: hub_scan_labels; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.hub_scan_labels (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    target_type text NOT NULL,
+    allocation_id uuid,
+    unit_number integer,
+    physical_unit_id uuid,
+    market_id uuid NOT NULL,
+    relais_id uuid NOT NULL,
+    qr_value text NOT NULL,
+    short_alias text NOT NULL,
+    created_by uuid,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT chk_hub_scan_label_target CHECK ((((target_type = 'ARTICLE'::text) AND (allocation_id IS NOT NULL) AND (unit_number IS NOT NULL) AND (physical_unit_id IS NULL)) OR ((target_type = 'COMBOX'::text) AND (physical_unit_id IS NOT NULL) AND (allocation_id IS NULL) AND (unit_number IS NULL)))),
+    CONSTRAINT hub_scan_labels_qr_value_check CHECK ((qr_value ~ '^KQ1_[A-F0-9]{32}$'::text)),
+    CONSTRAINT hub_scan_labels_short_alias_check CHECK ((short_alias ~ '^[A-HJ-NP-Z2-9]{8}$'::text)),
+    CONSTRAINT hub_scan_labels_target_type_check CHECK ((target_type = ANY (ARRAY['ARTICLE'::text, 'COMBOX'::text]))),
+    CONSTRAINT hub_scan_labels_unit_number_check CHECK (((unit_number IS NULL) OR (unit_number > 0)))
+);
+
+
+--
+-- Name: TABLE hub_scan_labels; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.hub_scan_labels IS 'Étiquettes QR opaques Hub #5215 : identifiant non secret, autorisation par session, référence commerciale non imprimée, scans validés par writers métier.';
+
+
+--
+-- Name: hub_supplier_receipt_check_lines; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.hub_supplier_receipt_check_lines (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    check_id uuid NOT NULL,
+    product_sku_id uuid NOT NULL,
+    expected_quantity integer NOT NULL,
+    received_quantity integer NOT NULL,
+    rejected_quantity integer NOT NULL,
+    conforming_quantity integer GENERATED ALWAYS AS ((received_quantity - rejected_quantity)) STORED,
+    missing_quantity integer GENERATED ALWAYS AS ((expected_quantity - received_quantity)) STORED,
+    CONSTRAINT hub_supplier_receipt_check_lines_check CHECK (((rejected_quantity <= received_quantity) AND (received_quantity <= expected_quantity))),
+    CONSTRAINT hub_supplier_receipt_check_lines_expected_quantity_check CHECK ((expected_quantity > 0)),
+    CONSTRAINT hub_supplier_receipt_check_lines_received_quantity_check CHECK ((received_quantity >= 0)),
+    CONSTRAINT hub_supplier_receipt_check_lines_rejected_quantity_check CHECK ((rejected_quantity >= 0))
+);
+
+
+--
+-- Name: TABLE hub_supplier_receipt_check_lines; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.hub_supplier_receipt_check_lines IS 'Observed received, rejected and missing quantities; rejected units are not client allocations.';
+
+
+--
+-- Name: hub_supplier_receipt_checks; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.hub_supplier_receipt_checks (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    reference text NOT NULL,
+    purchase_order_id uuid NOT NULL,
+    market_id uuid NOT NULL,
+    observed_by uuid NOT NULL,
+    observed_at timestamp with time zone DEFAULT now() NOT NULL,
+    observation_hash text NOT NULL,
+    conforming_unit_id uuid,
+    CONSTRAINT hub_supplier_receipt_checks_observation_hash_check CHECK ((observation_hash ~ '^[0-9a-f]{64}$'::text)),
+    CONSTRAINT hub_supplier_receipt_checks_reference_check CHECK (((length(reference) >= 1) AND (length(reference) <= 120)))
+);
+
+
+--
+-- Name: TABLE hub_supplier_receipt_checks; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.hub_supplier_receipt_checks IS 'Immutable supplier quality observation; conforming stock is recorded separately by canonical physical receipt.';
+
+
+--
+-- Name: hub_supplier_return_attestations; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.hub_supplier_return_attestations (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    reference text NOT NULL,
+    check_line_id uuid NOT NULL,
+    quantity integer NOT NULL,
+    returned_by uuid NOT NULL,
+    returned_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT hub_supplier_return_attestations_quantity_check CHECK ((quantity > 0)),
+    CONSTRAINT hub_supplier_return_attestations_reference_check CHECK (((length(reference) >= 1) AND (length(reference) <= 120)))
+);
+
+
+--
+-- Name: TABLE hub_supplier_return_attestations; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.hub_supplier_return_attestations IS 'Physical supplier handover only; never a refund, replacement or loss decision.';
 
 
 --
@@ -8201,6 +8849,43 @@ COMMENT ON COLUMN public.local_stock_allocations.quantity IS 'Quantité allouée
 
 
 --
+-- Name: local_stock_economic_lot_lines; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.local_stock_economic_lot_lines (
+    order_item_id uuid NOT NULL,
+    receipt_id uuid NOT NULL,
+    quantity integer NOT NULL,
+    purchase_kmf numeric(16,2) NOT NULL,
+    lot_proof_ref text NOT NULL,
+    linked_by uuid,
+    linked_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT local_stock_economic_lot_lines_lot_proof_ref_check CHECK (((length(btrim(lot_proof_ref)) >= 1) AND (length(btrim(lot_proof_ref)) <= 200))),
+    CONSTRAINT local_stock_economic_lot_lines_purchase_kmf_check CHECK ((purchase_kmf >= (0)::numeric)),
+    CONSTRAINT local_stock_economic_lot_lines_quantity_check CHECK ((quantity > 0))
+);
+
+
+--
+-- Name: local_stock_economic_lots; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.local_stock_economic_lots (
+    receipt_id uuid NOT NULL,
+    sku_id uuid NOT NULL,
+    market_id uuid NOT NULL,
+    quantity integer NOT NULL,
+    purchase_total_kmf numeric(16,2) NOT NULL,
+    payment_proof_ref text NOT NULL,
+    closed_by uuid,
+    closed_at timestamp with time zone DEFAULT now() NOT NULL,
+    CONSTRAINT local_stock_economic_lots_payment_proof_ref_check CHECK (((length(btrim(payment_proof_ref)) >= 1) AND (length(btrim(payment_proof_ref)) <= 200))),
+    CONSTRAINT local_stock_economic_lots_purchase_total_kmf_check CHECK ((purchase_total_kmf >= (0)::numeric)),
+    CONSTRAINT local_stock_economic_lots_quantity_check CHECK ((quantity > 0))
+);
+
+
+--
 -- Name: loyalty_rewards; Type: TABLE; Schema: public; Owner: -
 --
 
@@ -8812,6 +9497,7 @@ CREATE TABLE public.markets (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     lifecycle_status text DEFAULT 'PROVISIONING'::text NOT NULL,
     storefront_texts jsonb DEFAULT '{}'::jsonb NOT NULL,
+    business_timezone text,
     CONSTRAINT markets_lifecycle_is_active_check CHECK ((is_active = (lifecycle_status = ANY (ARRAY['ACTIVE'::text, 'SUSPENDED'::text])))),
     CONSTRAINT markets_lifecycle_status_check CHECK ((lifecycle_status = ANY (ARRAY['PROVISIONING'::text, 'ACTIVE'::text, 'SUSPENDED'::text, 'CLOSED'::text]))),
     CONSTRAINT markets_minor_unit_check CHECK (((minor_unit >= 0) AND (minor_unit <= 4))),
@@ -8852,6 +9538,13 @@ COMMENT ON COLUMN public.markets.lifecycle_status IS 'Canonical lifecycle: PROVI
 --
 
 COMMENT ON COLUMN public.markets.storefront_texts IS 'Market-owned storefront copy/settings as JSON object. No authorization is derived from this payload.';
+
+
+--
+-- Name: COLUMN markets.business_timezone; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.markets.business_timezone IS 'Canonical IANA business timezone; NULL means no explicit decision.';
 
 
 --
@@ -9026,6 +9719,35 @@ CREATE TABLE public.order_cost_entry_events (
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     CONSTRAINT order_cost_entry_events_event_type_check CHECK ((event_type = ANY (ARRAY['simulation_scope_assigned'::text, 'manual_cost_entered'::text, 'manual_cost_corrected'::text])))
 );
+
+
+--
+-- Name: order_delivery_waves; Type: TABLE; Schema: public; Owner: -
+--
+
+CREATE TABLE public.order_delivery_waves (
+    id uuid DEFAULT gen_random_uuid() NOT NULL,
+    subject_recipient_id uuid NOT NULL,
+    market_id uuid NOT NULL,
+    relais_id uuid NOT NULL,
+    client_code text NOT NULL,
+    next_order_number integer DEFAULT 1 NOT NULL,
+    planned_units integer DEFAULT 0 NOT NULL,
+    opened_at timestamp with time zone DEFAULT now() NOT NULL,
+    closed_at timestamp with time zone,
+    close_reason text,
+    CONSTRAINT chk_order_wave_client_code CHECK ((client_code ~ '^[A-Z][A-HJ-NP-Z2-9]{2}$'::text)),
+    CONSTRAINT chk_order_wave_close CHECK ((((closed_at IS NULL) AND (close_reason IS NULL)) OR ((closed_at IS NOT NULL) AND (close_reason = ANY (ARRAY['FIRST_HANDOFF'::text, 'EXPIRED'::text, 'LAST_ORDER_CONFIRMED'::text, 'ALL_CANCELLED'::text]))))),
+    CONSTRAINT order_delivery_waves_next_order_number_check CHECK (((next_order_number >= 1) AND (next_order_number <= 100))),
+    CONSTRAINT order_delivery_waves_planned_units_check CHECK ((planned_units >= 0))
+);
+
+
+--
+-- Name: TABLE order_delivery_waves; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON TABLE public.order_delivery_waves IS 'Groupe temporaire invisible par destinataire authentifie, marche et relais. Ne sert ni d identite civile, ni de code de retrait, ni de sac ou emplacement.';
 
 
 --
@@ -9488,6 +10210,7 @@ CREATE TABLE public.orders (
     simulation_scope text,
     transport_pricing_snapshot jsonb,
     fx_snapshot jsonb,
+    delivery_wave_id uuid,
     CONSTRAINT chk_orders_discount CHECK (((discount_pct >= (0)::numeric) AND (discount_pct <= (100)::numeric))),
     CONSTRAINT chk_orders_total CHECK ((total_kmf >= (0)::numeric)),
     CONSTRAINT chk_sav_replacement_no_charge CHECK ((((payment_mode)::text <> 'sav_replacement'::text) OR ((total_kmf = (0)::numeric) AND (NOT (total_eur IS DISTINCT FROM (0)::numeric)) AND (stripe_payment_id IS NULL) AND (paypal_capture_id IS NULL) AND (COALESCE(wallet_applied_kmf, (0)::numeric) = (0)::numeric) AND (remaining_cash_kmf = (0)::numeric)))),
@@ -10109,9 +10832,11 @@ CREATE TABLE public.physical_offers (
     updated_at timestamp with time zone DEFAULT now() NOT NULL,
     image_ref text,
     actions_enabled text[] DEFAULT ARRAY['request'::text] NOT NULL,
+    offer_options jsonb DEFAULT '[]'::jsonb NOT NULL,
     CONSTRAINT physical_offers_actions_enabled_allowed CHECK (((cardinality(actions_enabled) > 0) AND (actions_enabled <@ ARRAY['request'::text, 'quote'::text, 'callback'::text, 'call'::text, 'whatsapp'::text]))),
     CONSTRAINT physical_offers_commercial_exposure_check CHECK ((commercial_exposure = ANY (ARRAY['DISABLED'::text, 'ENABLED'::text]))),
-    CONSTRAINT physical_offers_image_ref_public CHECK (((image_ref IS NULL) OR (image_ref ~ '^/[^/]'::text) OR (image_ref ~~ 'https://%'::text)))
+    CONSTRAINT physical_offers_image_ref_public CHECK (((image_ref IS NULL) OR (image_ref ~ '^/[^/]'::text) OR (image_ref ~~ 'https://%'::text))),
+    CONSTRAINT physical_offers_options_array CHECK (((jsonb_typeof(offer_options) = 'array'::text) AND (jsonb_array_length(offer_options) <= 30)))
 );
 
 
@@ -10141,6 +10866,13 @@ COMMENT ON COLUMN public.physical_offers.image_ref IS 'Référence média publiq
 --
 
 COMMENT ON COLUMN public.physical_offers.actions_enabled IS 'Capacités cumulatives de la fiche Komerce : request, quote, callback, call, whatsapp. Le kind ne choisit jamais seul l interaction.';
+
+
+--
+-- Name: COLUMN physical_offers.offer_options; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.physical_offers.offer_options IS 'Optional informational configurations; not stock, checkout SKU, reservations or binding prices.';
 
 
 --
@@ -10453,12 +11185,14 @@ CREATE TABLE public.pricing_market_decision_policy_events (
     rationale text NOT NULL,
     recorded_by uuid NOT NULL,
     recorded_at timestamp with time zone DEFAULT now() NOT NULL,
+    selection_by_family jsonb,
     CONSTRAINT pricing_market_decision_poli_disposed_contribution_treatm_check CHECK ((disposed_contribution_treatment = 'EXCLUDE_FROM_NUMERATOR'::text)),
     CONSTRAINT pricing_market_decision_policy_even_max_disposition_ratio_check CHECK (((max_disposition_ratio >= (0)::numeric) AND (max_disposition_ratio <= (1)::numeric))),
     CONSTRAINT pricing_market_decision_policy_events_coverage_threshold_check CHECK ((coverage_threshold > (0)::numeric)),
     CONSTRAINT pricing_market_decision_policy_events_evidence_ref_check CHECK (((char_length(btrim(evidence_ref)) >= 3) AND (char_length(btrim(evidence_ref)) <= 1000))),
     CONSTRAINT pricing_market_decision_policy_events_maturity_threshold_check CHECK (((maturity_threshold >= (0)::numeric) AND (maturity_threshold <= (1)::numeric))),
     CONSTRAINT pricing_market_decision_policy_events_rationale_check CHECK (((char_length(btrim(rationale)) >= 10) AND (char_length(btrim(rationale)) <= 2000))),
+    CONSTRAINT pricing_market_decision_policy_events_selection_by_family_check CHECK (((selection_by_family IS NULL) OR (jsonb_typeof(selection_by_family) = 'object'::text))),
     CONSTRAINT pricing_market_decision_policy_events_source_check CHECK (((char_length(btrim(source)) >= 3) AND (char_length(btrim(source)) <= 500))),
     CONSTRAINT pricing_market_decision_policy_events_version_check CHECK (((char_length(btrim(version)) >= 1) AND (char_length(btrim(version)) <= 100))),
     CONSTRAINT pricing_market_decision_policy_events_window_days_check CHECK ((window_days > 0)),
@@ -10485,6 +11219,13 @@ COMMENT ON COLUMN public.pricing_market_decision_policy_events.window_days IS 'L
 --
 
 COMMENT ON COLUMN public.pricing_market_decision_policy_events.coverage_threshold IS 'Seuil explicite de market_coverage_ratio autorisant une nouvelle position sous CDR ; toute modification est un nouvel événement auditable.';
+
+
+--
+-- Name: COLUMN pricing_market_decision_policy_events.selection_by_family; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.pricing_market_decision_policy_events.selection_by_family IS 'Optional, versioned catalog-family selection thresholds. Older policy events keep NULL.';
 
 
 --
@@ -11725,9 +12466,11 @@ CREATE TABLE public.relais (
     latitude numeric(10,7),
     longitude numeric(11,7),
     photo_url text,
+    short_code text,
     CONSTRAINT relais_gps_pair_check CHECK (((latitude IS NULL) = (longitude IS NULL))),
     CONSTRAINT relais_latitude_range_check CHECK (((latitude IS NULL) OR ((latitude >= ('-90'::integer)::numeric) AND (latitude <= (90)::numeric)))),
-    CONSTRAINT relais_longitude_range_check CHECK (((longitude IS NULL) OR ((longitude >= ('-180'::integer)::numeric) AND (longitude <= (180)::numeric))))
+    CONSTRAINT relais_longitude_range_check CHECK (((longitude IS NULL) OR ((longitude >= ('-180'::integer)::numeric) AND (longitude <= (180)::numeric)))),
+    CONSTRAINT relais_short_code_format CHECK (((short_code IS NULL) OR (short_code ~ '^[A-Z]{2}(0[1-9]|[1-9][0-9])$'::text)))
 );
 
 
@@ -11778,6 +12521,13 @@ COMMENT ON COLUMN public.relais.longitude IS 'Longitude GPS exacte du point rela
 --
 
 COMMENT ON COLUMN public.relais.photo_url IS 'Photo publique permettant au client de reconnaître physiquement le relais.';
+
+
+--
+-- Name: COLUMN relais.short_code; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.relais.short_code IS 'Code stable de deux lettres du nom reel + numero local a deux chiffres (YA01), non reutilise.';
 
 
 --
@@ -13363,6 +14113,12 @@ CREATE TABLE public.supplier_payment_settlements (
     notes text,
     recorded_by uuid,
     recorded_at timestamp with time zone DEFAULT now() NOT NULL,
+    debit_amount numeric(18,4),
+    debit_currency text,
+    fee_amount numeric(18,4),
+    fee_currency text,
+    debit_at timestamp with time zone,
+    debit_fx_snapshot jsonb,
     CONSTRAINT chk_sps_amount_currency CHECK ((amount_currency > (0)::numeric)),
     CONSTRAINT chk_sps_amount_kmf CHECK ((amount_kmf > (0)::numeric)),
     CONSTRAINT chk_sps_currency CHECK ((currency ~ '^[A-Z]{3}$'::text)),
@@ -13370,6 +14126,7 @@ CREATE TABLE public.supplier_payment_settlements (
     CONSTRAINT chk_sps_fees_only_on_payment CHECK (((kind = 'payment'::text) OR (fees_kmf = (0)::numeric))),
     CONSTRAINT chk_sps_idem CHECK ((btrim(idempotency_key) <> ''::text)),
     CONSTRAINT chk_sps_kind CHECK ((kind = ANY (ARRAY['payment'::text, 'goods_refund'::text, 'fee_refund'::text, 'other_refund'::text]))),
+    CONSTRAINT chk_sps_native_debit_complete CHECK ((((debit_amount IS NULL) AND (debit_currency IS NULL) AND (fee_amount IS NULL) AND (fee_currency IS NULL) AND (debit_at IS NULL) AND (debit_fx_snapshot IS NULL)) OR ((debit_amount IS NOT NULL) AND (debit_amount > (0)::numeric) AND (debit_currency IS NOT NULL) AND (debit_currency ~ '^[A-Z]{3}$'::text) AND (fee_amount IS NOT NULL) AND (fee_amount >= (0)::numeric) AND ((kind = 'payment'::text) OR (fee_amount = (0)::numeric)) AND (fee_currency IS NOT NULL) AND (fee_currency ~ '^[A-Z]{3}$'::text) AND (debit_at IS NOT NULL) AND (debit_fx_snapshot IS NOT NULL) AND (jsonb_typeof(debit_fx_snapshot) = 'object'::text)))),
     CONSTRAINT chk_sps_proof CHECK ((btrim(proof_ref) <> ''::text))
 );
 
@@ -13379,6 +14136,20 @@ CREATE TABLE public.supplier_payment_settlements (
 --
 
 COMMENT ON TABLE public.supplier_payment_settlements IS 'Règlements fournisseur réellement débités en KMF (append-only) : payment / goods_refund / fee_refund / other_refund ; taux effectif calculé, jamais stocké.';
+
+
+--
+-- Name: COLUMN supplier_payment_settlements.amount_kmf; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.supplier_payment_settlements.amount_kmf IS 'Legacy: actual recorded KMF. For native debit: historical FX KMF projection, never a new bank debit fact.';
+
+
+--
+-- Name: COLUMN supplier_payment_settlements.debit_currency; Type: COMMENT; Schema: public; Owner: -
+--
+
+COMMENT ON COLUMN public.supplier_payment_settlements.debit_currency IS 'Actual bank/wallet currency, distinct from supplier obligation currency.';
 
 
 --
@@ -14956,6 +15727,166 @@ ALTER TABLE ONLY public.e2e_test_accounts
 
 
 --
+-- Name: economic_cost_budget_revisions economic_budget_request_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_budget_revisions
+    ADD CONSTRAINT economic_budget_request_unique UNIQUE (post_id, period_start, idempotency_key);
+
+
+--
+-- Name: economic_cost_budget_revisions economic_budget_revision_unique; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_budget_revisions
+    ADD CONSTRAINT economic_budget_revision_unique UNIQUE (post_id, period_start, revision);
+
+
+--
+-- Name: economic_cost_budget_revisions economic_cost_budget_revisions_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_budget_revisions
+    ADD CONSTRAINT economic_cost_budget_revisions_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: economic_cost_centers economic_cost_center_scope_code; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_centers
+    ADD CONSTRAINT economic_cost_center_scope_code UNIQUE NULLS NOT DISTINCT (market_id, code);
+
+
+--
+-- Name: economic_cost_centers economic_cost_centers_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_centers
+    ADD CONSTRAINT economic_cost_centers_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: economic_cost_commitment_movements economic_cost_commitment_movement_commitment_id_request_key_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_commitment_movements
+    ADD CONSTRAINT economic_cost_commitment_movement_commitment_id_request_key_key UNIQUE (commitment_id, request_key);
+
+
+--
+-- Name: economic_cost_commitment_movements economic_cost_commitment_movements_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_commitment_movements
+    ADD CONSTRAINT economic_cost_commitment_movements_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: economic_cost_commitments economic_cost_commitments_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_commitments
+    ADD CONSTRAINT economic_cost_commitments_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: economic_cost_commitments economic_cost_commitments_post_id_request_key_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_commitments
+    ADD CONSTRAINT economic_cost_commitments_post_id_request_key_key UNIQUE (post_id, request_key);
+
+
+--
+-- Name: economic_cost_families economic_cost_families_center_id_code_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_families
+    ADD CONSTRAINT economic_cost_families_center_id_code_key UNIQUE (center_id, code);
+
+
+--
+-- Name: economic_cost_families economic_cost_families_center_id_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_families
+    ADD CONSTRAINT economic_cost_families_center_id_id_key UNIQUE (center_id, id);
+
+
+--
+-- Name: economic_cost_families economic_cost_families_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_families
+    ADD CONSTRAINT economic_cost_families_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: economic_cost_posts economic_cost_posts_family_id_code_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_posts
+    ADD CONSTRAINT economic_cost_posts_family_id_code_key UNIQUE (family_id, code);
+
+
+--
+-- Name: economic_cost_posts economic_cost_posts_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_posts
+    ADD CONSTRAINT economic_cost_posts_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: economic_cost_posts economic_cost_posts_structure_charge_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_posts
+    ADD CONSTRAINT economic_cost_posts_structure_charge_id_key UNIQUE (structure_charge_id);
+
+
+--
+-- Name: economic_cost_resources economic_cost_resources_center_id_code_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_resources
+    ADD CONSTRAINT economic_cost_resources_center_id_code_key UNIQUE (center_id, code);
+
+
+--
+-- Name: economic_cost_resources economic_cost_resources_center_id_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_resources
+    ADD CONSTRAINT economic_cost_resources_center_id_id_key UNIQUE (center_id, id);
+
+
+--
+-- Name: economic_cost_resources economic_cost_resources_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_resources
+    ADD CONSTRAINT economic_cost_resources_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: economic_group_period_closures economic_group_period_closures_period_start_evidence_hash_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_group_period_closures
+    ADD CONSTRAINT economic_group_period_closures_period_start_evidence_hash_key UNIQUE (period_start, evidence_hash);
+
+
+--
+-- Name: economic_group_period_closures economic_group_period_closures_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_group_period_closures
+    ADD CONSTRAINT economic_group_period_closures_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: economic_risk_cost_events economic_risk_cost_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -14969,6 +15900,14 @@ ALTER TABLE ONLY public.economic_risk_cost_events
 
 ALTER TABLE ONLY public.economic_risk_watermark_events
     ADD CONSTRAINT economic_risk_watermark_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: economic_sku_rail_selection_events economic_sku_rail_selection_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_sku_rail_selection_events
+    ADD CONSTRAINT economic_sku_rail_selection_events_pkey PRIMARY KEY (id);
 
 
 --
@@ -15116,11 +16055,43 @@ ALTER TABLE ONLY public.hub_box_bags
 
 
 --
+-- Name: hub_box_custody_scans hub_box_custody_scans_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_box_custody_scans
+    ADD CONSTRAINT hub_box_custody_scans_pkey PRIMARY KEY (id);
+
+
+--
 -- Name: hub_custody_events hub_custody_events_pkey; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
 ALTER TABLE ONLY public.hub_custody_events
     ADD CONSTRAINT hub_custody_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: hub_internal_invoices hub_internal_invoices_market_id_period_from_period_to_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_internal_invoices
+    ADD CONSTRAINT hub_internal_invoices_market_id_period_from_period_to_key UNIQUE (market_id, period_from, period_to);
+
+
+--
+-- Name: hub_internal_invoices hub_internal_invoices_payment_reference_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_internal_invoices
+    ADD CONSTRAINT hub_internal_invoices_payment_reference_key UNIQUE (payment_reference);
+
+
+--
+-- Name: hub_internal_invoices hub_internal_invoices_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_internal_invoices
+    ADD CONSTRAINT hub_internal_invoices_pkey PRIMARY KEY (id);
 
 
 --
@@ -15153,6 +16124,94 @@ ALTER TABLE ONLY public.hub_physical_units
 
 ALTER TABLE ONLY public.hub_purchase_allocations
     ADD CONSTRAINT hub_purchase_allocations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: hub_scan_label_box_scans hub_scan_label_box_scans_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_scan_label_box_scans
+    ADD CONSTRAINT hub_scan_label_box_scans_pkey PRIMARY KEY (label_id);
+
+
+--
+-- Name: hub_scan_labels hub_scan_labels_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_scan_labels
+    ADD CONSTRAINT hub_scan_labels_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: hub_scan_labels hub_scan_labels_qr_value_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_scan_labels
+    ADD CONSTRAINT hub_scan_labels_qr_value_key UNIQUE (qr_value);
+
+
+--
+-- Name: hub_scan_labels hub_scan_labels_short_alias_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_scan_labels
+    ADD CONSTRAINT hub_scan_labels_short_alias_key UNIQUE (short_alias);
+
+
+--
+-- Name: hub_supplier_receipt_check_lines hub_supplier_receipt_check_lines_check_id_product_sku_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_supplier_receipt_check_lines
+    ADD CONSTRAINT hub_supplier_receipt_check_lines_check_id_product_sku_id_key UNIQUE (check_id, product_sku_id);
+
+
+--
+-- Name: hub_supplier_receipt_check_lines hub_supplier_receipt_check_lines_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_supplier_receipt_check_lines
+    ADD CONSTRAINT hub_supplier_receipt_check_lines_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: hub_supplier_receipt_checks hub_supplier_receipt_checks_conforming_unit_id_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_supplier_receipt_checks
+    ADD CONSTRAINT hub_supplier_receipt_checks_conforming_unit_id_key UNIQUE (conforming_unit_id);
+
+
+--
+-- Name: hub_supplier_receipt_checks hub_supplier_receipt_checks_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_supplier_receipt_checks
+    ADD CONSTRAINT hub_supplier_receipt_checks_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: hub_supplier_receipt_checks hub_supplier_receipt_checks_reference_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_supplier_receipt_checks
+    ADD CONSTRAINT hub_supplier_receipt_checks_reference_key UNIQUE (reference);
+
+
+--
+-- Name: hub_supplier_return_attestations hub_supplier_return_attestations_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_supplier_return_attestations
+    ADD CONSTRAINT hub_supplier_return_attestations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: hub_supplier_return_attestations hub_supplier_return_attestations_reference_key; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_supplier_return_attestations
+    ADD CONSTRAINT hub_supplier_return_attestations_reference_key UNIQUE (reference);
 
 
 --
@@ -15337,6 +16396,22 @@ ALTER TABLE ONLY public.local_mobile_refund_handoffs
 
 ALTER TABLE ONLY public.local_stock_allocations
     ADD CONSTRAINT local_stock_allocations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: local_stock_economic_lot_lines local_stock_economic_lot_lines_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_stock_economic_lot_lines
+    ADD CONSTRAINT local_stock_economic_lot_lines_pkey PRIMARY KEY (order_item_id, receipt_id);
+
+
+--
+-- Name: local_stock_economic_lots local_stock_economic_lots_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_stock_economic_lots
+    ADD CONSTRAINT local_stock_economic_lots_pkey PRIMARY KEY (receipt_id);
 
 
 --
@@ -15593,6 +16668,14 @@ ALTER TABLE ONLY public.order_comments
 
 ALTER TABLE ONLY public.order_cost_entry_events
     ADD CONSTRAINT order_cost_entry_events_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: order_delivery_waves order_delivery_waves_pkey; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_delivery_waves
+    ADD CONSTRAINT order_delivery_waves_pkey PRIMARY KEY (id);
 
 
 --
@@ -16796,6 +17879,14 @@ ALTER TABLE ONLY public.financial_movement_documents
 
 
 --
+-- Name: hub_box_custody_scans uq_hub_box_custody_stage; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_box_custody_scans
+    ADD CONSTRAINT uq_hub_box_custody_stage UNIQUE (shipment_id, box_unit_id, event_type);
+
+
+--
 -- Name: import_runtime_item_events uq_import_runtime_item_events_run_seq; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -16932,6 +18023,14 @@ ALTER TABLE ONLY public.users
 
 
 --
+-- Name: order_delivery_waves ux_order_wave_relay_client_code; Type: CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_delivery_waves
+    ADD CONSTRAINT ux_order_wave_relay_client_code UNIQUE (market_id, relais_id, client_code);
+
+
+--
 -- Name: purchase_order_authorizations ux_po_authorizations_type; Type: CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -17008,6 +18107,20 @@ ALTER TABLE ONLY public.webauthn_credentials
 --
 
 CREATE INDEX catalog_media_visual_fr_reviews_reviewed_at_idx ON public.catalog_media_visual_fr_reviews USING btree (reviewed_at);
+
+
+--
+-- Name: hub_supplier_receipt_checks_po_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX hub_supplier_receipt_checks_po_idx ON public.hub_supplier_receipt_checks USING btree (purchase_order_id, observed_at);
+
+
+--
+-- Name: hub_supplier_return_line_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX hub_supplier_return_line_idx ON public.hub_supplier_return_attestations USING btree (check_line_id);
 
 
 --
@@ -17662,6 +18775,27 @@ CREATE INDEX idx_disputes_status ON public.disputes USING btree (status);
 
 
 --
+-- Name: idx_economic_commitment_movements_fact; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_economic_commitment_movements_fact ON public.economic_cost_commitment_movements USING btree (structure_event_id);
+
+
+--
+-- Name: idx_economic_commitments_post_period; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_economic_commitments_post_period ON public.economic_cost_commitments USING btree (post_id, period_start);
+
+
+--
+-- Name: idx_economic_cost_posts_center_family; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_economic_cost_posts_center_family ON public.economic_cost_posts USING btree (center_id, family_id);
+
+
+--
 -- Name: idx_economic_risk_cost_adjusts; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -17694,6 +18828,13 @@ CREATE INDEX idx_economic_risk_cost_provision ON public.economic_risk_cost_event
 --
 
 CREATE INDEX idx_economic_risk_watermark_market ON public.economic_risk_watermark_events USING btree (market_id, closed_through DESC, recorded_at DESC, id DESC);
+
+
+--
+-- Name: idx_economic_sku_rail_selection_current; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_economic_sku_rail_selection_current ON public.economic_sku_rail_selection_events USING btree (market_id, sku_id, rail, id DESC);
 
 
 --
@@ -17753,6 +18894,13 @@ CREATE INDEX idx_fx_public_reference_quote_latest ON public.fx_public_reference_
 
 
 --
+-- Name: idx_hub_box_custody_shipment; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_hub_box_custody_shipment ON public.hub_box_custody_scans USING btree (shipment_id, event_type, occurred_at);
+
+
+--
 -- Name: idx_hub_custody_events_operation; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -17806,6 +18954,13 @@ CREATE INDEX idx_hub_purchase_allocations_market ON public.hub_purchase_allocati
 --
 
 CREATE INDEX idx_hub_purchase_allocations_order ON public.hub_purchase_allocations USING btree (order_id, order_item_id);
+
+
+--
+-- Name: idx_hub_scan_labels_market_relais; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_hub_scan_labels_market_relais ON public.hub_scan_labels USING btree (market_id, relais_id);
 
 
 --
@@ -18548,6 +19703,13 @@ CREATE INDEX idx_orders_created_at ON public.orders USING btree (created_at);
 --
 
 CREATE INDEX idx_orders_created_status ON public.orders USING btree (created_at DESC, status);
+
+
+--
+-- Name: idx_orders_delivery_wave_id; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX idx_orders_delivery_wave_id ON public.orders USING btree (delivery_wave_id) WHERE (delivery_wave_id IS NOT NULL);
 
 
 --
@@ -20217,6 +21379,20 @@ CREATE INDEX ix_physical_code_sku ON public.product_sku_physical_codes USING btr
 
 
 --
+-- Name: local_stock_economic_lot_lines_receipt_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX local_stock_economic_lot_lines_receipt_idx ON public.local_stock_economic_lot_lines USING btree (receipt_id);
+
+
+--
+-- Name: local_stock_economic_lots_market_sku_idx; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE INDEX local_stock_economic_lots_market_sku_idx ON public.local_stock_economic_lots USING btree (market_id, sku_id, closed_at);
+
+
+--
 -- Name: one_draft_per_order; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -20525,6 +21701,20 @@ CREATE UNIQUE INDEX uq_disputes_product_return_active_line ON public.disputes US
 
 
 --
+-- Name: uq_hub_label_article; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_hub_label_article ON public.hub_scan_labels USING btree (allocation_id, unit_number) WHERE (target_type = 'ARTICLE'::text);
+
+
+--
+-- Name: uq_hub_label_combox; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX uq_hub_label_combox ON public.hub_scan_labels USING btree (physical_unit_id) WHERE (target_type = 'COMBOX'::text);
+
+
+--
 -- Name: uq_market_transport_sale_rates_active; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -20714,6 +21904,13 @@ CREATE UNIQUE INDEX ux_local_stock_product_market_location ON public.local_stock
 
 
 --
+-- Name: ux_order_wave_open_recipient; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_order_wave_open_recipient ON public.order_delivery_waves USING btree (subject_recipient_id, market_id, relais_id) WHERE (closed_at IS NULL);
+
+
+--
 -- Name: ux_physical_code_global; Type: INDEX; Schema: public; Owner: -
 --
 
@@ -20802,6 +21999,13 @@ CREATE UNIQUE INDEX ux_purchase_orders_order_item_supplier_active ON public.purc
 --
 
 CREATE UNIQUE INDEX ux_refunds_local_cash_payout_id ON public.refunds USING btree (local_cash_refund_payout_id) WHERE (local_cash_refund_payout_id IS NOT NULL);
+
+
+--
+-- Name: ux_relais_market_short_code; Type: INDEX; Schema: public; Owner: -
+--
+
+CREATE UNIQUE INDEX ux_relais_market_short_code ON public.relais USING btree (market_id, short_code) WHERE (short_code IS NOT NULL);
 
 
 --
@@ -21204,6 +22408,13 @@ CREATE TRIGGER dashboard_refresh_after_write AFTER INSERT OR DELETE OR UPDATE ON
 
 
 --
+-- Name: economic_sku_rail_selection_events economic_sku_rail_selection_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER economic_sku_rail_selection_immutable BEFORE DELETE OR UPDATE ON public.economic_sku_rail_selection_events FOR EACH ROW EXECUTE FUNCTION public.reject_economic_sku_rail_selection_mutation();
+
+
+--
 -- Name: fx_pegs fx_pegs_append_only; Type: TRIGGER; Schema: public; Owner: -
 --
 
@@ -21271,6 +22482,48 @@ CREATE TRIGGER guard_customs_fee_after_international_n1 BEFORE INSERT ON public.
 --
 
 CREATE TRIGGER guard_customs_freight_after_international_n1 BEFORE UPDATE OF freight_kmf ON public.customs_shipments FOR EACH ROW EXECUTE FUNCTION public.guard_international_n1_against_legacy_duplicate();
+
+
+--
+-- Name: hub_internal_invoices guard_hub_internal_invoice; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER guard_hub_internal_invoice BEFORE DELETE OR UPDATE ON public.hub_internal_invoices FOR EACH ROW EXECUTE FUNCTION public.guard_hub_internal_invoice();
+
+
+--
+-- Name: hub_box_custody_scans hub_box_custody_scans_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER hub_box_custody_scans_immutable BEFORE DELETE OR UPDATE ON public.hub_box_custody_scans FOR EACH ROW EXECUTE FUNCTION public.international_facts_immutable();
+
+
+--
+-- Name: hub_supplier_receipt_checks hub_supplier_check_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER hub_supplier_check_immutable BEFORE DELETE OR UPDATE ON public.hub_supplier_receipt_checks FOR EACH ROW EXECUTE FUNCTION public.hub_supplier_check_immutable();
+
+
+--
+-- Name: hub_supplier_receipt_check_lines hub_supplier_check_line_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER hub_supplier_check_line_immutable BEFORE DELETE OR UPDATE ON public.hub_supplier_receipt_check_lines FOR EACH ROW EXECUTE FUNCTION public.hub_supplier_check_immutable();
+
+
+--
+-- Name: hub_supplier_return_attestations hub_supplier_return_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER hub_supplier_return_immutable BEFORE DELETE OR UPDATE ON public.hub_supplier_return_attestations FOR EACH ROW EXECUTE FUNCTION public.hub_supplier_check_immutable();
+
+
+--
+-- Name: hub_supplier_return_attestations hub_supplier_return_quantity_guard; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER hub_supplier_return_quantity_guard BEFORE INSERT ON public.hub_supplier_return_attestations FOR EACH ROW EXECUTE FUNCTION public.hub_supplier_return_quantity_guard();
 
 
 --
@@ -21586,6 +22839,62 @@ CREATE TRIGGER trg_customs_updated_at BEFORE UPDATE ON public.customs_history FO
 --
 
 CREATE TRIGGER trg_disputes_updated BEFORE UPDATE ON public.disputes FOR EACH ROW EXECUTE FUNCTION public.set_updated_at();
+
+
+--
+-- Name: economic_cost_budget_revisions trg_economic_cost_budget_guard_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_economic_cost_budget_guard_immutable BEFORE DELETE OR UPDATE ON public.economic_cost_budget_revisions FOR EACH ROW EXECUTE FUNCTION public.economic_cost_budget_guard_immutable();
+
+
+--
+-- Name: economic_cost_centers trg_economic_cost_center_guard_scope; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_economic_cost_center_guard_scope BEFORE UPDATE OF market_id ON public.economic_cost_centers FOR EACH ROW EXECUTE FUNCTION public.economic_cost_center_guard_scope();
+
+
+--
+-- Name: economic_cost_commitment_movements trg_economic_cost_commitment_guard_movement; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_economic_cost_commitment_guard_movement BEFORE INSERT ON public.economic_cost_commitment_movements FOR EACH ROW EXECUTE FUNCTION public.economic_cost_commitment_guard_movement();
+
+
+--
+-- Name: economic_cost_commitments trg_economic_cost_commitment_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_economic_cost_commitment_immutable BEFORE DELETE OR UPDATE ON public.economic_cost_commitments FOR EACH ROW EXECUTE FUNCTION public.economic_cost_commitment_guard_immutable();
+
+
+--
+-- Name: economic_cost_commitment_movements trg_economic_cost_commitment_movement_immutable; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_economic_cost_commitment_movement_immutable BEFORE DELETE OR UPDATE ON public.economic_cost_commitment_movements FOR EACH ROW EXECUTE FUNCTION public.economic_cost_commitment_guard_immutable();
+
+
+--
+-- Name: economic_cost_posts trg_economic_cost_post_guard_scope; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_economic_cost_post_guard_scope BEFORE INSERT OR UPDATE OF center_id, structure_charge_id ON public.economic_cost_posts FOR EACH ROW EXECUTE FUNCTION public.economic_cost_post_guard_scope();
+
+
+--
+-- Name: charges trg_economic_cost_reference_guard_charge_scope; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_economic_cost_reference_guard_charge_scope BEFORE UPDATE OF market_owner_id ON public.charges FOR EACH ROW EXECUTE FUNCTION public.economic_cost_reference_guard_charge_scope();
+
+
+--
+-- Name: economic_group_period_closures trg_economic_group_period_closure_append_only; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trg_economic_group_period_closure_append_only BEFORE DELETE OR UPDATE ON public.economic_group_period_closures FOR EACH ROW EXECUTE FUNCTION public.reject_economic_group_period_closure_mutation();
 
 
 --
@@ -23264,6 +24573,142 @@ ALTER TABLE ONLY public.e2e_test_accounts
 
 
 --
+-- Name: economic_cost_budget_revisions economic_budget_predecessor; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_budget_revisions
+    ADD CONSTRAINT economic_budget_predecessor FOREIGN KEY (post_id, period_start, previous_revision) REFERENCES public.economic_cost_budget_revisions(post_id, period_start, revision) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_cost_budget_revisions economic_cost_budget_revisions_post_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_budget_revisions
+    ADD CONSTRAINT economic_cost_budget_revisions_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.economic_cost_posts(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_cost_budget_revisions economic_cost_budget_revisions_recorded_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_budget_revisions
+    ADD CONSTRAINT economic_cost_budget_revisions_recorded_by_fkey FOREIGN KEY (recorded_by) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_cost_centers economic_cost_centers_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_centers
+    ADD CONSTRAINT economic_cost_centers_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_cost_centers economic_cost_centers_responsible_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_centers
+    ADD CONSTRAINT economic_cost_centers_responsible_user_id_fkey FOREIGN KEY (responsible_user_id) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_cost_commitment_movements economic_cost_commitment_movements_commitment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_commitment_movements
+    ADD CONSTRAINT economic_cost_commitment_movements_commitment_id_fkey FOREIGN KEY (commitment_id) REFERENCES public.economic_cost_commitments(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_cost_commitment_movements economic_cost_commitment_movements_recorded_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_commitment_movements
+    ADD CONSTRAINT economic_cost_commitment_movements_recorded_by_fkey FOREIGN KEY (recorded_by) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_cost_commitment_movements economic_cost_commitment_movements_structure_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_commitment_movements
+    ADD CONSTRAINT economic_cost_commitment_movements_structure_event_id_fkey FOREIGN KEY (structure_event_id) REFERENCES public.economic_structure_cost_events(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_cost_commitments economic_cost_commitments_post_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_commitments
+    ADD CONSTRAINT economic_cost_commitments_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.economic_cost_posts(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_cost_commitments economic_cost_commitments_recorded_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_commitments
+    ADD CONSTRAINT economic_cost_commitments_recorded_by_fkey FOREIGN KEY (recorded_by) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_cost_families economic_cost_families_center_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_families
+    ADD CONSTRAINT economic_cost_families_center_id_fkey FOREIGN KEY (center_id) REFERENCES public.economic_cost_centers(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_cost_posts economic_cost_post_family_scope; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_posts
+    ADD CONSTRAINT economic_cost_post_family_scope FOREIGN KEY (center_id, family_id) REFERENCES public.economic_cost_families(center_id, id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_cost_posts economic_cost_post_resource_scope; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_posts
+    ADD CONSTRAINT economic_cost_post_resource_scope FOREIGN KEY (center_id, resource_id) REFERENCES public.economic_cost_resources(center_id, id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_cost_posts economic_cost_posts_center_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_posts
+    ADD CONSTRAINT economic_cost_posts_center_id_fkey FOREIGN KEY (center_id) REFERENCES public.economic_cost_centers(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_cost_posts economic_cost_posts_structure_charge_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_posts
+    ADD CONSTRAINT economic_cost_posts_structure_charge_id_fkey FOREIGN KEY (structure_charge_id) REFERENCES public.charges(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_cost_resources economic_cost_resources_center_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_cost_resources
+    ADD CONSTRAINT economic_cost_resources_center_id_fkey FOREIGN KEY (center_id) REFERENCES public.economic_cost_centers(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_group_period_closures economic_group_period_closures_actor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_group_period_closures
+    ADD CONSTRAINT economic_group_period_closures_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
 -- Name: economic_risk_cost_events economic_risk_cost_events_adjusts_event_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -23317,6 +24762,30 @@ ALTER TABLE ONLY public.economic_risk_watermark_events
 
 ALTER TABLE ONLY public.economic_risk_watermark_events
     ADD CONSTRAINT economic_risk_watermark_events_recorded_by_fkey FOREIGN KEY (recorded_by) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_sku_rail_selection_events economic_sku_rail_selection_events_actor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_sku_rail_selection_events
+    ADD CONSTRAINT economic_sku_rail_selection_events_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_sku_rail_selection_events economic_sku_rail_selection_events_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_sku_rail_selection_events
+    ADD CONSTRAINT economic_sku_rail_selection_events_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: economic_sku_rail_selection_events economic_sku_rail_selection_events_sku_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.economic_sku_rail_selection_events
+    ADD CONSTRAINT economic_sku_rail_selection_events_sku_id_fkey FOREIGN KEY (sku_id) REFERENCES public.product_skus(id) ON DELETE RESTRICT;
 
 
 --
@@ -23424,6 +24893,38 @@ ALTER TABLE ONLY public.hub_box_bags
 
 
 --
+-- Name: hub_box_custody_scans hub_box_custody_scans_actor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_box_custody_scans
+    ADD CONSTRAINT hub_box_custody_scans_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_box_custody_scans hub_box_custody_scans_box_unit_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_box_custody_scans
+    ADD CONSTRAINT hub_box_custody_scans_box_unit_id_fkey FOREIGN KEY (box_unit_id) REFERENCES public.hub_physical_units(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_box_custody_scans hub_box_custody_scans_label_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_box_custody_scans
+    ADD CONSTRAINT hub_box_custody_scans_label_id_fkey FOREIGN KEY (label_id) REFERENCES public.hub_scan_labels(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_box_custody_scans hub_box_custody_scans_shipment_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_box_custody_scans
+    ADD CONSTRAINT hub_box_custody_scans_shipment_id_fkey FOREIGN KEY (shipment_id) REFERENCES public.international_shipments(id) ON DELETE RESTRICT;
+
+
+--
 -- Name: hub_custody_events hub_custody_events_actor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -23445,6 +24946,30 @@ ALTER TABLE ONLY public.hub_custody_events
 
 ALTER TABLE ONLY public.hub_custody_events
     ADD CONSTRAINT hub_custody_events_physical_unit_id_fkey FOREIGN KEY (physical_unit_id) REFERENCES public.hub_physical_units(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_internal_invoices hub_internal_invoices_issued_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_internal_invoices
+    ADD CONSTRAINT hub_internal_invoices_issued_by_fkey FOREIGN KEY (issued_by) REFERENCES public.users(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_internal_invoices hub_internal_invoices_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_internal_invoices
+    ADD CONSTRAINT hub_internal_invoices_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_internal_invoices hub_internal_invoices_paid_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_internal_invoices
+    ADD CONSTRAINT hub_internal_invoices_paid_by_fkey FOREIGN KEY (paid_by) REFERENCES public.users(id) ON DELETE RESTRICT;
 
 
 --
@@ -23549,6 +25074,150 @@ ALTER TABLE ONLY public.hub_purchase_allocations
 
 ALTER TABLE ONLY public.hub_purchase_allocations
     ADD CONSTRAINT hub_purchase_allocations_supplier_id_fkey FOREIGN KEY (supplier_id) REFERENCES public.suppliers(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_scan_label_box_scans hub_scan_label_box_scans_actor_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_scan_label_box_scans
+    ADD CONSTRAINT hub_scan_label_box_scans_actor_id_fkey FOREIGN KEY (actor_id) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: hub_scan_label_box_scans hub_scan_label_box_scans_allocation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_scan_label_box_scans
+    ADD CONSTRAINT hub_scan_label_box_scans_allocation_id_fkey FOREIGN KEY (allocation_id) REFERENCES public.hub_purchase_allocations(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_scan_label_box_scans hub_scan_label_box_scans_box_unit_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_scan_label_box_scans
+    ADD CONSTRAINT hub_scan_label_box_scans_box_unit_id_fkey FOREIGN KEY (box_unit_id) REFERENCES public.hub_physical_units(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_scan_label_box_scans hub_scan_label_box_scans_from_unit_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_scan_label_box_scans
+    ADD CONSTRAINT hub_scan_label_box_scans_from_unit_id_fkey FOREIGN KEY (from_unit_id) REFERENCES public.hub_physical_units(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_scan_label_box_scans hub_scan_label_box_scans_label_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_scan_label_box_scans
+    ADD CONSTRAINT hub_scan_label_box_scans_label_id_fkey FOREIGN KEY (label_id) REFERENCES public.hub_scan_labels(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_scan_labels hub_scan_labels_allocation_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_scan_labels
+    ADD CONSTRAINT hub_scan_labels_allocation_id_fkey FOREIGN KEY (allocation_id) REFERENCES public.hub_purchase_allocations(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_scan_labels hub_scan_labels_created_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_scan_labels
+    ADD CONSTRAINT hub_scan_labels_created_by_fkey FOREIGN KEY (created_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: hub_scan_labels hub_scan_labels_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_scan_labels
+    ADD CONSTRAINT hub_scan_labels_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_scan_labels hub_scan_labels_physical_unit_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_scan_labels
+    ADD CONSTRAINT hub_scan_labels_physical_unit_id_fkey FOREIGN KEY (physical_unit_id) REFERENCES public.hub_physical_units(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_scan_labels hub_scan_labels_relais_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_scan_labels
+    ADD CONSTRAINT hub_scan_labels_relais_id_fkey FOREIGN KEY (relais_id) REFERENCES public.relais(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: hub_supplier_receipt_check_lines hub_supplier_receipt_check_lines_check_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_supplier_receipt_check_lines
+    ADD CONSTRAINT hub_supplier_receipt_check_lines_check_id_fkey FOREIGN KEY (check_id) REFERENCES public.hub_supplier_receipt_checks(id);
+
+
+--
+-- Name: hub_supplier_receipt_check_lines hub_supplier_receipt_check_lines_product_sku_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_supplier_receipt_check_lines
+    ADD CONSTRAINT hub_supplier_receipt_check_lines_product_sku_id_fkey FOREIGN KEY (product_sku_id) REFERENCES public.product_skus(id);
+
+
+--
+-- Name: hub_supplier_receipt_checks hub_supplier_receipt_checks_conforming_unit_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_supplier_receipt_checks
+    ADD CONSTRAINT hub_supplier_receipt_checks_conforming_unit_id_fkey FOREIGN KEY (conforming_unit_id) REFERENCES public.hub_physical_units(id);
+
+
+--
+-- Name: hub_supplier_receipt_checks hub_supplier_receipt_checks_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_supplier_receipt_checks
+    ADD CONSTRAINT hub_supplier_receipt_checks_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: hub_supplier_receipt_checks hub_supplier_receipt_checks_observed_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_supplier_receipt_checks
+    ADD CONSTRAINT hub_supplier_receipt_checks_observed_by_fkey FOREIGN KEY (observed_by) REFERENCES public.users(id);
+
+
+--
+-- Name: hub_supplier_receipt_checks hub_supplier_receipt_checks_purchase_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_supplier_receipt_checks
+    ADD CONSTRAINT hub_supplier_receipt_checks_purchase_order_id_fkey FOREIGN KEY (purchase_order_id) REFERENCES public.purchase_orders(id);
+
+
+--
+-- Name: hub_supplier_return_attestations hub_supplier_return_attestations_check_line_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_supplier_return_attestations
+    ADD CONSTRAINT hub_supplier_return_attestations_check_line_id_fkey FOREIGN KEY (check_line_id) REFERENCES public.hub_supplier_receipt_check_lines(id);
+
+
+--
+-- Name: hub_supplier_return_attestations hub_supplier_return_attestations_returned_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.hub_supplier_return_attestations
+    ADD CONSTRAINT hub_supplier_return_attestations_returned_by_fkey FOREIGN KEY (returned_by) REFERENCES public.users(id);
 
 
 --
@@ -23949,6 +25618,62 @@ ALTER TABLE ONLY public.local_stock_allocations
 
 ALTER TABLE ONLY public.local_stock_allocations
     ADD CONSTRAINT local_stock_allocations_order_id_fkey FOREIGN KEY (order_id) REFERENCES public.orders(id) ON DELETE CASCADE;
+
+
+--
+-- Name: local_stock_economic_lot_lines local_stock_economic_lot_lines_linked_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_stock_economic_lot_lines
+    ADD CONSTRAINT local_stock_economic_lot_lines_linked_by_fkey FOREIGN KEY (linked_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: local_stock_economic_lot_lines local_stock_economic_lot_lines_order_item_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_stock_economic_lot_lines
+    ADD CONSTRAINT local_stock_economic_lot_lines_order_item_id_fkey FOREIGN KEY (order_item_id) REFERENCES public.order_items(id) ON DELETE CASCADE;
+
+
+--
+-- Name: local_stock_economic_lot_lines local_stock_economic_lot_lines_receipt_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_stock_economic_lot_lines
+    ADD CONSTRAINT local_stock_economic_lot_lines_receipt_id_fkey FOREIGN KEY (receipt_id) REFERENCES public.local_stock_economic_lots(receipt_id) ON DELETE CASCADE;
+
+
+--
+-- Name: local_stock_economic_lots local_stock_economic_lots_closed_by_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_stock_economic_lots
+    ADD CONSTRAINT local_stock_economic_lots_closed_by_fkey FOREIGN KEY (closed_by) REFERENCES public.users(id) ON DELETE SET NULL;
+
+
+--
+-- Name: local_stock_economic_lots local_stock_economic_lots_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_stock_economic_lots
+    ADD CONSTRAINT local_stock_economic_lots_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id);
+
+
+--
+-- Name: local_stock_economic_lots local_stock_economic_lots_receipt_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_stock_economic_lots
+    ADD CONSTRAINT local_stock_economic_lots_receipt_id_fkey FOREIGN KEY (receipt_id) REFERENCES public.market_delegation_audit(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: local_stock_economic_lots local_stock_economic_lots_sku_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.local_stock_economic_lots
+    ADD CONSTRAINT local_stock_economic_lots_sku_id_fkey FOREIGN KEY (sku_id) REFERENCES public.product_skus(id) ON DELETE CASCADE;
 
 
 --
@@ -24560,6 +26285,30 @@ ALTER TABLE ONLY public.order_comments
 
 
 --
+-- Name: order_delivery_waves order_delivery_waves_market_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_delivery_waves
+    ADD CONSTRAINT order_delivery_waves_market_id_fkey FOREIGN KEY (market_id) REFERENCES public.markets(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: order_delivery_waves order_delivery_waves_relais_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_delivery_waves
+    ADD CONSTRAINT order_delivery_waves_relais_id_fkey FOREIGN KEY (relais_id) REFERENCES public.relais(id) ON DELETE RESTRICT;
+
+
+--
+-- Name: order_delivery_waves order_delivery_waves_subject_recipient_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.order_delivery_waves
+    ADD CONSTRAINT order_delivery_waves_subject_recipient_id_fkey FOREIGN KEY (subject_recipient_id) REFERENCES public.recipients(id) ON DELETE RESTRICT;
+
+
+--
 -- Name: order_incidents order_incidents_order_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
 --
 
@@ -24789,6 +26538,14 @@ ALTER TABLE ONLY public.orders
 
 ALTER TABLE ONLY public.orders
     ADD CONSTRAINT orders_confection_artisan_id_fkey FOREIGN KEY (confection_artisan_id) REFERENCES public.partners(id) ON DELETE SET NULL;
+
+
+--
+-- Name: orders orders_delivery_wave_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: -
+--
+
+ALTER TABLE ONLY public.orders
+    ADD CONSTRAINT orders_delivery_wave_id_fkey FOREIGN KEY (delivery_wave_id) REFERENCES public.order_delivery_waves(id) ON DELETE RESTRICT;
 
 
 --
