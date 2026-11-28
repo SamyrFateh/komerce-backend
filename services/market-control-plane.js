@@ -6,7 +6,7 @@
  * @criticality   medium
  * @inputs        canonical market code (server-validated), read-only DB executor
  * @outputs       per-market control view (assignment, team, ceiling, payment, cash policy, relais) and gap report
- * @depends       services/fx-authority.js, services/economic-cost-reference-service.js, services/market-commercial-price-service.js, services/market-payment-provider-config-service.js, db.js, services/market-delegation-service.js, services/market-delivery-proof-service.js
+ * @depends       services/routing.js, services/fx-authority.js, services/economic-cost-reference-service.js, services/market-commercial-price-service.js, services/market-payment-provider-config-service.js, db.js, services/market-delegation-service.js, services/market-delivery-proof-service.js
  * @used-by       routes/admin-market-control-plane.js
  * @db-read       market_settlements, disputes, orders, markets, currency_parities, carriers, capability_registry, market_operating_assignments, assignment_memberships, membership_capabilities, assignment_capability_ceiling, market_payment_providers, market_cash_control_policies, relais, market_delivery_attestations
  * @db-write      none
@@ -26,6 +26,7 @@
 
 const { delegationError, normalizeMarketCode } = require('./market-delegation-service');
 const { getDeliveryProof } = require('./market-delivery-proof-service');
+const { isRelaisRoutable } = require('./routing');
 const { convert, FxError, MINOR_UNITS } = require('./fx-authority');
 const { getCostReferenceReadiness } = require('./economic-cost-reference-service');
 const { getPricePreparation } = require('./market-commercial-price-service');
@@ -49,7 +50,7 @@ const GAP_MESSAGES = Object.freeze({
   NO_PAYMENT_PROVIDER: 'Aucun moyen de paiement admissible : activer le cash au relais ou configurer un fournisseur de paiement.',
   NO_CASH_POLICY: 'Aucune politique de contrôle de caisse n’est définie.',
   NO_RELAIS: 'Aucun relais actif n’est rattaché au marché.',
-  NO_DELIVERY_PROOF: 'Aucune liaison de livraison valide et attestée pour la première ouverture.',
+  NO_ROUTABLE_RELAIS: 'Aucun relais actif ne possède une destination exploitable par le routage canonique. Compléter la ville/zone ou la destination du relais.',
   NO_PREPARED_PRICE: 'Aucun prix local positif préparé pour un produit actif dans la devise du marché.',
   NO_ECONOMIC_REFERENCES: 'Le référentiel économique initial du marché est incomplet.',
 });
@@ -89,7 +90,8 @@ function computeGaps(snapshot) {
   // Existing active/suspended markets keep the established lifecycle rules.
   if(snapshot.market.lifecycle_status==='PROVISIONING' && snapshot.preparation){
     if(snapshot.market.business_timezone === null)add('NO_BUSINESS_TIMEZONE');
-    if(snapshot.deliveryProof?.proven!==true)add('NO_DELIVERY_PROOF');
+    // Existing relay/routing authority, not a freight-cost attestation.
+    if(snapshot.relaisActive>0 && snapshot.preparation.routableRelays===0)add('NO_ROUTABLE_RELAIS');
     const prices=snapshot.preparation.prices;
     if(!prices || prices.drafts+prices.authorized+prices.active===0)add('NO_PREPARED_PRICE');
     if(snapshot.preparation.economic?.ready!==true){
@@ -101,7 +103,7 @@ function computeGaps(snapshot) {
 }
 
 const PLATFORM_BLOCKERS = new Set(['NO_BUSINESS_TIMEZONE','INVALID_CURRENCY_UNIT','NO_CURRENCY_PARITY','NO_CENTRAL_REFERENT','EMPTY_CEILING','MISSING_AMOUNT_LIMIT','NO_PAYMENT_PROVIDER','NO_CASH_POLICY','NO_ECONOMIC_REFERENCES']);
-const OPERATIONS_BLOCKERS = new Set(['NO_ASSIGNMENT','ASSIGNMENT_NOT_ACTIVE','NO_ACTIVE_MEMBERSHIP','NO_TEAM_GRANT_HOLDER','NO_OPERATING_LEAD','NO_RELAIS','NO_DELIVERY_PROOF','NO_PREPARED_PRICE']);
+const OPERATIONS_BLOCKERS = new Set(['NO_ASSIGNMENT','ASSIGNMENT_NOT_ACTIVE','NO_ACTIVE_MEMBERSHIP','NO_TEAM_GRANT_HOLDER','NO_OPERATING_LEAD','NO_RELAIS','NO_ROUTABLE_RELAIS','NO_PREPARED_PRICE']);
 
 function readinessFromGaps(gaps) {
   const platform = gaps.filter(gap => PLATFORM_BLOCKERS.has(gap.code));
@@ -151,6 +153,12 @@ async function resolveCurrencyReadiness(executor, currency, minorUnit) {
     if (!(error instanceof FxError)) throw error;
     return {fx_ready:false,currency_unit_valid:validUnit,fx_reason:error.code};
   }
+}
+
+async function countRoutableRelays(executor,market) {
+  const {rows}=await executor.query(
+    'SELECT id,name,island,island_code,zone FROM relais WHERE market_id=$1 AND is_active',[market.id]);
+  return rows.filter(relay=>isRelaisRoutable(relay,{marketCode:market.code})).length;
 }
 
 async function getControlPlane(executor, marketCode) {
@@ -229,8 +237,8 @@ async function getControlPlane(executor, marketCode) {
   ];
   const snapshot = { market, assignment, ceiling, team, paymentProviders, cashPolicy, relaisActive, deliveryProof, centralCollectionModes, paymentAvailability };
   if(market.lifecycle_status==='PROVISIONING' && assignment?.status==='ACTIVE'){
-    const [economic,prices]=await Promise.all([getCostReferenceReadiness(db,market.id),getPricePreparation(db,market)]);
-    snapshot.preparation={economic,prices};
+    const [economic,prices,routableRelays]=await Promise.all([getCostReferenceReadiness(db,market.id),getPricePreparation(db,market),countRoutableRelays(db,market)]);
+    snapshot.preparation={economic,prices,routableRelays};
   }
   const gaps = computeGaps(snapshot);
   // Choix du transporteur pour l'attestation de livrabilité : fourni uniquement quand la preuve manque
@@ -305,13 +313,12 @@ async function getPreparationChecklist(executor, authorization) {
     items: [
       item('identity','Identité, devise, fuseau et mandat',['NO_BUSINESS_TIMEZONE','NO_CURRENCY_PARITY','INVALID_CURRENCY_UNIT','NO_ASSIGNMENT','ASSIGNMENT_NOT_ACTIVE','NO_CENTRAL_REFERENT','EMPTY_CEILING','MISSING_AMOUNT_LIMIT'],'central'),
       item('team','Équipe locale',['NO_ACTIVE_MEMBERSHIP','NO_TEAM_GRANT_HOLDER','NO_OPERATING_LEAD'],'market'),
-      item('network','Réseau de relais',['NO_RELAIS'],'market'),
+      item('network','Réseau de relais et destination livrable',['NO_RELAIS','NO_ROUTABLE_RELAIS'],'market'),
       item('payments','Moyens de paiement',['NO_PAYMENT_PROVIDER','NO_CASH_POLICY'],'central'),
-      item('delivery','Livrabilité',['NO_DELIVERY_PROOF'],'central'),
       item('commerce','Préparation des prix locaux (brouillons uniquement avant ouverture)',['NO_PREPARED_PRICE'],'market'),
       item('economic','Raccordement des centres et familles de coûts',['NO_ECONOMIC_REFERENCES'],'central'),
     ],
   };
 }
 
-module.exports = { GAP_MESSAGES, computeGaps, readinessFromGaps, getControlPlane, getExitReadiness, listMarkets, getPreparationChecklist, resolveCurrencyReadiness };
+module.exports = { GAP_MESSAGES, computeGaps, readinessFromGaps, getControlPlane, getExitReadiness, listMarkets, getPreparationChecklist, resolveCurrencyReadiness, countRoutableRelays };

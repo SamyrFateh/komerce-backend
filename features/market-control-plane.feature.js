@@ -149,7 +149,7 @@ module.exports = {
       'market-delegation (affectation, équipe, plafond, politique de caisse lus ; normalizeMarketCode)',
       'providers-services (fournisseurs de paiement du marché lus)',
       'payments (configuration initiale du provider paiement via le writer canonique market-payment-provider-config-service)',
-      'logistics (relais lus)',
+      'logistics (relais lus ; isRelaisRoutable, même autorité de routage que le checkout)',
       'dashboard (dashboard_global_access_grants et require-dashboard-global-authority : autorisation centrale explicite lue)',
       'catalog (catalog_global_access_grants et require-catalog-global-authority : autorisation centrale explicite lue)',
       'decision-signals (decision_signal_global_access_grants et son middleware : autorisation centrale explicite lue)',

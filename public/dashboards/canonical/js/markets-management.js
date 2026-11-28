@@ -564,7 +564,7 @@
       paint();
     };
     ctx.onRevoke = async (market, attestationId, reason) => {
-      if (!confirmImpl(`Confirmer : révoquer l’attestation de livrabilité du marché ${market.code} ? Les nouvelles commandes seront refusées.`)) return;
+      if (!confirmImpl(`Confirmer : révoquer l’attestation de livrabilité du marché ${market.code} ? Cette révocation retire la preuve documentaire ; elle ne ferme pas le marché.`)) return;
       try {
         await request(fetchImpl, `/api/admin/markets/${encodeURIComponent(market.code)}/delivery-attestations/${encodeURIComponent(attestationId)}/revoke`, {
           method: 'POST', body: { reason },

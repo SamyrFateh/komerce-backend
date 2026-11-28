@@ -117,7 +117,7 @@ describeE2E('Market Control Plane H — provisioning -> première commande',({db
     cleanup.trackSql('DELETE FROM market_delegation_audit WHERE market_id=$1 OR assignment_id=$2',[marketId,assignmentId]);
 
     expect(res.body.readiness.ready_for_activation).toBe(false);
-    expect(res.body.readiness.operations.blockers.map(b=>b.code)).toEqual(expect.arrayContaining(['NO_DELIVERY_PROOF','NO_PREPARED_PRICE']));
+    expect(res.body.readiness.operations.blockers.map(b=>b.code)).toEqual(expect.arrayContaining(['NO_PREPARED_PRICE']));
     expect(res.body.lead.kind).toBe('membership');
     expect(relayId).toBeTruthy();
     const {rows:[stored]}=await db.query('SELECT lifecycle_status,is_active FROM markets WHERE id=$1',[marketId]);
@@ -126,7 +126,7 @@ describeE2E('Market Control Plane H — provisioning -> première commande',({db
     expect(references.centers).toBeGreaterThan(0);
   });
 
-  it('1b — un relais actif ne dispense pas des preuves de première ouverture',async()=>{
+  it('1b — un relais actif ne dispense pas de préparer l’offre avant ouverture',async()=>{
     const view=await request(app).get(`/api/admin/markets/${marketCode}/control-plane`).set('Authorization',`Bearer ${adminToken}`);
     expect(view.status).toBe(200);
     expect(view.body.relaisActive).toBeGreaterThan(0);
@@ -139,7 +139,7 @@ describeE2E('Market Control Plane H — provisioning -> première commande',({db
     expect(stored).toMatchObject({lifecycle_status:'PROVISIONING',is_active:false});
   });
 
-  it('1c — préparation réelle du prix et attestation de livraison par les routes canoniques',async()=>{
+  it('1c — prix préparé et relais routable suffisent sans attestation tarifaire',async()=>{
     const {rows:[product]}=await db.query(
       'INSERT INTO products (id,name,price_kmf,stock,is_active) VALUES ($1,$2,25000,50,TRUE) RETURNING product_ref',
       [productId,`E2E produit ${tag('product')}`]
@@ -155,16 +155,10 @@ describeE2E('Market Control Plane H — provisioning -> première commande',({db
     const activatePrice=await request(app).post('/api/admin/workspaces/pricing/market/'+marketCode+'/products/'+encodeURIComponent(product.product_ref)+'/local-price/activate')
       .set('Authorization',`Bearer ${adminToken}`).send({reason:'Activation interdite avant ouverture'});
     expect([404,409]).toContain(activatePrice.status);
-    const carrierId=uuid();
-    await db.query("INSERT INTO carriers (id,name,type,is_active) VALUES ($1,'E2E carrier','maritime',TRUE)",[carrierId]);
-    cleanup.track('carriers','id',carrierId);
-    cleanup.trackSql('DELETE FROM market_delivery_attestations WHERE market_id=$1',[marketId]);
-    const att=await request(app).post('/api/admin/markets/'+marketCode+'/delivery-attestations')
-      .set('Authorization',`Bearer ${adminToken}`).send({carrier_id:carrierId,mode:'SEA',origin_ref:'E2E-ORIGIN',freight_rate:1,rate_currency:'KMF',rate_unit:'PER_KG',transit_days:30,evidence_ref:'E2E test documentary proof',valid_until:new Date(Date.now()+30*86400000).toISOString()});
-    expect(att.status).toBe(201);
     const view=await request(app).get('/api/admin/markets/'+marketCode+'/control-plane').set('Authorization',`Bearer ${adminToken}`);
     expect(view.status).toBe(200);
-    expect(view.body.deliveryProof.proven).toBe(true);
+    expect(view.body.deliveryProof.proven).toBe(false);
+    expect(view.body.preparation.routableRelays).toBeGreaterThan(0);
     expect(view.body.readiness.ready_for_activation).toBe(true);
   });
 

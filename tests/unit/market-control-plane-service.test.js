@@ -205,17 +205,18 @@ test('economic template readiness uses exact center/family pairs, not total coun
   await expect(getCostReferenceReadiness(db,id)).resolves.toEqual({ready:false,missing:['Transport et douane — Livraison locale']});
 });
 
-test('initialized first opening requires delivery, positive prepared price and canonical references',()=>{
+test('initialized first opening requires routable relay, positive prepared price and canonical references without freight proof',()=>{
   const s=healthy();
   s.market.lifecycle_status='PROVISIONING';s.market.is_active=false;
   s.deliveryProof={proven:false};
-  s.preparation={economic:{ready:false,missing:['Transport et douane — Livraison locale']},prices:{drafts:0,authorized:0,active:0}};
-  expect(codes(s)).toEqual(['MARKET_INACTIVE','NO_DELIVERY_PROOF','NO_PREPARED_PRICE','NO_ECONOMIC_REFERENCES']);
+  s.preparation={economic:{ready:false,missing:['Transport et douane — Livraison locale']},prices:{drafts:0,authorized:0,active:0},routableRelays:0};
+  expect(codes(s)).toEqual(['MARKET_INACTIVE','NO_ROUTABLE_RELAIS','NO_PREPARED_PRICE','NO_ECONOMIC_REFERENCES']);
   expect(readinessFromGaps(computeGaps(s)).ready_for_activation).toBe(false);
   expect(computeGaps(s).find(g=>g.code==='NO_ECONOMIC_REFERENCES').message).toContain('Livraison locale');
-  s.deliveryProof={proven:true};
+  s.preparation.routableRelays=1;
   s.preparation.economic={ready:true,missing:[]};
   s.preparation.prices.drafts=1;
+  expect(s.deliveryProof.proven).toBe(false);
   expect(readinessFromGaps(computeGaps(s)).ready_for_activation).toBe(true);
   s.market.lifecycle_status='SUSPENDED';s.market.is_active=true;
   s.deliveryProof={proven:false};s.preparation.prices.drafts=0;
@@ -250,4 +251,14 @@ test('first opening refuses missing explicit business timezone',()=>{
   expect(readinessFromGaps(computeGaps(s)).ready_for_activation).toBe(false);
   s.market.business_timezone='Africa/Libreville';
   expect(readinessFromGaps(computeGaps(s)).ready_for_activation).toBe(true);
+});
+
+test('routable relay count uses the canonical checkout router and only active scoped relays',async()=>{
+  const {countRoutableRelays}=require('../../services/market-control-plane');
+  const db={query:jest.fn().mockResolvedValue({rows:[{id:'r1',name:'Incomplet',zone:null},{id:'r2',name:'Libreville',zone:'Libreville'}]})};
+  await expect(countRoutableRelays(db,{id:'m1',code:'GA'})).resolves.toBe(1);
+  expect(db.query.mock.calls[0][0]).toContain('WHERE market_id=$1 AND is_active');
+  expect(db.query.mock.calls[0][1]).toEqual(['m1']);
+  db.query.mockResolvedValue({rows:[{id:'r1',name:'Incomplet',zone:null}]});
+  await expect(countRoutableRelays(db,{id:'m1',code:'GA'})).resolves.toBe(0);
 });
