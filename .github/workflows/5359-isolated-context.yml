@@ -1,29 +1,104 @@
-name: 5359 isolated context and impact
+name: 5359 staging country desktop read-only
 on:
   push:
     branches: [test/5359-market-context-preflight]
 permissions:
   contents: read
+concurrency:
+  group: komerce-staging-storefront-e2e-audit
+  cancel-in-progress: false
 jobs:
-  context:
+  verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 12
     env:
-      TZ: UTC
+      STAGING_ORIGIN: https://komerce-backend-production.up.railway.app
+      EXPECTED_SHA: 65bcc304359e078d12de268b2134120f9d885ce9
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: b42f515b3648ab3c49048fb17ca9a14954e61221
-          fetch-depth: 0
+          ref: 65bcc304359e078d12de268b2134120f9d885ce9
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: npm ci --prefix public/boutique --ignore-scripts --no-audit --no-fund
-      - name: Targeted unit regression tests
+      - name: Confirm exact deployed staging revision before opening browser
         run: |
-          npx jest --config jest.unit.config.js --runInBand tests/unit/sw.test.js
-          cd public/boutique && npx jest --runInBand --runTestsByPath tests/unit/market-context.test.js tests/unit/market-country-path.test.js
-      - name: Canonical preflight before PR
-        run: npm run pr:preflight -- --base 80e7c8c3496468a26e6b268d8ee9b27d0192ccb2
+          mkdir -p test-results/5359
+          node <<'JS'
+          const fs=require('node:fs');
+          (async()=>{
+            const get=async p=>{const r=await fetch(process.env.STAGING_ORIGIN+p,{redirect:'error'});if(!r.ok)throw Error('HTTP '+r.status);return r.json()};
+            const h=await get('/health'),v=await get('/health/version');
+            const out={environment:h.komerce_env,db:h.db,sha:v.commit,fingerprint:h.target?.db_fingerprint,expected:process.env.EXPECTED_SHA};
+            console.log(JSON.stringify(out));fs.writeFileSync('test-results/5359/target.json',JSON.stringify(out,null,2));
+            if(h.komerce_env!=='staging'||h.db!=='connected'||!out.fingerprint||v.commit!==out.expected)throw Error('NOT_PROVEN_TARGET_PIN');
+          })().catch(e=>{console.error(e.message);process.exitCode=1});
+          JS
+      - run: npm ci --prefix public/boutique --ignore-scripts --no-audit --no-fund
+      - run: cd public/boutique && npx playwright install --with-deps chromium
+      - name: Real desktop Chromium country navigation and public API reads
+        run: |
+          node <<'JS'
+          const {chromium}=require('./public/boutique/node_modules/@playwright/test');
+          const fs=require('node:fs'),assert=require('node:assert/strict');
+          const base=process.env.STAGING_ORIGIN,out='test-results/5359',target=JSON.parse(fs.readFileSync(out+'/target.json'));
+          const report={target,scope:'public read-only desktop, service workers blocked for network evidence',markets:[],verdict:'NOT_PROVEN'};
+          const expected={KM:'KMF',CM:'XAF',CG:'XAF',DJ:'DJF',YT:'EUR'};
+          const accents={KM:'#176247',CM:'#155239',CG:'#9d2536',DJ:'#185779',YT:'#233e74'};
+          async function get(p){const r=await fetch(base+p,{redirect:'error'});assert.equal(r.status,200);return r.json()}
+          (async()=>{
+            const registry=(await get('/api/public/markets')).markets;
+            assert.ok(Array.isArray(registry)&&registry.length);
+            const browser=await chromium.launch();
+            try{
+              const ctx=await browser.newContext({viewport:{width:1440,height:900},serviceWorkers:'block'});
+              await ctx.route('**/*',route=>['GET','HEAD','OPTIONS'].includes(route.request().method())?route.continue():route.abort());
+              const page=await ctx.newPage();
+              for(const code of Object.keys(expected)){
+                const market=registry.find(m=>m.code===code),row={code,active:!!market,requests:[],errors:[]};report.markets.push(row);
+                const onReq=r=>{const u=new URL(r.url());if(u.origin===base&&/^\/api\/products(?:\/|$)/.test(u.pathname))row.requests.push({path:u.pathname,market:u.searchParams.get('market')})};
+                const onErr=e=>row.errors.push(e.message);
+                page.on('request',onReq);page.on('pageerror',onErr);
+                try{
+                  const response=await page.goto(base+'/'+code,{waitUntil:'domcontentloaded'});
+                  row.http=response.status();
+                  if(!market){assert.equal(row.http,404);continue}
+                  assert.equal(row.http,200);
+                  await page.waitForFunction(c=>document.body.dataset.marketCode===c,code,{timeout:15000});
+                  await page.waitForFunction(()=>window.KomerceMarket?.get?.()&&document.querySelector('#k-hero-badge')?.textContent?.trim(),null,{timeout:15000});
+                  await page.waitForTimeout(1800);
+                  row.dom=await page.evaluate(()=>({code:document.body.dataset.marketCode,title:document.title,badge:document.querySelector('#k-hero-badge').textContent.trim(),currency:window.KomerceMarket.get().currency,accent:getComputedStyle(document.querySelector('.k-hero')).getPropertyValue('--hero-market-accent').trim(),ids:Array.from(document.querySelectorAll('#k-grid [data-id]')).map(x=>x.dataset.id)}));
+                  assert.equal(row.dom.code,code);assert.equal(row.dom.currency,expected[code]);assert.equal(row.dom.accent,accents[code]);assert.equal(row.dom.badge,market.storefront_texts?.gentile||'Komerce — '+market.name);
+                  const api=await get('/api/products?market='+code+'&limit=1000');
+                  const list=Array.isArray(api)?api:api.products;
+                  assert.ok(Array.isArray(list));const ids=new Set(list.filter(p=>p.is_available!==false).map(p=>String(p.id)));
+                  row.api_count=ids.size;row.render_count=row.dom.ids.length;
+                  if(ids.size) {await page.waitForFunction(()=>document.querySelectorAll('#k-grid [data-id]').length>0,null,{timeout:15000});row.dom.ids=await page.locator('#k-grid [data-id]').evaluateAll(xs=>xs.map(x=>x.dataset.id));row.render_count=row.dom.ids.length}
+                  assert.ok(row.requests.some(r=>r.path==='/api/products'&&r.market===code),'No scoped catalogue request');
+                  assert.ok(row.requests.every(r=>r.market===code),'Wrong market product request');
+                  assert.ok(row.dom.ids.every(id=>ids.has(id)),'Rendered item not in scoped API');
+                  await page.screenshot({path:out+'/'+code+'.png'});
+                  await page.reload({waitUntil:'domcontentloaded'});
+                  await page.waitForFunction(c=>document.body.dataset.marketCode===c,code,{timeout:15000});
+                  row.reload_code=await page.locator('body').getAttribute('data-market-code');
+                  assert.equal(row.reload_code,code);
+                  row.verdict='PASS_PUBLIC_BROWSER_API';
+                }catch(e){row.verdict='FAIL';row.failure=e.message;await page.screenshot({path:out+'/'+code+'-failure.png'}).catch(()=>{})}
+                finally{page.off('request',onReq);page.off('pageerror',onErr);fs.writeFileSync(out+'/report.json',JSON.stringify(report,null,2))}
+              }
+            }finally{await browser.close()}
+            const end=await get('/health/version'),health=await get('/health');
+            assert.equal(end.commit,target.sha);assert.equal(health.target?.db_fingerprint,target.fingerprint);assert.equal(health.komerce_env,'staging');
+            assert.ok(report.markets.filter(m=>m.active).length);
+            assert.ok(report.markets.every(m=>m.active?m.verdict==='PASS_PUBLIC_BROWSER_API':m.http===404));
+            report.verdict='PASS_PUBLIC_BROWSER_API_NOT_FULL_CERTIFICATION';
+          })().catch(e=>{report.failure=e.message;process.exitCode=1}).finally(()=>{fs.writeFileSync(out+'/report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report))});
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: 5359-staging-country-proof
+          path: test-results/5359/
+          if-no-files-found: error
+          retention-days: 14
