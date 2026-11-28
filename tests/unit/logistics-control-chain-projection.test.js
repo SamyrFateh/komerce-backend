@@ -396,9 +396,22 @@ describe('logistics-control-chain-projection', () => {
 
   test('drill refuse remise non projetée, scope recette, état invalide et pagination ambiguë',()=>{
     const valid={chain_drill:'ORDER',page:'1',token:'a'.repeat(32)};
-    for (const bad of [{chain_drill:'HANDOFF'},{health:'BAD'},{page:'0'},{page:'1.5'},{page:['1']},{token:'bad'},{simulation_scope:'RCT1'}]) {
+    for (const bad of [{chain_drill:'HANDOFF'},{health:'BAD'},{page:'0'},{page:'1.5'},{page:['1']},{token:'bad'},{simulation_scope:'bad'}]) {
       expect(()=>projection.parseChainDrill({...valid,...bad})).toThrow('invalid_control_chain_drill');
     }
+  });
+
+  test('scope de recette explicite paramétré avant projection et pagination',async()=>{
+    mockQuery.mockResolvedValue({rows:[]});
+    const result=await projection.getControlChain({market:{id:'cm'},simulationScope:'RCT1'});
+    expect(result.population.simulation_scope).toBe('RCT1');
+    const [sql,params]=mockQuery.mock.calls[0];
+    expect(sql).toContain('o.simulation_scope = $5::text');
+    expect(params[4]).toBe('RCT1');
+    const drill=projection.parseChainDrill({chain_drill:'ORDER',page:'1',token:'a'.repeat(32),simulation_scope:'RCT1'});
+    await expect(projection.getControlChain({market:{id:'cm'},drill})).rejects.toMatchObject({status:409});
+    expect(mockQuery.mock.calls[1][0]).toContain('o.simulation_scope = $8::text');
+    expect(mockQuery.mock.calls[1][1][7]).toBe('RCT1');
   });
 
   test('le service reste strictement read-only', () => {

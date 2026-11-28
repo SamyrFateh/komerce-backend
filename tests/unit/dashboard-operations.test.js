@@ -86,9 +86,9 @@ describe('dashboard-operations signal vocabulary', () => {
 describe('dashboard-operations', () => {
   test('recette non certifiée : ne consulte aucune source réelle',async()=>{
     const result=await operations.buildOperations({market:{id:'cm',code:'CM'},simulationScope:'RCT1'});
-    expect(result.simulation).toEqual({scope:'RCT1',status:'UNAVAILABLE'});
-    expect(result.control_chain).toBeNull();
-    expect(mockControlChain).not.toHaveBeenCalled();
+    expect(result.simulation).toEqual({scope:'RCT1',status:'CHAIN_ONLY'});
+    expect(result.control_chain).toBeDefined();
+    expect(mockControlChain).toHaveBeenCalledWith({market:{id:'cm',code:'CM'},simulationScope:'RCT1'});
     expect(mockWorkQueues).not.toHaveBeenCalled();
     expect(db.query).not.toHaveBeenCalled();
     Object.values(mockMetrics).forEach(fn=>expect(fn).not.toHaveBeenCalled());

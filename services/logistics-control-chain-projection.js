@@ -19,6 +19,7 @@
 'use strict';
 
 const db = require('../db');
+const {isValidScope}=require('./simulation-scope-service');
 const { ACTIVE_ORDER_STATUSES } = require('./dashboard-metrics/_helpers');
 
 const STAGES = Object.freeze([
@@ -63,10 +64,11 @@ function parseChainDrill(query = {}) {
       || typeof query.page !== 'string' || !/^[1-9][0-9]*$/.test(query.page)
       || !Number.isSafeInteger(page) || page > 1000000
       || typeof query.token !== 'string' || !/^[a-f0-9]{32}$/.test(query.token)
-      || Object.prototype.hasOwnProperty.call(query,'simulation_scope')) {
+      || (query.simulation_scope !== undefined && !isValidScope(query.simulation_scope))) {
     throw drillError(400,'invalid_control_chain_drill');
   }
-  return {phase,health,page,token:query.token,stages:phase==='ALL'?null:PHASE_STAGES[phase]};
+  return {phase,health,page,token:query.token,stages:phase==='ALL'?null:PHASE_STAGES[phase],
+    ...(query.simulation_scope ? {simulationScope:query.simulation_scope}: {})};
 }
 
 // A census is authoritative only when all stage/health cells reconcile to the full total.
@@ -230,6 +232,9 @@ async function getControlChain(options = {}) {
   const orderId = options.orderId || null;
   const params = [marketId(options.market), ACTIVE_ORDER_STATUSES, limit, orderId];
   if (drill) params.push(drill.stages,drill.health,(drill.page-1)*limit);
+  const simulationScope=drill ? drill.simulationScope : options.simulationScope;
+  if(simulationScope!==undefined && !isValidScope(simulationScope)) throw drillError(400,'invalid_simulation_scope');
+  const scopeParam=simulationScope ? params.push(simulationScope) : null;
 
   const { rows } = await db.query(`
     WITH scoped_orders AS (
@@ -242,7 +247,7 @@ async function getControlChain(options = {}) {
              o.updated_at
         FROM orders o
        WHERE ($1::uuid IS NULL OR o.market_id = $1)
-         AND o.simulation_scope IS NULL
+         AND ${scopeParam ? 'o.simulation_scope = $'+scopeParam+'::text' : 'o.simulation_scope IS NULL'}
          AND o.status::text = ANY($2::text[])
          AND ($4::uuid IS NULL OR o.id = $4::uuid)
     ),
@@ -567,7 +572,7 @@ async function getControlChain(options = {}) {
     limit,
     complete: exact ? total === orders.length : null,
     clock: 'current_active_orders',
-    simulation_scope: 'real_only',
+    simulation_scope: simulationScope || 'real_only',
   });
 
   // A drill never claims an empty page to be an empty population. A changed
@@ -585,7 +590,7 @@ async function getControlChain(options = {}) {
     population,
     ...(census ? {population_census:census} : {}),
     ...(drill ? {drill:Object.freeze({phase:drill.phase,health:drill.health,page:drill.page,
-      page_size:limit,total,token:drill.token})} : {}),
+      page_size:limit,total,token:drill.token,...(simulationScope ? {simulation_scope:simulationScope}: {})})} : {}),
     orders: Object.freeze(orders),
     by_stage: Object.freeze(Object.fromEntries(
       Object.entries(byStage).map(([key, list]) => [key, Object.freeze(list)])

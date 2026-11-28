@@ -280,7 +280,7 @@
     const raw=chain?.population_census;
     const population=chain?.population;
     if(!raw || !/^[a-f0-9]{32}$/.test(raw.token||'') || !Number.isSafeInteger(population?.total)
-        || population.clock!=='current_active_orders' || population.simulation_scope!=='real_only') return null;
+        || population.clock!=='current_active_orders' || population.simulation_scope!==(payload?.simulation?.scope||'real_only')) return null;
     const columns=controlChainColumns(payload);
     const keys=PROCESS_PHASES.flatMap(phase=>phase.stages);
     if(columns.length!==keys.length || keys.some(key=>!columns.some(c=>c.key===key&&c.available))) return null;
@@ -331,7 +331,7 @@
     const shown = phases.length === 5 ? controlChainColumns(payload).reduce((sum, column) => sum + column.orders.length, 0) : null;
     const raw = payload?.control_chain?.population;
     const valid = shown !== null && raw && raw.clock === 'current_active_orders'
-      && raw.simulation_scope === 'real_only'
+      && raw.simulation_scope === (payload?.simulation?.scope||'real_only')
       && Number.isSafeInteger(raw.shown) && raw.shown === shown
       && Number.isSafeInteger(raw.limit) && raw.limit > 0 && raw.shown <= raw.limit
       && Number.isSafeInteger(raw.total) && raw.total >= shown
@@ -945,16 +945,17 @@
     return { section, body };
   }
 
-  function chainDrillUrl(endpoint, phase, health, page, token) {
+  function chainDrillUrl(endpoint, phase, health, page, token, simulationScope=null) {
     const params=new URLSearchParams({chain_drill:phase,page:String(page),token});
     if(health) params.set('health',health);
+    if(simulationScope) params.set('simulation_scope',simulationScope);
     return endpoint+'?'+params.toString();
   }
 
-  function matchesChainDrill(result,{phase,health,page,token,total}) {
+  function matchesChainDrill(result,{phase,health,page,token,total,simulationScope=null}) {
     const d=result?.drill;
     if(!d || d.phase!==phase || d.health!==health || d.page!==page || d.token!==token
-        || d.total!==total || d.page_size!==25 || !Array.isArray(result.orders)) return false;
+        || d.total!==total || d.page_size!==25 || (d.simulation_scope||null)!==simulationScope || !Array.isArray(result.orders)) return false;
     const members=phase==='ALL'?PROCESS_PHASES.flatMap(p=>p.stages):PROCESS_PHASES.find(p=>p.key===phase)?.stages;
     const expected=Math.min(25,Math.max(0,total-(page-1)*25));
     return !!members && result.orders.length===expected
@@ -976,6 +977,7 @@
       return;
     }
     const endpoint=base.endpointForContext(options.adminContext,options.contextContract,options.requestedMarket);
+    const simulationScope=payload?.simulation?.scope||null;
     const max=Math.ceil(total/25);
     const saved=Number(new URLSearchParams(globalThis.location?.search||'').get('chain_page'));
     let sequence=0;
@@ -985,9 +987,9 @@
       host.setAttribute('data-chain-drill-loading','');
       host.appendChild(text(doc,'p','kmc-control-chain-empty-notice','Chargement du détail…'));
       try {
-        const result=await base.jsonRequest(options.fetch,chainDrillUrl(endpoint,phase,health,page,census.token));
+        const result=await base.jsonRequest(options.fetch,chainDrillUrl(endpoint,phase,health,page,census.token,simulationScope));
         if(request!==sequence||!rootNode.contains(host)) return;
-        if(!matchesChainDrill(result,{phase,health,page,token:census.token,total})) throw new Error('population_changed');
+        if(!matchesChainDrill(result,{phase,health,page,token:census.token,total,simulationScope})) throw new Error('population_changed');
         host.replaceChildren();
         const pager=doc.createElement('div');
         pager.className='kmc-decision-toolbar';
@@ -1043,7 +1045,7 @@
     header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'OPÉRATIONS'));
     header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Où en sont les commandes ?'));
     header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Une commande, une position opérationnelle, une cause actionnable.'));
-    if(payload?.simulation?.status==='UNAVAILABLE') header.appendChild(text(doc,'p','kmc-dashboard-description','Recette '+payload.simulation.scope+' : projection opérationnelle non certifiée. Aucune activité réelle affichée.'));
+    if(payload?.simulation?.scope) header.appendChild(text(doc,'p','kmc-dashboard-description','Recette '+payload.simulation.scope+' : seules les commandes de ce périmètre sont projetées ; files et signaux transverses non certifiés.'));
     dashboard.appendChild(header);
 
     const controlColumns = controlChainColumns(payload);
