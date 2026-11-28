@@ -71,7 +71,7 @@ function rejectBrowserAuthority(req, res, next) {
 
 // Express strips /market/:marketCode in this mounted middleware. Only the
 // existing draft editor's endpoints may resolve a PROVISIONING market.
-// All commercial, budget, commitment and other write routes stay closed.
+// Only explicitly allowlisted reference and budget planning writes may run in preparation. Actuals and commitments stay closed.
 function isPreparationPriceEndpoint(req) {
   const path = req.path;
   if (req.method === 'GET') return path === '/' || path === '/commercial-prices';
@@ -81,7 +81,7 @@ function isPreparationPriceEndpoint(req) {
 function isPreparationReferenceEndpoint(req) {
   const path = req.path;
   if(req.method==='GET')return path==='/cost-centers';
-  return req.method==='POST' && (/^\/cost-centers\/(?:initialize|references)$/.test(path) || /^\/cost-centers\/families\/[^/]+\/posts$/.test(path));
+  return req.method==='POST' && (/^\/cost-centers\/(?:initialize|references)$/.test(path) || /^\/cost-centers\/families\/[^/]+\/posts$/.test(path) || /^\/cost-centers\/posts\/[^/]+\/budget-revisions$/.test(path));
 }
 
 async function resolveRequestedMarket(req, res, next) {
@@ -290,12 +290,12 @@ async function reviseCostCenterBudget(req,res,next) {
       marketCode:req.workspaceMarket?.code||null,postId:req.params.postId,
       periodStart:body.periodStart,expectedRevision:body.expectedRevision,
       currency:body.currency,amountNative:body.amountNative,reason:body.reason,requestKey:body.requestKey
-    });
+    },...(req.marketPreparationReference?[{preparationOnly:true}]:[]));
     res.set('Cache-Control','private, no-store');
     res.status(result.outcome==='created'?201:200).json(result);
   } catch(error) { handleError(error,res,next); }
 }
-router.post('/market/:marketCode/cost-centers/posts/:postId/budget-revisions', requirePricingCapability('pricing.cost_component.update'), reviseCostCenterBudget);
+router.post('/market/:marketCode/cost-centers/posts/:postId/budget-revisions', requirePricingCapability('pricing.cost_component.update',{allowPreparationReference:true}), reviseCostCenterBudget);
 
 async function openCostCommitment(req,res,next){
   try{

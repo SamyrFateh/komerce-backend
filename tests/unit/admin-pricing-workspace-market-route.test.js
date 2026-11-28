@@ -680,9 +680,9 @@ describe('market preparation draft editor #4370',()=>{
   });
 });
 
-test('preparation economic reference writes never unlock actuals, budgets or commitments',async()=>{
+test('preparation economic planning writes never unlock actuals or commitments',async()=>{
   db.query.mockImplementation(async (sql,params)=>({rows:[{id:'market-cm',code:params[0],name:'CM',currency:'XAF',lifecycle_status:'PROVISIONING'}]}));
-  for(const path of ['/posts/p/budget-revisions','/posts/p/actuals','/posts/p/commitments','/commitments/c/movements']){
+  for(const path of ['/posts/p/actuals','/posts/p/commitments','/commitments/c/movements']){
     const res=await request(app()).post('/api/admin/workspaces/pricing/market/CM/cost-centers'+path).send({});
     expect(res.status).toBe(409);
   }

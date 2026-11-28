@@ -36,7 +36,7 @@ async function classifyActor(actor,marketCode){
 async function check(client,actor,marketCode,marketId,central,action,{record=false,preparationOnly=false}={}){
   const capabilities=ACTION_CAPABILITIES[action];
   if(!capabilities)throw new TypeError('Unknown economic cost action');
-  if(preparationOnly && action!=='reference')throw fail('MARKET_NOT_ACTIVE',409,'Seuls les référentiels sont configurables en préparation.');
+  if(preparationOnly && !['reference','budget'].includes(action))throw fail('MARKET_NOT_ACTIVE',409,'Seuls les référentiels et budgets prévisionnels sont configurables en préparation.');
   if(central)return true;
   if(!marketCode||!marketId)throw fail('pricing_global_access_denied',403,'Autorité globale requise');
   let authz;

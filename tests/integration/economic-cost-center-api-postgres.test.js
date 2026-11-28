@@ -373,7 +373,7 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
     expect((await q("SELECT is_active FROM markets WHERE code='DJ'")).rows[0].is_active).toBe(false);
   });
 
-  test('initialized preparation exposes references but not the financial period or foreign market',async()=>{
+  test('initialized preparation exposes references and planned budgets but not realized financial activity or foreign market',async()=>{
     // Only the isolated fixture market, never the five reference markets.
     const market=fx.marketA, assignment=fx.assignmentA;
     await q("UPDATE market_operating_assignments SET central_referent_user_id=$2 WHERE id=$1",[assignment.id,fx.central.id]);
@@ -383,10 +383,22 @@ run('ECO-1f canonical read API on disposable PostgreSQL',()=>{
       const own=await get(fx.managerA,market.code);
       expect(own.status).toBe(200);
       expect(own.body).toMatchObject({preparationOnly:true,marketCode:market.code,activity:null,profitability:null,
-        costCapabilities:{budget:false,commitment:false,consume:false,actual:false,reference:true}});
+        costCapabilities:{budget:true,commitment:false,consume:false,actual:false,reference:true}});
       expect(own.body.centers.map(c=>c.id)).toContain(a.center);
       expect(own.body.centers.map(c=>c.id)).not.toContain(b.center);
       expect((await get(fx.managerB,market.code)).status).toBe(403);
+      const budgetPeriod='2026-12-01';
+      const body={periodStart:budgetPeriod,expectedRevision:0,currency:'EUR',amountNative:'120.00',reason:'Budget prévisionnel CI',requestKey:tag+'PREP-BUDGET'};
+      const write=(actor,id)=>request(app).post(endpoint(market.code)+'/posts/'+id+'/budget-revisions').set('Authorization',actor.token).send(body);
+      expect((await write(fx.managerB,a.post)).status).toBe(403);
+      expect((await write(fx.managerA,b.post)).status).toBe(404);
+      const saved=await write(fx.managerA,a.post);
+      expect(saved.status).toBe(201);
+      const read=await request(app).get(endpoint(market.code)+'?periodStart='+budgetPeriod).set('Authorization',fx.managerA.token);
+      expect(read.status).toBe(200);
+      expect(read.body.posts.find(p=>p.id===a.post).budget).toMatchObject({revision:1,currency:'EUR',eur:'120.00'});
+      expect(read.body).toMatchObject({activity:null,profitability:null,commitmentSummary:null,recordedBalance:null});
+      expect((await write(fx.managerA,a.post)).status).toBe(200);
       const refused=await request(app).post(endpoint(market.code)+'/posts/'+a.post+'/commitments').set('Authorization',fx.managerA.token).send({});
       expect(refused.status).toBe(404);
     }finally{

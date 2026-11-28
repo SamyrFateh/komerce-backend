@@ -866,16 +866,16 @@ async function readCostCentersSnapshot(actor,input,client,central,globalRead,{pr
        ) b ON true
        WHERE c.market_id IS NOT DISTINCT FROM $1::uuid ORDER BY p.code,p.id`,[marketId,input.periodStart]);
     if(preparationOnly){
-      // A reference editor is not the historical financial/activity read model.
+      // Planning references and immutable budgets are not historical financial/activity facts.
       // No period calculation, FX conversion, or realized amount is inferred.
       const responsibleCandidates=costCapabilities.reference?await listResponsibleCandidates(client,marketId):[];
       const references=posts.map(({budget_revision,budget_currency,budget_native,budget_eur,...p})=>({
-        ...p,budget:null,commitments:[],eligibleStructureFacts:[],structureEvidence:null,actual:null,available:null,coverage:'NOT_RECONCILED'
+        ...p,budget:budget_revision===null?null:{revision:budget_revision,currency:budget_currency,native:budget_native,eur:budget_eur},commitments:[],eligibleStructureFacts:[],structureEvidence:null,actual:null,available:null,coverage:'NOT_RECONCILED'
       }));
       return {scope:'MARKET',marketCode:input.marketCode,periodStart:input.periodStart,globalRead,central,
-        costCapabilities,preparationOnly:true,readOnly:!costCapabilities.reference,
-        centers,families,resources,responsibleCandidates,posts:references,
-        recordedBalance:null,budgetSummary:null,commitmentSummary:null,structureEvidence:null,
+        costCapabilities,preparationOnly:true,readOnly:!costCapabilities.reference&&!costCapabilities.budget,
+        centers:centers.map(c=>({...c,budgetSummary:budgetSummary(references.filter(p=>p.center_id===c.id))})),families,resources,responsibleCandidates,posts:references,
+        recordedBalance:null,budgetSummary:budgetSummary(references),commitmentSummary:null,structureEvidence:null,
         activity:null,profitability:null,activityCurrencyProjection:null,actualCoverage:'NOT_RECONCILED',available:null};
     }
     const {rows:commitments}=await client.query(
