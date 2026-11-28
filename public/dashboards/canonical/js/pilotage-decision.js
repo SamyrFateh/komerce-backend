@@ -106,7 +106,7 @@
 
     if (critical) items.push({
       key: 'critical-open', label: 'Critiques ouvertes', helper: 'Nécessitent une action immédiate',
-      value: display(base, critical), tone: Number(critical.value) > 0 ? 'critical' : 'positive', icon: '!',
+      value: display(base, critical), tone: critical.value == null ? 'neutral' : Number(critical.value) > 0 ? 'critical' : 'positive', icon: '!',
       href: withReturn(critical.drill_to || '#pilotage-alerts'), actionLabel: 'Voir les critiques →',
     });
     if (attention && Number(attention.value) > 0) items.push({
@@ -116,10 +116,10 @@
     });
     if (incomplete) items.push({
       key: 'costing-incomplete', label: 'Problèmes costing', helper: incomplete.label || 'Coûts incomplets',
-      value: display(base, incomplete), tone: Number(incomplete.value) > 0 ? 'violet' : 'positive', icon: '◇',
+      value: display(base, incomplete), tone: incomplete.value == null ? 'neutral' : Number(incomplete.value) > 0 ? 'violet' : 'positive', icon: '◇',
       href: withReturn('/admin/operations'), actionLabel: 'Examiner les commandes →',
     });
-    if (activeOrders) items.push({
+    if (activeOrders && !payload.decision_clocks) items.push({
       key: 'active-orders', label: 'Commandes actives', helper: 'En cours dans la chaîne',
       value: display(base, activeOrders), tone: 'info', icon: '▣',
       href: withReturn('/admin/operations'), actionLabel: 'Voir le flux →',
@@ -178,7 +178,7 @@
     return (Array.isArray(chain.stages) ? chain.stages : []).map(stage => {
       const counts = stage && stage.health_counts && typeof stage.health_counts === 'object' ? stage.health_counts : {};
       const helper = [
-        `${Number(stage.order_count) || 0} commande(s)`,
+        Number.isSafeInteger(stage.order_count) && stage.order_count >= 0 ? `${stage.order_count} commande(s)` : 'Position non déterminée',
         Number(counts.RED) > 0 ? `${counts.RED} bloquée(s)` : null,
         Number(counts.ORANGE) > 0 ? `${counts.ORANGE} à surveiller` : null,
         Number(counts.UNKNOWN) > 0 ? `${counts.UNKNOWN} non observée(s)` : null,
@@ -242,6 +242,28 @@
     return { section, body };
   }
 
+  function clockItems(payload, base) {
+    const clocks=payload?.decision_clocks;
+    if (!clocks) return [];
+    const stock=metric(payload,'cmds_actives');
+    const flow=metric(payload,'ca_encaisse');
+    const eco=metric(payload,'economic_period_result');
+    const states={CLOSED:'Clôturé',PROVISIONAL:'Provisoire',REOPENED:'Réouvert — à rapprocher',NOT_RECONCILED:'Non rapproché',MARKET_RESULT_NOT_RECONCILED:'Marché non rapproché',SIMULATION_EXCLUDED:'Hors simulation',UNAVAILABLE:'Indisponible'};
+    const dates=clocks.flow||{};
+    const bounds=dates.from||dates.to
+      ? 'Création : '+(dates.from||'sans borne de début')+' → '+(dates.to||'sans borne de fin')
+      : 'Historique sans filtre de date de création';
+    const stamp=clocks.stock?.observed_at;
+    return [
+      {key:'stock',label:'Stock opérationnel · instantané',value:display(base,stock),tone:'neutral',
+        helper:'Commandes actives toutes dates de création'+(stamp?' · lecture '+stamp:'')},
+      {key:'flow',label:'Flux commercial · hors avoir',value:display(base,flow),tone:'neutral',
+        helper:bounds+' · commandes payées, hors wallet · ni ventes totales ni encaissements'},
+      {key:'economic',label:'Résultat ECO · mois UTC',value:display(base,eco),tone:eco?.data_quality?.status==='CLOSED'?'neutral':'warning',
+        helper:(clocks.economic?.period_start?.slice(0,7)||'Mois non déterminé')+' UTC · '+(states[eco?.data_quality?.status]||'Non certifié')},
+    ];
+  }
+
   function render(rootNode, payload, options, base, decisionUi) {
     const doc = options.document;
     const ui = options.ui;
@@ -265,7 +287,7 @@
     header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Voir ce qui demande une décision maintenant, puis agir au bon endroit.'));
     dashboard.appendChild(header);
     const economic=metric(payload,'economic_period_result');
-    if(economic){
+    if(economic && !payload.decision_clocks){
       const quality=economic.data_quality||{};
       const states={CLOSED:'Clôturé',PROVISIONAL:'Provisoire',REOPENED:'Réouvert — à rapprocher',NOT_RECONCILED:'Non rapproché',MARKET_RESULT_NOT_RECONCILED:'Résultat marché non rapproché',SIMULATION_EXCLUDED:'Hors simulation',UNAVAILABLE:'Indisponible'};
       const note=states[quality.status]||'Non certifié';
@@ -281,16 +303,38 @@
       dashboard.appendChild(host);
     }
 
+    const clocks=clockItems(payload,base);
+    if (clocks.length) {
+      const reading=cardSection(doc,'Trois horloges, trois lectures','Le stock actuel ne dépend pas de la période de création ; le résultat ECO suit son propre mois UTC.','pilotage-clocks');
+      reading.section.setAttribute('data-dashboard-role','secondary');
+      if (payload.decision_clocks.stock?.simulation_scope) reading.body.appendChild(text(doc,'p','kmc-decision-dashboard-section-copy',
+        'Recette '+payload.decision_clocks.stock.simulation_scope+' · faits simulés, hors activité réelle.'));
+      const strip=doc.createElement('div');
+      strip.className='kmc-pilotage-clock-strip';
+      strip.setAttribute('data-pilotage-clocks','');
+      ui.MetricStrip.render(strip,{items:clocks});
+      reading.body.appendChild(strip);
+      dashboard.appendChild(reading.section);
+    }
+
     const stages = controlStages(payload);
     if (stages.length) {
       const flowSection = cardSection(
         doc,
         'Où ça bloque',
-        'Les étapes à surveiller ou bloquées dans la chaîne.',
+        'Les étapes à surveiller ou bloquées dans la chaîne. Les états portent uniquement sur la projection chargée.',
         'pilotage-flow-health'
       );
       flowSection.section.className += ' is-control-tower-flow';
       flowSection.section.setAttribute('data-dashboard-role', 'primary');
+      const population=payload.control_chain?.population;
+      if (population && Number.isSafeInteger(population.shown) && Number.isSafeInteger(population.total)
+          && population.total>=population.shown && population.complete===(population.total===population.shown)) {
+        flowSection.body.appendChild(text(doc,'p','kmc-decision-dashboard-section-copy',
+          population.shown+' sur '+population.total+' commandes actives · '+(population.complete?'projection exhaustive':'projection partielle')));
+      } else if (payload.decision_clocks) {
+        flowSection.body.appendChild(text(doc,'p','kmc-decision-dashboard-section-copy','Total de la projection non déterminé.'));
+      }
       decisionUi.FlowStrip.render(flowSection.body, { stages });
       dashboard.appendChild(flowSection.section);
     }
@@ -316,7 +360,7 @@
 
     // Supervision des marchés : lecture serveur (markets_supervision) ; absence = « Non disponible », jamais 0.
     const supervision = Array.isArray(payload && payload.markets_supervision) ? payload.markets_supervision : null;
-    const market = cardSection(doc, 'Supervision des marchés', 'Marchés actifs · périmètre et période du Pilotage ; 0 = aucune commande ou incident sur la période.', 'pilotage-markets');
+    const market = cardSection(doc, 'Supervision des marchés', payload.decision_clocks ? 'Marchés actifs · stock instantané sans filtre de date de création ; distinct des signaux du siège.' : 'Marchés actifs · périmètre et période du Pilotage ; 0 = aucune commande ou incident sur la période.', 'pilotage-markets');
     market.section.setAttribute('data-dashboard-role', 'secondary');
     if (supervision && supervision.length) {
       decisionUi.DenseTable.render(market.body, {
@@ -365,5 +409,5 @@
     });
   }
 
-  return Object.freeze({ HUMAN_LABELS, humanLabel, metric, incompleteCost, decisionItems, summaryCards, flowStages, structuralCauses, controlStages, residualActions, principles, trust, render, enhance });
+  return Object.freeze({ HUMAN_LABELS, humanLabel, metric, incompleteCost, decisionItems, clockItems, summaryCards, flowStages, structuralCauses, controlStages, residualActions, principles, trust, render, enhance });
 });

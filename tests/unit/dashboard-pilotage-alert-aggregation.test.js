@@ -112,3 +112,23 @@ describe('pilotage structural alert aggregation', () => {
     expect(merged[1].id).toBe('warning');
   });
 });
+
+test('Pilotage : stock indépendant des filtres de flux, scope serveur conservé',()=>{
+  const {pilotageStockFilters,pilotageDecisionClocks}=require('../../services/dashboard-pilotage-alert-aggregation');
+  const filters={market_id:'internal-id',from:'2026-11-01',to:'2026-11-28',status:'confirmed',simulation_scope:'RCT1'};
+  expect(pilotageStockFilters(filters)).toEqual({market_id:'internal-id',simulation_scope:'RCT1'});
+  expect(pilotageStockFilters({from:'2026-11-01',simulation_scope:null})).toEqual({});
+  const clocks=pilotageDecisionClocks(filters,{data_quality:{period_start:'2026-11-01'}},'2026-11-28T07:00:00Z');
+  expect(clocks).toMatchObject({stock:{basis:'current_active_orders',simulation_scope:'RCT1'},flow:{from:filters.from,to:filters.to,simulation_scope:'RCT1'},economic:{period_start:'2026-11-01'}});
+  expect(JSON.stringify(clocks)).not.toContain('internal-id');
+  expect(Object.isFrozen(clocks.stock)).toBe(true);
+});
+
+test('Pilotage : phase absente ou projection partielle jamais déclarée saine',()=>{
+  const result=summarizeControlChain({stages:[{key:'ORDER'},{key:'RELAY'},{key:'CUSTOMS'}],
+    by_stage:{ORDER:[{health:'GREEN'}],RELAY:[{health:'RED'}]},
+    population:{total:5,shown:2,complete:false}});
+  expect(result.stages.map(s=>[s.key,s.order_count,s.health])).toEqual([
+    ['ORDER',1,'UNKNOWN'],['RELAY',1,'RED'],['CUSTOMS',null,'UNKNOWN']]);
+  expect(result.population.complete).toBe(false);
+});

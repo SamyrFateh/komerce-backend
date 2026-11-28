@@ -21,7 +21,7 @@
 const db = require('../db');
 const metrics = require('./dashboard-metrics');
 const controlChain = require('./logistics-control-chain-projection');
-const { mergePilotageAlerts, summarizeControlChain } = require('./dashboard-pilotage-alert-aggregation');
+const { mergePilotageAlerts, summarizeControlChain, pilotageStockFilters, pilotageDecisionClocks } = require('./dashboard-pilotage-alert-aggregation');
 const { buildSignalMarketClause } = require('./dashboard-metrics/_helpers');
 const { EXCLUDE_SIMULATED_ORDER_SIGNALS_SQL } = require('./signal-simulation-scope');
 const log = require('../utils/logger').child({ module: 'dashboard-pilotage-market' });
@@ -90,7 +90,7 @@ async function buildMarketPilotage(filters, market, actor=null) {
     controlChainProjection,
   ] = await Promise.all([
     metrics.getCAEncaisse(filters),
-    metrics.getCmdsActives(filters),
+    metrics.getCmdsActives(pilotageStockFilters(filters)),
     metrics.getAlertesCritiques(filters),
     metrics.getTauxCompletudeCouts(filters),
     metrics.getCoutReel(filters),
@@ -153,6 +153,7 @@ async function buildMarketPilotage(filters, market, actor=null) {
         currency: market.currency,
       },
     },
+    decision_clocks: pilotageDecisionClocks(filters,economicResult,new Date().toISOString()),
     kpis_global: [ca, cmdsActives, economicResult, alertesCritiques, tauxCouts],
     view_blocks,
     economic_flow: {

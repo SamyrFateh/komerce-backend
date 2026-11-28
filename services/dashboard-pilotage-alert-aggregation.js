@@ -41,31 +41,51 @@ function structuralAlertsFromChain(chain) {
 }
 
 
+// #5315 : un stock ne dépend jamais des dates de création du flux.
+function pilotageStockFilters(filters = {}) {
+  return {
+    ...(filters.market_id ? {market_id:filters.market_id} : {}),
+    ...(filters.simulation_scope ? {simulation_scope:filters.simulation_scope} : {}),
+  };
+}
+
+function pilotageDecisionClocks(filters = {}, economicResult, observedAt) {
+  return Object.freeze({
+    stock:Object.freeze({basis:'current_active_orders',observed_at:observedAt,simulation_scope:filters.simulation_scope||null}),
+    flow:Object.freeze({basis:'orders.created_at',from:filters.from||null,to:filters.to||null,
+      simulation_scope:filters.simulation_scope||null,metric_id:'commerce.paid_order_nonwallet'}),
+    economic:Object.freeze({basis:'utc_calendar_month',period_start:economicResult?.data_quality?.period_start||null,
+      metric_id:'eco.period_result'}),
+  });
+}
+
 function summarizeControlChain(chain) {
   const stages = Array.isArray(chain && chain.stages) ? chain.stages : [];
   const byStage = chain && chain.by_stage && typeof chain.by_stage === 'object' ? chain.by_stage : {};
   const structural = Array.isArray(chain && chain.structural_alerts) ? chain.structural_alerts : [];
 
   const stage_health = stages.map(stage => {
-    const orders = Array.isArray(byStage[stage.key]) ? byStage[stage.key] : [];
+    const available = Array.isArray(byStage[stage.key]);
+    const orders = available ? byStage[stage.key] : [];
     const counts = { GREEN: 0, ORANGE: 0, RED: 0, UNKNOWN: 0 };
     orders.forEach(order => {
       const health = ['GREEN', 'ORANGE', 'RED', 'UNKNOWN'].includes(order && order.health) ? order.health : 'UNKNOWN';
       counts[health] += 1;
     });
     const health = counts.RED > 0 ? 'RED'
-      : (counts.ORANGE > 0 ? 'ORANGE' : (counts.UNKNOWN > 0 ? 'UNKNOWN' : 'GREEN'));
+      : (counts.ORANGE > 0 ? 'ORANGE' : (counts.UNKNOWN > 0 || !available || chain?.population?.complete !== true ? 'UNKNOWN' : 'GREEN'));
     return Object.freeze({
       key: stage.key,
       label: stage.label,
       health,
-      order_count: orders.length,
-      health_counts: Object.freeze(counts),
+      order_count: available ? orders.length : null,
+      health_counts: available ? Object.freeze(counts) : null,
     });
   });
 
   return Object.freeze({
     stages: Object.freeze(stage_health),
+    population: chain?.population || null,
     structural_alerts: Object.freeze(structural.map(row => Object.freeze({
       stage: row.stage || 'UNKNOWN',
       health: ['GREEN', 'ORANGE', 'RED', 'UNKNOWN'].includes(row.health) ? row.health : 'UNKNOWN',
@@ -118,4 +138,6 @@ module.exports = {
   structuralAlertsFromChain,
   mergePilotageAlerts,
   summarizeControlChain,
+  pilotageStockFilters,
+  pilotageDecisionClocks,
 };

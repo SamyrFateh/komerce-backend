@@ -253,6 +253,7 @@ describe('GET /unified', () => {
     const res = await request(app).get('/api/admin/dashboard/unified');
     expect(res.status).toBe(200);
     expect(res.body.kpis_global).toHaveLength(6);
+    expect(res.body.decision_clocks).toMatchObject({stock:{basis:'current_active_orders'},flow:{basis:'orders.created_at'},economic:{basis:'utc_calendar_month'}});
     expect(res.body.kpis_global).toContainEqual(expect.objectContaining({key:'economic_period_result',value:'42.01',unit:'EUR',data_quality:expect.objectContaining({status:'PROVISIONAL',metric_id:'eco.period_result'})}));
     expect(res.body.kpis_global.some(k=>k.key==='marge_consolidee')).toBe(false);
     expect(res.body.view_blocks).toHaveLength(3);

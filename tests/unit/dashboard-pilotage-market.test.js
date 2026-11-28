@@ -59,7 +59,7 @@ describe('dashboard-pilotage-market', () => {
 
     for (const name of mockMetricNames) {
       expect(mockMetricFunctions[name]).toHaveBeenCalledTimes(1);
-      expect(mockMetricFunctions[name]).toHaveBeenCalledWith(filters);
+      expect(mockMetricFunctions[name]).toHaveBeenCalledWith(name==='getCmdsActives'?{market_id:market.id}:filters);
     }
 
     expect(result.scope).toEqual({
@@ -70,6 +70,8 @@ describe('dashboard-pilotage-market', () => {
     expect(result.data_quality.filters).toEqual({ from: '2026-08-01', status: 'confirmed' });
     expect(result.data_quality.filters.market_id).toBeUndefined();
     expect(result.kpis_global).toHaveLength(5);
+    expect(result.decision_clocks).toMatchObject({stock:{basis:'current_active_orders',simulation_scope:null},flow:{basis:'orders.created_at',from:'2026-08-01',to:null},economic:{basis:'utc_calendar_month',metric_id:'eco.period_result'}});
+    expect(JSON.stringify(result.decision_clocks)).not.toContain(market.id);
     expect(result.kpis_global).toContainEqual(expect.objectContaining({key:'economic_period_result',value:null,data_quality:expect.objectContaining({status:'MARKET_RESULT_NOT_RECONCILED'})}));
     expect(result.view_blocks).toHaveLength(3);
     expect(mockControlChain).toHaveBeenCalledWith({ market });
