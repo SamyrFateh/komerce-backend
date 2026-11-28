@@ -345,7 +345,7 @@ router.get(
       if (req.query.simulation_scope !== undefined && !isValidScope(req.query.simulation_scope)) return res.status(400).json({error:'invalid_simulation_scope'});
       const payload = Object.prototype.hasOwnProperty.call(req.query,'chain_drill')
         ? await operations.buildControlChainDrill(req.query)
-        : await operations.buildOperations(req.query.simulation_scope ? {simulationScope:req.query.simulation_scope} : undefined);
+        : await (req.query.simulation_scope ? operations.buildOperations({simulationScope:req.query.simulation_scope}) : operations.buildOperations());
       res.json(payload);
     } catch (err) {
       if ([400,409].includes(err.status) && ['invalid_control_chain_drill','control_chain_population_changed'].includes(err.code)) return res.status(err.status).json({error:err.code,code:err.code});
