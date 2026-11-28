@@ -722,7 +722,6 @@
 
   function renderPaymentSettlement(doc, parent, payment, context) {
     if (!payment.id || payment.status !== 'succeeded' || payment.real_debit_verified !== true) return;
-    const key = `payment-settlement:${payment.id}`;
     const url = `${ENDPOINT}/supplier-payments/${encodeURIComponent(payment.id)}/settlements`;
     const history = makeButton(doc, 'Voir les règlements consignés', 'read-payment-settlements', true);
     const historySlot = doc.createElement('div');
@@ -735,9 +734,9 @@
         const rows = result.settlements || [];
         if (!rows.length) historySlot.appendChild(text(doc, 'p', '', 'Aucun règlement consigné.'));
         renderExecutionTable(doc, historySlot, 'Règlements consignés',
-          ['Nature', 'Montant', 'Débit hors frais', 'Frais', 'Justificatif'], rows,
+          ['Nature', 'Dette fournisseur', 'Débit hors frais', 'Frais', 'Justificatif'], rows,
           (row) => [row.kind, formatExactAmount(row.amount_currency, row.currency),
-            formatExactAmount(row.amount_kmf, 'KMF'), formatExactAmount(row.fees_kmf, 'KMF'), row.proof_ref],
+            formatExactAmount(row.debit_amount ?? row.amount_kmf, row.debit_currency ?? 'KMF'), formatExactAmount(row.fee_amount ?? row.fees_kmf, row.fee_currency ?? 'KMF'), row.proof_ref],
           'settlements');
       } catch (error) {
         historySlot.textContent = describeError(error);
@@ -746,30 +745,7 @@
       }
     });
     parent.append(history, historySlot);
-    const amount = { type: 'number', required: true, min: '0.01', step: '0.01' };
-    appendOperatorForm(doc, parent,
-      `Consigner le débit vérifié · ${payment.payment_ref || shortId(payment.id)}`, [
-        { ...amount, label: `Montant débité en ${payment.currency}`, min: '0.0001', step: '0.0001' },
-        { ...amount, label: 'Montant du débit hors frais (KMF)' },
-        { ...amount, label: 'Frais constatés (KMF)', required: false, min: '0' },
-        { label: 'Référence unique du débit (relevé ou reçu)', required: true, maxLength: 180 },
-      ], (button, [native, kmf, fees, proof]) => {
-        if (context.busy.has(key)) return;
-        const reference = proof.value.trim();
-        if (!reference) {
-          setFeedback(context.root, 'La référence du débit est obligatoire.', 'critical');
-          return;
-        }
-        context.act(button, key, {
-          url,
-          body: {
-            kind: 'payment', currency: payment.currency, amount_currency: native.value,
-            amount_kmf: kmf.value, fees_kmf: fees.value || '0',
-            proof_ref: reference, idempotency_key: `purchasing-ui:${reference}`,
-          },
-          successMessage: 'Débit déjà effectué consigné dans les règlements fournisseur.',
-        });
-      });
+    parent.appendChild(text(doc,'p','kmc-workspace-note','Le règlement est consigné exclusivement par Finance habilitée après les deux décisions Hub.'));
   }
 
   function renderLineSettlement(doc, parent, po, line, context) {

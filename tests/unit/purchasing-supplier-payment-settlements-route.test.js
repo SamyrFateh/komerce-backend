@@ -75,24 +75,30 @@ describe('POST/GET settlements', () => {
     expect(mockRecord).not.toHaveBeenCalled();
   });
 
-  it('201 à la création, 200 au rejeu idempotent ; l\'acteur est req.user.id', async () => {
+  it('admin/Achats ne peut plus consigner ; alias Finance soumis à la même garde B4', async () => {
+    mockGlobal.mockResolvedValue(true);
+    const body = { kind: 'payment', amount_currency: '1', debit_currency:'EUR',debit_amount:'1' };
+    expect((await request(app).post(URL).send(body)).status).toBe(403);
+    expect(mockRecord).not.toHaveBeenCalled();
+    mockRole='finance';
     mockRecord.mockResolvedValueOnce({ settlement: { id: 's1' }, idempotent_replay: false });
-    const body = { kind: 'payment', market_id: 'IGNORE', amount_currency: '1' };
-    const r1 = await request(app).post(URL).send(body);
-    expect(r1.status).toBe(201);
-    expect(mockRecord).toHaveBeenCalledWith(expect.anything(), PAY, body, 'admin-1');
+    expect((await request(app).post(URL).send(body)).status).toBe(201);
+    expect(mockRecord).toHaveBeenCalledWith(expect.anything(),PAY,body,'admin-1',{requireB4:true});
     mockRecord.mockResolvedValueOnce({ settlement: { id: 's1' }, idempotent_replay: true });
     expect((await request(app).post(URL).send(body)).status).toBe(200);
+    expect((await request(app).post(URL).send({...body,market_id:'fake'})).status).toBe(400);
   });
 
   it('propage les codes explicites du service (409 / 400 / 404)', async () => {
     const err = (status, code) => Object.assign(new Error(code), { status, code });
+    mockRole='finance';mockGlobal.mockResolvedValue(true);
     mockRecord.mockRejectedValueOnce(err(409, 'SETTLEMENT_IDEMPOTENCY_CONFLICT'));
     const r = await request(app).post(URL).send({});
     expect(r.status).toBe(409);
     expect(r.body.code).toBe('SETTLEMENT_IDEMPOTENCY_CONFLICT');
     mockRecord.mockRejectedValueOnce(err(400, 'SETTLEMENT_KIND_INVALID'));
     expect((await request(app).post(URL).send({})).status).toBe(400);
+    mockRole='admin';
     mockList.mockRejectedValueOnce(err(404, 'SUPPLIER_PAYMENT_NOT_FOUND'));
     expect((await request(app).get(URL)).status).toBe(404);
   });
