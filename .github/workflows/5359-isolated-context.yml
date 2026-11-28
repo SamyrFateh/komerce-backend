@@ -1,4 +1,4 @@
-name: ECO V7/V6 and dashboard real staging rendered contract audit
+name: 5356 integrated On Demand responsive final staging lifecycle
 on:
   push:
     branches: [test/5359-market-context-preflight]
@@ -8,103 +8,231 @@ concurrency:
   group: komerce-g6-canonical-real-transaction
   cancel-in-progress: false
 jobs:
-  verify:
+  lifecycle:
     runs-on: ubuntu-24.04
-    timeout-minutes: 14
+    timeout-minutes: 20
     env:
-      STAGING_ORIGIN: https://komerce-backend-production.up.railway.app
-      EXPECTED_SHA: 97f971a9d2e630e5dc6a9c57b240b9a49a321ab2
+      NODE_ENV: test
+      KOMERCE_ENV: staging
+      KOMERCE_DISABLE_CRONS: 'true'
+      EXPECTED_RAILWAY_ENVIRONMENT: staging
+      STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
+      EXPECTED_SHA: 41cbf83e587e339bcd75f15760a29f1950bdae37
+      DATABASE_URL: ${{ secrets.RAILWAY_DATABASE_URL }}
       E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
       E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_MARKET_OPERATOR_KM_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_KM_EMAIL }}
+      E2E_MARKET_OPERATOR_KM_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_KM_PASSWORD }}
       E2E_MARKET_OPERATOR_CM_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_CM_EMAIL }}
       E2E_MARKET_OPERATOR_CM_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_CM_PASSWORD }}
+      E2E_AGENT_HUB_EMAIL: ${{ secrets.E2E_AGENT_HUB_EMAIL }}
+      E2E_AGENT_HUB_PASSWORD: ${{ secrets.E2E_AGENT_HUB_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 97f971a9d2e630e5dc6a9c57b240b9a49a321ab2
+          ref: 41cbf83e587e339bcd75f15760a29f1950bdae37
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npm ci --prefix public/boutique --ignore-scripts --no-audit --no-fund
-      - run: cd public/boutique && npx playwright install --with-deps chromium
-      - name: Compare live dashboard files to exact deployed commit and inspect authenticated UI
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Wait for exact approved staging SHA
+        shell: bash
         run: |
-          mkdir -p test-results/dashboard-delivery
+          set -euo pipefail
+          for i in $(seq 1 36); do
+            if curl -fsS "$STAGING_BASE_URL/health/version" | node -e 'let s="";process.stdin.on("data",d=>s+=d);process.stdin.on("end",()=>{try{if(JSON.parse(s).commit!==process.env.EXPECTED_SHA)process.exit(1)}catch{process.exit(1)}})'; then exit 0; fi
+            sleep 10
+          done
+          exit 1
+      - name: Real staging Chromium with scoped fixtures and independent PostgreSQL
+        run: |
+          mkdir -p test-results/on-demand
           node <<'JS'
-          const fs=require('node:fs'),crypto=require('node:crypto'),assert=require('node:assert/strict');
-          const {chromium}=require('./public/boutique/node_modules/@playwright/test');
-          const base=process.env.STAGING_ORIGIN,report={verdict:'NOT_PROVEN',assets:[],routes:[],roles:[]};
-          const digest=x=>crypto.createHash('sha256').update(x).digest('hex');
-          const get=async p=>{const r=await fetch(base+p,{redirect:'manual',cache:'no-store'});return r};
-          const routeSet=['/admin/pilotage?market=CM','/admin/commerce?market=CM','/admin/operations?market=CM','/admin/finance?market=CM','/admin/hub','/admin/hub?branch=operations','/admin/workspaces/pricing','/admin/workspaces/pricing?market=CM','/admin/workspaces/pricing?market=KM','/admin/workspaces/pricing?market=CG'];
-          const selectors={'/admin/pilotage':'[data-dashboard-id="pilotage"]','/admin/commerce':'[data-dashboard-id="commerce"]','/admin/operations':'[data-dashboard-id="operations"]'};
+          const fs=require('node:fs'),crypto=require('node:crypto'),assert=require('node:assert/strict'),bcrypt=require('bcryptjs');
+          const {chromium}=require('playwright');
+          const db=require('./db'),{confirmTarget}=require('./scripts/recette/target-guard');
+          const {createAdminUser}=require('./services/user-mutation-service');
+          const {markE2eTestAccount}=require('./scripts/recette/staging-e2e-provision');
+          const {preseedG6BuyerOtp}=require('./services/g6-staging-buyer-identity-guard');
+          const base=process.env.STAGING_BASE_URL,run=crypto.randomBytes(4).toString('hex'),tag='RECETTE ON DEMAND '+run;
+          const report={run,verdict:'NOT_PROVEN',steps:[],fixtureIds:[],reference:null},out='test-results/on-demand/report.json';
+          let ref=null,browser,owner,agent,hub,foreign;
+          const PNG=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGO8o+HGwMDAxMDAwMDAAAAQOAFOsvRgogAAAABJRU5ErkJggg==','base64');
+          const photo={name:'recette.png',mimeType:'image/png',buffer:PNG};
+          function record(name,detail={}){report.steps.push({name,...detail});fs.writeFileSync(out,JSON.stringify(report,null,2));console.log(name)}
+          function check(ok,code){if(!ok)throw Error(code)}
+          async function target(){const v=await(await fetch(base+'/health/version')).json();check(v.commit===process.env.EXPECTED_SHA,'SHA_DRIFT');const t=await confirmTarget({db});check(t.confirmed,'TARGET_NOT_CONFIRMED');if(report.target)check(t.fingerprint===report.target.fingerprint,'DB_DRIFT');else report.target={sha:v.commit,fingerprint:t.fingerprint}}
+          async function context(kind,phone){
+           const ctx=await browser.newContext({viewport:{width:1440,height:900},serviceWorkers:'block'});
+           await ctx.route('**/*',async route=>{
+            const req=route.request(),u=new URL(req.url()),m=req.method();
+            if(u.origin!==base)return route.abort();
+            if(['GET','HEAD','OPTIONS'].includes(m))return route.continue();
+            if(m==='POST'&&kind==='staff'&&u.pathname==='/api/auth/login')return route.continue();
+            if(m==='POST'&&kind==='buyer'&&['/api/auth/otp/request','/api/auth/otp/verify'].includes(u.pathname)){
+             try{if(req.postDataJSON().phone===phone)return route.continue()}catch{}
+            }
+            if(m==='POST'&&kind==='buyer'&&u.pathname==='/api/client-requests'&&!ref&&req.postData()?.includes(tag))return route.continue();
+            if(ref){
+             const parts=u.pathname.split('/');
+             if(kind==='buyer'&&m==='POST'&&u.pathname==='/api/client-requests/'+ref+'/messages')return route.continue();
+             if(kind==='staff'&&((parts[2]==='markets'&&parts[3]==='KM'&&parts[4]==='client-requests'&&parts[5]===ref&&['messages','hub-share','close','reopen'].includes(parts[6]))||(parts[2]==='hub'&&parts[3]==='client-requests'&&parts[4]===ref&&parts[5]==='messages'))&&['POST','DELETE'].includes(m))return route.continue();
+            }
+            return route.abort();
+           });
+           return ctx;
+          }
+          async function staff(prefix,role,next){
+           const email=process.env[prefix+'EMAIL'],password=process.env[prefix+'PASSWORD'];check(email&&password,'MISSING_'+prefix+'CREDENTIALS');
+           const ctx=await context('staff'),page=await ctx.newPage();
+           await page.goto(base+'/login.html?next='+encodeURIComponent(next),{waitUntil:'domcontentloaded'});
+           await page.locator('#email').fill(email);await page.locator('#password').fill(password);
+           const response=page.waitForResponse(r=>r.url()===base+'/api/auth/login'&&r.request().method()==='POST',{timeout:25000});
+           await page.locator('#btn-submit').click();check((await response).status()===200,'STAFF_LOGIN_'+role);
+           await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:20000});
+           const me=await page.request.get(base+'/api/auth/me');check(me.ok(),'STAFF_ME_'+role);const data=await me.json(),user=data.user||data;
+           check(user.role===role,'STAFF_ROLE_'+role);
+           const marked=await db.query('SELECT 1 FROM e2e_test_accounts WHERE user_id=$1',[user.id]);check(marked.rowCount===1,'STAFF_NOT_MARKED_'+role);
+           return {ctx,page,user};
+          }
+          async function provision(admin,market){
+           let phone;for(let i=0;i<20;i++){const p='+2693'+String(crypto.randomInt(1000000)).padStart(6,'0');if(!(await db.query('SELECT 1 FROM users WHERE phone=$1 OR whatsapp_phone=$1',[p])).rowCount){phone=p;break}}
+           check(phone,'UNIQUE_PHONE_UNAVAILABLE');
+           const code=String(crypto.randomInt(100000,1000000)),id=crypto.randomBytes(4).toString('hex');
+           const q=await db.getClient();
+           try{
+            await q.query('BEGIN');
+            const {rows:[buyer]}=await createAdminUser(q,{fullName:'G6 E2E '+id+' On Demand',email:'g6-e2e-'+id+'@komerce.test',phone,role:'client',currencyPref:'KMF',passwordHash:await bcrypt.hash(crypto.randomBytes(24).toString('hex'),10)});
+            await markE2eTestAccount(q,{userId:buyer.id,actorId:admin.id});await preseedG6BuyerOtp(q,{buyer,phone,code,purpose:'login'});await q.query('COMMIT');report.fixtureIds.push(buyer.id);record('MARKED_OTP_FIXTURE_CREATED',{id:buyer.id});return {buyer,phone,code};
+           }catch(e){await q.query('ROLLBACK');throw e}finally{q.release()}
+          }
+          async function buyerLogin(f){
+           const ctx=await context('buyer',f.phone),page=await ctx.newPage();
+           await page.goto(base+'/KM',{waitUntil:'domcontentloaded'});
+           await page.locator('#k-wa-fab[data-on-demand]').click();
+           await page.locator('#k-id-step-phone').waitFor({state:'visible',timeout:20000});
+           await page.locator('#k-id-name').fill('G6');await page.locator('#k-id-lastname').fill('E2E');
+           await page.locator('#k-id-phone-country').selectOption('+269');await page.locator('#k-id-phone').fill(f.phone.slice(4));
+           const prepared=await db.query("SELECT 1 FROM otp_codes WHERE phone=$1 AND purpose='login' AND NOT verified AND expires_at>now()",[f.phone]);check(prepared.rowCount===1,'OTP_NOT_PREPARED');
+           const rq=page.waitForResponse(r=>r.url()===base+'/api/auth/otp/request'&&r.request().method()==='POST',{timeout:20000});
+           await page.locator('#k-id-phone-cta').click();const rr=await rq,b=await rr.json();check(rr.ok()&&b.success&&!b._test&&!b._dev&&String(b.message).includes('aucun envoi externe'),'OTP_NOT_ISOLATED');
+           const vr=page.waitForResponse(r=>r.url()===base+'/api/auth/otp/verify'&&r.request().method()==='POST',{timeout:20000});
+           for(let i=0;i<6;i++)await page.locator('.k-id-otp-box').nth(i).fill(f.code[i]);
+           const res=await vr,body=await res.json();check(res.ok()&&body.user?.id===f.buyer.id&&!body._test,'OTP_VERIFY_FAILED');check((await ctx.cookies()).some(c=>c.name.endsWith('kmrc_jwt')&&c.httpOnly),'OTP_SESSION_NOT_SET');
+           await page.locator('dialog.k-on-demand[open]').waitFor({timeout:20000});
+           record('CHROMIUM_REAL_OTP_NO_EXTERNAL',{id:f.buyer.id});return {ctx,page,user:f.buyer};
+          }
+          async function api(actor,path,code){const r=await actor.ctx.request.get(base+path);check(r.status()===code,'HTTP_'+code+'_GOT_'+r.status());return code===200?await r.json():null}
+          async function row(){const {rows}=await db.query('SELECT r.id,r.status,r.hub_shared,r.user_id,r.verified_callback_phone,m.code FROM client_requests r JOIN markets m ON m.id=r.market_id WHERE reference=$1',[ref]);check(rows.length===1&&rows[0].user_id===owner.user.id&&rows[0].code==='KM','PG_DOSSIER_SCOPE');return rows[0]}
+          async function oracle(state,shared){const r=await row();check(r.status===state&&r.hub_shared===shared,'PG_STATE_MISMATCH');return r}
+          function response(page,path,method){return page.waitForResponse(r=>new URL(r.url()).pathname===path&&r.request().method()===method,{timeout:20000})}
+          async function clickMutation(page,locator,path,method,status=200){const p=response(page,path,method);await locator.click();const r=await p;check(r.status()===status,'MUTATION_'+method+'_HTTP_'+r.status());return r.json()}
+          async function scoped(actor,route,which){await actor.page.goto(base+route,{waitUntil:'domcontentloaded'});const s=actor.page.locator('[data-client-requests="'+which+'"]');await s.waitFor({timeout:30000});return s}
+          async function send(page,section,path,body,attach=false){const f=section.locator('form').last();await f.locator('textarea').fill(body);if(attach)await f.locator('input[type=file]').setInputFiles(photo);return clickMutation(page,f.getByRole('button',{name:'Envoyer',exact:true}),path,'POST',201)}
           (async()=>{
-            const v=await (await get('/health/version')).json(),h=await (await get('/health')).json();
-            assert.equal(v.commit,process.env.EXPECTED_SHA);assert.equal(h.komerce_env,'staging');report.target={sha:v.commit,fingerprint:h.target.db_fingerprint};
-            const index=fs.readFileSync('public/dashboards/canonical/index.html','utf8');
-            const paths=[...index.matchAll(/(?:src|href)="(\/dashboards\/canonical\/[^"]+)"/g)].map(m=>m[1]).filter(x=>/\.(js|css)(\?|$)/.test(x));
-            for(const p of paths){
-              const local='public'+p.split('?')[0];if(!fs.existsSync(local))continue;
-              const r=await get(p);const actual=digest(Buffer.from(await r.arrayBuffer())),expected=digest(fs.readFileSync(local));
-              report.assets.push({path:p,status:r.status,match:actual===expected,cache:r.headers.get('cache-control')});
-            }
-            for(const p of routeSet){
-              const r=await get(p),body=await r.text();
-              report.routes.push({path:p,status:r.status,generation:r.headers.get('x-admin-generation'),canonical:body.includes('data-admin-generation="canonical"'),location:r.headers.get('location')});
-            }
-            const browser=await chromium.launch();
-            try{
-              for(const [role,prefix] of [['admin','E2E_ADMIN_'],['market_operator','E2E_MARKET_OPERATOR_CM_']]){
-                const result={role,pages:[],errors:0};report.roles.push(result);
-                if(!process.env[prefix+'EMAIL']||!process.env[prefix+'PASSWORD']){result.blocked='MISSING_TEST_CREDENTIALS';continue}
-                const ctx=await browser.newContext({viewport:{width:1440,height:900},serviceWorkers:'allow'});
-                try{
-                  const page=await ctx.newPage();page.on('pageerror',()=>result.errors++);
-                  await ctx.route('**/*',route=>{
-                    const req=route.request(),u=new URL(req.url());
-                    return ['GET','HEAD','OPTIONS'].includes(req.method())||(u.origin===base&&u.pathname==='/api/auth/login'&&req.method()==='POST')?route.continue():route.abort();
-                  });
-                  await page.goto(base+'/login.html?next='+encodeURIComponent('/admin/pilotage'),{waitUntil:'domcontentloaded'});
-                  await page.locator('#email').fill(process.env[prefix+'EMAIL']);await page.locator('#password').fill(process.env[prefix+'PASSWORD']);
-                  const resp=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/login'&&r.request().method()==='POST');
-                  await page.locator('#btn-submit').click();assert.equal((await resp).status(),200);
-                  await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:20000});
-                  const me=await page.request.get(base+'/api/auth/me');assert.equal(me.status(),200);
-                  const account=await me.json();assert.equal(account.user?.role||account.role,role);
-                  for(const p of routeSet){
-                    const item={path:p};result.pages.push(item);
-                    const reqs=[];const track=r=>{const u=new URL(r.url());if(u.origin===base&&u.pathname.startsWith('/api/'))reqs.push({path:u.pathname.replace(/[0-9a-f]{8}-[0-9a-f-]{27}/gi,':id'),status:r.status()})};
-                    page.on('response',track);
-                    try{
-                      await page.goto(base+p,{waitUntil:'domcontentloaded'});
-                      if(p.includes('pricing?market=')){await page.locator('.kmc-v7v6-tabs, .kmc-v7-coverage[role=status]').first().waitFor({state:'visible',timeout:15000}).catch(()=>{});await page.locator('.kmc-v7v6-tabs').waitFor({state:'visible',timeout:12000}).catch(()=>{});}
-                      else if(selectors[p.split('?')[0]])await page.locator(selectors[p.split('?')[0]]).waitFor({state:'visible',timeout:12000}).catch(()=>{});
-                      else await page.locator('[data-canonical-surface], [data-hub-director-todo], .kmc-client-requests').first().waitFor({state:'attached',timeout:12000}).catch(()=>{});
-                      item.view=await page.evaluate(()=>({generation:document.body.dataset.adminGeneration||null,route:location.pathname,hasNav:!!document.querySelector('#canonical-admin-navigation'),surfaces:[...new Set(Array.from(document.querySelectorAll('[data-canonical-surface]')).map(x=>x.dataset.canonicalSurface))],dashboards:[...new Set(Array.from(document.querySelectorAll('[data-dashboard-id]')).map(x=>x.dataset.dashboardId))],hubDirector:!!document.querySelector('[data-hub-director-todo]'),clientRequests:!!document.querySelector('[data-client-requests]'),period:!!document.querySelector('[data-pilotage-clocks]'),buyerDrill:!!document.querySelector('[data-buyer-cohort]'),operationsChain:!!document.querySelector('[data-process-source="control_chain"]')}));
-                      item.rendered=await page.evaluate(()=>({headings:[...document.querySelectorAll('main h1,main h2,main h3')].filter(e=>e.getClientRects().length).slice(0,20).map(e=>e.textContent.trim().slice(0,120)),v7Installed:!!globalThis.KomerceCanonicalPricingWorkspace?.__economicV7V6Installed,exclusive:!!document.querySelector('[data-pricing-mock-contract="exclusive"]'),v7:!!document.querySelector('[data-v7-centers]'),tabs:[...document.querySelectorAll('.kmc-v7v6-tabs nav button')].map(e=>e.textContent.trim()),legacy:!!document.querySelector('.kmc-pricing-approved-layout,.kmc-pricing-decision-overview'),status:[...document.querySelectorAll('.kmc-v7v6-session > [role=status]')].map(e=>e.textContent.trim()),canonicalSections:[...document.querySelectorAll('[data-dashboard-role]')].filter(e=>e.getClientRects().length).map(e=>e.dataset.dashboardRole).slice(0,25)}));
-                      if(item.rendered.tabs.length===3){
-                        item.tabProof=[];
-                        for(const label of ['Centres de coûts','Activité','Rentabilité']){
-                          await page.locator('.kmc-v7v6-tabs nav button').filter({hasText:label}).click();
-                          item.tabProof.push(await page.evaluate(()=>({active:document.querySelector('.kmc-v7v6-tabs nav [aria-pressed=true]')?.textContent.trim(),headings:[...document.querySelectorAll('.kmc-v7v6-content h2,.kmc-v7v6-content h3,.kmc-v7v6-content h4')].slice(0,8).map(e=>e.textContent.trim().slice(0,100)),centers:document.querySelectorAll('.kmc-v7-center-card').length,visible:!!document.querySelector('.kmc-v7v6-content')?.getClientRects().length})));
-                        }
-                      }
-                      item.httpErrors=reqs.filter(x=>x.status>=400).slice(0,20);
-                      item.economicRequests=reqs.filter(x=>x.path.includes('/cost-centers'));
-                    }catch(e){item.failure=String(e.name)}
-                    finally{page.off('response',track)}
-                  }
-                }catch(e){result.blocked=String(e.name)}finally{await ctx.close()}
-              }
-            }finally{await browser.close()}
-            const end=await (await get('/health/version')).json(),after=await (await get('/health')).json();assert.equal(end.commit,report.target.sha);assert.equal(after.target.db_fingerprint,report.target.fingerprint);
-            report.verdict='RENDER_AUDIT_COMPLETE_NOT_CERTIFICATION';report.assetMismatch=report.assets.filter(x=>!x.match).length;
-          })().catch(e=>{report.failure=e.code||e.name;process.exitCode=1}).finally(()=>{fs.writeFileSync('test-results/dashboard-delivery/report.json',JSON.stringify(report,null,2));console.log(JSON.stringify({...report,assets:report.assets.filter(x=>!x.match),assetTotal:report.assets.length}))});
+           await target();browser=await chromium.launch();
+           const admin=await staff('E2E_ADMIN_','admin','/admin/pilotage');
+           agent=await staff('E2E_MARKET_OPERATOR_KM_','market_operator','/admin/clients?market=KM');
+           foreign=await staff('E2E_MARKET_OPERATOR_CM_','market_operator','/admin/clients?market=CM');
+           hub=await staff('E2E_AGENT_HUB_','agent_hub','/admin/hub');
+           for(const [a,market] of [[agent,'KM'],[foreign,'CM']]){
+            const {rows}=await db.query("SELECT DISTINCT m.code,mc.capability FROM markets m JOIN market_operating_assignments o ON o.market_id=m.id AND o.status='ACTIVE' JOIN assignment_memberships am ON am.assignment_id=o.id AND am.status='ACTIVE' JOIN membership_capabilities mc ON mc.membership_id=am.id AND mc.revoked_at IS NULL JOIN assignment_capability_ceiling ac ON ac.assignment_id=o.id AND ac.capability=mc.capability AND ac.revoked_at IS NULL WHERE am.user_id=$1 AND mc.capability IN ('client.read','client.case.handle')",[a.user.id]);
+            check(rows.length===2&&rows.every(x=>x.code===market),'STAFF_SCOPE_NOT_MONO_'+market);
+           }
+           await api(agent,'/api/markets/KM/client-requests',200);await api(foreign,'/api/markets/KM/client-requests',403);await api(hub,'/api/hub/client-requests',200);
+           const ms=await scoped(agent,'/admin/clients?market=KM','market'),hs=await scoped(hub,'/admin/hub','hub');
+           record('STAFF_REAL_SESSIONS_AND_WORKSPACES');
+           await target();const f=await provision(admin.user,'KM');owner=await buyerLogin(f);
+           const strangerFixture=await provision(admin.user,'KM');const stranger=await buyerLogin(strangerFixture);
+           // Re-seeding only auth fixtures; all business transitions below via real UI.
+           const dialog=owner.page.locator('dialog.k-on-demand[open]');
+           await dialog.getByRole('button',{name:'Nouvelle demande'}).click();
+           await dialog.locator('[data-motif=auto_parts]').click();
+           check(!(await dialog.evaluate(e=>e.matches(':modal'))),'DESKTOP_PANEL_MODAL');
+           await dialog.locator('textarea[name=body]').fill(tag+' alternateur');
+           await dialog.locator('input[aria-label="Choisir des photos"]').setInputFiles(photo);
+           await dialog.locator('.k-od-preview img').waitFor();
+           check(await dialog.locator('.k-od-preview img').evaluate(e=>e.complete&&e.naturalWidth>0),'PREVIEW_NOT_LOADED');
+           await dialog.getByRole('button',{name:'Supprimer la photo'}).click();
+           check(await dialog.locator('.k-od-preview').count()===0,'PHOTO_REMOVE_FAILED');
+           await dialog.locator('input[aria-label="Choisir des photos"]').setInputFiles(photo);
+           await dialog.locator('.k-od-preview img').waitFor();
+           await dialog.getByRole('button',{name:'Continuer',exact:true}).click();
+           await dialog.getByRole('button',{name:'Passer cette étape',exact:true}).click();
+           await dialog.getByRole('button',{name:'Modifier',exact:true}).click();
+           check(await dialog.locator('textarea').inputValue()===tag+' alternateur','DRAFT_LOST');
+           await dialog.getByRole('button',{name:'Continuer',exact:true}).click();
+           await dialog.getByRole('button',{name:'Passer cette étape',exact:true}).click();
+           await dialog.screenshot({path:'test-results/on-demand/desktop-confirmation.png'});
+           record('DESKTOP_GUIDED_STEPS_PHOTO_PREVIEW_REMOVE_DRAFT');
+           const created=await clickMutation(owner.page,dialog.getByRole('button',{name:'Envoyer ma demande'}),'/api/client-requests','POST',201);
+           ref=created.request.reference;report.reference=ref;const id=(await oracle('new',false)).id;
+           check((await row()).verified_callback_phone===f.phone,'CALLBACK_NOT_VERIFIED');
+           const clientPhoto=created.message.attachments[0].id;
+           const read=await api(owner,'/api/client-requests/'+ref,200);check(read.messages.some(x=>x.body===tag+' alternateur'),'CLIENT_MESSAGE_MISSING');
+           const stored=await db.query('SELECT a.sha256,a.size_bytes FROM conversation_attachments a JOIN conversation_messages m ON m.id=a.message_id WHERE m.subject_id=$1 AND a.id=$2',[id,clientPhoto]);check(stored.rowCount===1&&stored.rows[0].size_bytes===PNG.length&&stored.rows[0].sha256===crypto.createHash('sha256').update(PNG).digest('hex'),'PHOTO_READBACK_MISMATCH');
+           await api(stranger,'/api/client-requests/'+ref,404);await api(foreign,'/api/markets/KM/client-requests/'+ref,403);await api(hub,'/api/hub/client-requests/'+ref,404);
+           check((await stranger.ctx.request.get(base+'/api/client-requests/'+ref+'/attachments/'+clientPhoto)).status()===404,'STRANGER_PHOTO_EXPOSED');
+           const signals=async()=>(await db.query("SELECT status FROM signals WHERE signal_type='client_request_awaiting_reply' AND entity_id=$1",[id])).rows[0]?.status;
+           const notifications=async()=>(await db.query("SELECT action_target,status FROM client_notifications WHERE entity_type='client_request' AND entity_id=$1 AND user_id=$2",[id,owner.user.id])).rows;
+           check(await signals()==='open','SIGNAL_NOT_OPEN');check((await notifications()).length===0,'PREMATURE_NOTIFICATION');
+           record('CLIENT_CREATE_PHOTO_AND_ISOLATION',{reference:ref});
+           await ms.getByRole('button',{name:'Actualiser',exact:true}).click();
+           await ms.locator('[data-request-ref="'+ref+'"]').click();
+           const md=ms.locator('.kmc-client-requests-detail'),marketPath='/api/markets/KM/client-requests/'+ref,hubPath='/api/hub/client-requests/'+ref;
+           await md.getByRole('link',{name:'Rappeler le client'}).waitFor();check(await md.getByRole('link',{name:'Rappeler le client'}).getAttribute('href')==='tel:'+f.phone,'CALLBACK_LINK_MISMATCH');
+           await clickMutation(agent.page,md.getByRole('button',{name:'Partager avec le Hub'}),marketPath+'/hub-share','POST');
+           await oracle('new',true);await hs.getByRole('button',{name:'Actualiser',exact:true}).click();await hs.locator('[data-request-ref="'+ref+'"]').click();
+           const hd=hs.locator('.kmc-client-requests-detail');await hd.getByText('Canal interne uniquement.',{exact:false}).waitFor();
+           const hubData=await api(hub,hubPath,200);check(!('callback_phone'in hubData.request)&&hubData.messages.every(x=>x.visibility==='internal'),'HUB_PRIVATE_DATA_EXPOSED');
+           check((await hub.ctx.request.get(base+hubPath+'/attachments/'+clientPhoto)).status()===404,'HUB_CLIENT_PHOTO_EXPOSED');
+           const internal=await send(hub.page,hd,hubPath+'/messages',tag+' échange interne',true);
+           check(await signals()==='open'&&(await notifications()).length===0,'INTERNAL_MESSAGE_SIDE_EFFECT');
+           const internalPhoto=internal.message.attachments[0].id;
+           check((await owner.ctx.request.get(base+'/api/client-requests/'+ref+'/attachments/'+internalPhoto)).status()===404,'CLIENT_INTERNAL_PHOTO_EXPOSED');
+           check((await api(owner,'/api/client-requests/'+ref,200)).messages.every(x=>x.visibility==='client'),'CLIENT_INTERNAL_MESSAGE_EXPOSED');
+           record('HUB_SHARE_INTERNAL_PHOTO_AND_CONFIDENTIALITY');
+           await md.getByRole('button',{name:'Conversation client'}).click();
+           await send(agent.page,md,marketPath+'/messages',tag+' réponse conseiller');
+           await oracle('in_progress',true);check(await signals()!=='open','SIGNAL_NOT_RESOLVED');check((await notifications()).some(n=>n.action_target==='client_requests'&&n.status==='open'),'NOTIFICATION_DB_MISSING');
+           const n=await api(owner,'/api/auth/me/notifications',200);check(n.notifications.some(x=>x.order_reference===ref&&x.action_target==='client_requests'),'NOTIFICATION_API_MISSING');
+           await owner.page.reload({waitUntil:'domcontentloaded'});const view=owner.page.locator('#k-client-notification').getByRole('button',{name:'Voir ma demande'});
+           await view.click({timeout:25000});await owner.page.locator('dialog.k-on-demand[open]').getByText(tag+' réponse conseiller',{exact:true}).waitFor({timeout:20000});
+           record('COUNSELOR_REPLY_NOTIFICATION_DEEP_LINK');
+           await clickMutation(agent.page,md.getByRole('button',{name:'Révoquer le partage Hub'}),marketPath+'/hub-share','DELETE');
+           await oracle('in_progress',false);await api(hub,hubPath,404);check((await hub.ctx.request.get(base+hubPath+'/attachments/'+internalPhoto)).status()===404,'REVOKED_PHOTO_EXPOSED');
+           record('HUB_REVOKED');
+           async function close(){await md.getByLabel('Motif de clôture').fill(tag+' clôture');await clickMutation(agent.page,md.getByRole('button',{name:'Clôturer',exact:true}),marketPath+'/close','POST');await oracle('closed',false);const ret=await db.query("SELECT a.purge_after=r.closed_at+interval '180 days' AS ok FROM conversation_attachments a JOIN conversation_messages m ON m.id=a.message_id JOIN client_requests r ON r.id=m.subject_id WHERE r.id=$1",[id]);check(ret.rowCount===2&&ret.rows.every(x=>x.ok),'RETENTION_NOT_EXACT')}
+           await close();
+           const denied=await owner.page.evaluate(async ({ref,tag})=>{const body=new FormData();body.append('body','REFUS '+tag);const r=await fetch('/api/client-requests/'+ref+'/messages',{method:'POST',body,credentials:'same-origin'});const d=await r.json();return {status:r.status,code:d.code||d.error};},{ref,tag});check(denied.status===409,'CLOSED_MESSAGE_NOT_REFUSED');
+           await clickMutation(agent.page,md.getByRole('button',{name:'Rouvrir',exact:true}),marketPath+'/reopen','POST');
+           await oracle('in_progress',false);
+           const reopened=await db.query('SELECT a.purge_after FROM conversation_attachments a JOIN conversation_messages m ON m.id=a.message_id WHERE m.subject_id=$1',[id]);check(reopened.rowCount===2&&reopened.rows.every(x=>x.purge_after===null),'REOPEN_RETENTION_NOT_CLEARED');
+           await close();check((await db.query('SELECT 1 FROM orders WHERE user_id=ANY($1::uuid[])',[report.fixtureIds])).rowCount===0,'UNEXPECTED_ORDERS');
+           await owner.page.locator('dialog.k-on-demand[open]').getByRole('button',{name:'Fermer',exact:true}).click();
+           await owner.page.setViewportSize({width:390,height:844});
+           await owner.page.locator('#k-wa-fab[data-on-demand]').click();
+           const mobile=owner.page.locator('dialog.k-on-demand[open]');
+           await mobile.getByRole('button',{name:'Nouvelle demande'}).click();
+           const layout=await mobile.evaluate(e=>{const b=e.getBoundingClientRect();return {modal:e.matches(':modal'),width:b.width,viewport:innerWidth,overflow:e.scrollWidth>e.clientWidth+2}});
+           check(layout.modal&&layout.width<=layout.viewport+2&&!layout.overflow,'MOBILE_PANEL_LAYOUT');
+           check(await mobile.locator('input[capture=environment]').count()===1,'CAMERA_INPUT_MISSING');
+           await mobile.screenshot({path:'test-results/on-demand/mobile-guidance.png'});
+           await mobile.getByRole('button',{name:'Fermer',exact:true}).click();
+           record('MOBILE_VIEWPORT_GUIDANCE_CAMERA_CONTROL',{layout});
+           await target();record('CLOSE_REOPEN_180_DAY_RETENTION_NO_ORDERS');
+           report.verdict='PASS_STAGING_LIFECYCLE_RETENTION_NOT_ELAPSED_PURGE';
+          })().catch(e=>{report.failure=String(e.message).split('\n')[0].slice(0,200).replace(/\+269\d{7}/g,'[redacted]');process.exitCode=1}).finally(async()=>{
+           // Close only our own dossier, via its real API, when an intermediate failure leaves it open.
+           if(ref&&agent&&owner)try{await target();const r=await row();if(r.hub_shared)await agent.ctx.request.delete(base+'/api/markets/KM/client-requests/'+ref+'/hub-share',{headers:{origin:base},data:{}});if(r.status!=='closed')await agent.ctx.request.post(base+'/api/markets/KM/client-requests/'+ref+'/close',{headers:{origin:base},data:{reason:tag+' fin de recette'}});const final=await row();report.cleanup={status:final.status,shared:final.hub_shared,retainedForAudit:true}}catch{report.cleanup={status:'BLOCKED_REQUIRES_SELECTIVE_REVIEW'}}
+           if(browser)await browser.close();await db.pool.end();fs.writeFileSync(out,JSON.stringify(report,null,2));console.log(JSON.stringify(report))
+          });
           JS
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: eco-v7v6-real-staging-render-audit
-          path: test-results/dashboard-delivery/report.json
-          retention-days: 14
+          name: on-demand-real-staging-lifecycle
+          path: test-results/on-demand/
+          retention-days: 21
