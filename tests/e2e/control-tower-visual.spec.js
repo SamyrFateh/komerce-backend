@@ -343,8 +343,7 @@ test('Pilotage : trois horloges distinctes et population opérationnelle partiel
 test('Pilotage : vente canonique avec avoir, en EUR, distincte de la caisse',async({page})=>{
   const model=JSON.parse(JSON.stringify(payload));
   model.decision_clocks={stock:{},flow:{metric_id:'commerce.paid_sales_wallet_included',from:'2026-11-01',to:'2026-11-28'},economic:{}};
-  const sales=model.kpis_global.find(k=>k.key==='ca_encaisse');
-  Object.assign(sales,{value:123.45,unit:'EUR',data_quality:{metric_id:'commerce.paid_sales_wallet_included'}});
+  model.kpis_global.push({key:'ca_encaisse',label:'Ventes payées (avoir inclus)',value:123.45,unit:'EUR',drill_to:null,data_quality:{metric_id:'commerce.paid_sales_wallet_included',cash_basis:false}});
   await mountControlTower(page,model);
   const clocks=page.locator('[data-pilotage-clocks]');
   await expect(clocks).toContainText('Ventes payées · avoir inclus');

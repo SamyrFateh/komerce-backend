@@ -509,6 +509,6 @@ test('L10 : aucun écran Finance/Pilotage n’affiche « CA encaissé » ; libel
   });
   expect(fs.readFileSync(require('path').join(dir, 'finance-decision.js'), 'utf8')).toContain('Commandes payées — part hors avoir');
   expect(fs.readFileSync(require('path').join(dir, 'finance-decision.js'), 'utf8')).toContain('Ni chiffre d’affaires comptable, ni encaissement attesté.');
-  expect(fs.readFileSync(require('path').join(dir, 'pilotage.js'), 'utf8')).toContain('Commandes payées — part hors avoir');
+  expect(fs.readFileSync(require('path').join(dir, 'pilotage.js'), 'utf8')).toContain('Ventes payées (avoir inclus)');
   expect(fs.readFileSync(require('path').join(dir, 'commerce.js'), 'utf8')).toContain('Ventes payées (avoir inclus)');
 });
