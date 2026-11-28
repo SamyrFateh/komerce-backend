@@ -1,46 +1,25 @@
-name: 5356 responsive On Demand build and targeted preflight
+name: 5356 responsive On Demand standard preflight
 on:
   push:
     branches: [test/5359-market-context-preflight]
 permissions:
   contents: read
 jobs:
-  build:
+  preflight:
     runs-on: ubuntu-24.04
-    permissions:
-      contents: write
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 1d59835353d5d89f664367b5a7a6922bc381d9a7
+          ref: d7b651c354a52e250b422e12c10533e64b7a9f12
           fetch-depth: 0
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Generate the official CSS bundles
-        run: node public/boutique/scripts/deploy-css.js
-      - name: Commit only generated bundle and cache metadata on isolated branch
-        run: |
-          set -euo pipefail
-          git status --short
-          git diff --name-only
-          git diff --name-only | while read -r p; do
-            case "$p" in
-              public/boutique/css/dist/components.css|public/boutique/index.html|public/boutique/.cache-buster-state.json) ;;
-              *) echo "Unexpected generated file: $p"; exit 1;;
-            esac
-          done
-          test "$(git ls-remote origin refs/heads/wip/5356-responsive-on-demand | cut -f1)" = "1d59835353d5d89f664367b5a7a6922bc381d9a7"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/boutique/css/dist/components.css public/boutique/index.html public/boutique/.cache-buster-state.json
-          git commit -m "build(on-demand): regenerate canonical boutique CSS bundle"
-          git push origin HEAD:refs/heads/wip/5356-responsive-on-demand
-          echo "GENERATED_SHA=$(git rev-parse HEAD)"
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - run: npm ci --prefix public/boutique --ignore-scripts --no-audit --no-fund
       - name: Targeted unit regression
-        run: cd public/boutique && npx jest tests/unit/b-on-demand.test.js --runInBand
+        run: cd public/boutique && npx jest tests/unit/b-on-demand.test.js tests/unit/catalog-empty-states.test.js --runInBand
       - name: Standard preflight
         run: npm run pr:preflight
