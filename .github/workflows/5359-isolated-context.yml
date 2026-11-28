@@ -1,25 +1,110 @@
-name: CI single full preflight — quick publication proof
+name: ECO V7/V6 and dashboard real staging rendered contract audit
 on:
   push:
     branches: [test/5359-market-context-preflight]
 permissions:
   contents: read
+concurrency:
+  group: komerce-g6-canonical-real-transaction
+  cancel-in-progress: false
 jobs:
-  quick:
+  verify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 14
+    env:
+      STAGING_ORIGIN: https://komerce-backend-production.up.railway.app
+      EXPECTED_SHA: 97f971a9d2e630e5dc6a9c57b240b9a49a321ab2
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
+      E2E_MARKET_OPERATOR_CM_EMAIL: ${{ secrets.E2E_MARKET_OPERATOR_CM_EMAIL }}
+      E2E_MARKET_OPERATOR_CM_PASSWORD: ${{ secrets.E2E_MARKET_OPERATOR_CM_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: 78ec64ff5ea557c94615d4cb37252e357d6df11f
-          fetch-depth: 0
+          ref: 97f971a9d2e630e5dc6a9c57b240b9a49a321ab2
           persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: npm --prefix public/boutique ci --ignore-scripts --no-audit --no-fund
-      - name: Targeted governance regression
-        run: npx jest --config jest.unit.config.js --runInBand tests/unit/agent-guardrails-hooks.test.js tests/unit/pr-preflight-ci-parity.test.js
-      - name: Publication preflight (no repeated full unit suites)
-        run: npm run pr:preflight -- --quick --base 7ff197e1505dafed532a0e54a49733431079941c
+      - run: npm ci --prefix public/boutique --ignore-scripts --no-audit --no-fund
+      - run: cd public/boutique && npx playwright install --with-deps chromium
+      - name: Compare live dashboard files to exact deployed commit and inspect authenticated UI
+        run: |
+          mkdir -p test-results/dashboard-delivery
+          node <<'JS'
+          const fs=require('node:fs'),crypto=require('node:crypto'),assert=require('node:assert/strict');
+          const {chromium}=require('./public/boutique/node_modules/@playwright/test');
+          const base=process.env.STAGING_ORIGIN,report={verdict:'NOT_PROVEN',assets:[],routes:[],roles:[]};
+          const digest=x=>crypto.createHash('sha256').update(x).digest('hex');
+          const get=async p=>{const r=await fetch(base+p,{redirect:'manual',cache:'no-store'});return r};
+          const routeSet=['/admin/pilotage?market=CM','/admin/commerce?market=CM','/admin/operations?market=CM','/admin/finance?market=CM','/admin/hub','/admin/hub?branch=operations','/admin/workspaces/pricing','/admin/workspaces/pricing?market=CM','/admin/workspaces/pricing?market=KM','/admin/workspaces/pricing?market=CG'];
+          const selectors={'/admin/pilotage':'[data-dashboard-id="pilotage"]','/admin/commerce':'[data-dashboard-id="commerce"]','/admin/operations':'[data-dashboard-id="operations"]'};
+          (async()=>{
+            const v=await (await get('/health/version')).json(),h=await (await get('/health')).json();
+            assert.equal(v.commit,process.env.EXPECTED_SHA);assert.equal(h.komerce_env,'staging');report.target={sha:v.commit,fingerprint:h.target.db_fingerprint};
+            const index=fs.readFileSync('public/dashboards/canonical/index.html','utf8');
+            const paths=[...index.matchAll(/(?:src|href)="(\/dashboards\/canonical\/[^"]+)"/g)].map(m=>m[1]).filter(x=>/\.(js|css)(\?|$)/.test(x));
+            for(const p of paths){
+              const local='public'+p.split('?')[0];if(!fs.existsSync(local))continue;
+              const r=await get(p);const actual=digest(Buffer.from(await r.arrayBuffer())),expected=digest(fs.readFileSync(local));
+              report.assets.push({path:p,status:r.status,match:actual===expected,cache:r.headers.get('cache-control')});
+            }
+            for(const p of routeSet){
+              const r=await get(p),body=await r.text();
+              report.routes.push({path:p,status:r.status,generation:r.headers.get('x-admin-generation'),canonical:body.includes('data-admin-generation="canonical"'),location:r.headers.get('location')});
+            }
+            const browser=await chromium.launch();
+            try{
+              for(const [role,prefix] of [['admin','E2E_ADMIN_'],['market_operator','E2E_MARKET_OPERATOR_CM_']]){
+                const result={role,pages:[],errors:0};report.roles.push(result);
+                if(!process.env[prefix+'EMAIL']||!process.env[prefix+'PASSWORD']){result.blocked='MISSING_TEST_CREDENTIALS';continue}
+                const ctx=await browser.newContext({viewport:{width:1440,height:900},serviceWorkers:'allow'});
+                try{
+                  const page=await ctx.newPage();page.on('pageerror',()=>result.errors++);
+                  await ctx.route('**/*',route=>{
+                    const req=route.request(),u=new URL(req.url());
+                    return ['GET','HEAD','OPTIONS'].includes(req.method())||(u.origin===base&&u.pathname==='/api/auth/login'&&req.method()==='POST')?route.continue():route.abort();
+                  });
+                  await page.goto(base+'/login.html?next='+encodeURIComponent('/admin/pilotage'),{waitUntil:'domcontentloaded'});
+                  await page.locator('#email').fill(process.env[prefix+'EMAIL']);await page.locator('#password').fill(process.env[prefix+'PASSWORD']);
+                  const resp=page.waitForResponse(r=>new URL(r.url()).pathname==='/api/auth/login'&&r.request().method()==='POST');
+                  await page.locator('#btn-submit').click();assert.equal((await resp).status(),200);
+                  await page.waitForURL(u=>u.pathname!=='/login.html',{timeout:20000});
+                  const me=await page.request.get(base+'/api/auth/me');assert.equal(me.status(),200);
+                  const account=await me.json();assert.equal(account.user?.role||account.role,role);
+                  for(const p of routeSet){
+                    const item={path:p};result.pages.push(item);
+                    const reqs=[];const track=r=>{const u=new URL(r.url());if(u.origin===base&&u.pathname.startsWith('/api/'))reqs.push({path:u.pathname.replace(/[0-9a-f]{8}-[0-9a-f-]{27}/gi,':id'),status:r.status()})};
+                    page.on('response',track);
+                    try{
+                      await page.goto(base+p,{waitUntil:'domcontentloaded'});
+                      if(p.includes('pricing?market=')){await page.locator('.kmc-v7v6-tabs, .kmc-v7-coverage[role=status]').first().waitFor({state:'visible',timeout:15000}).catch(()=>{});await page.locator('.kmc-v7v6-tabs').waitFor({state:'visible',timeout:12000}).catch(()=>{});}
+                      else if(selectors[p.split('?')[0]])await page.locator(selectors[p.split('?')[0]]).waitFor({state:'visible',timeout:12000}).catch(()=>{});
+                      else await page.locator('[data-canonical-surface], [data-hub-director-todo], .kmc-client-requests').first().waitFor({state:'attached',timeout:12000}).catch(()=>{});
+                      item.view=await page.evaluate(()=>({generation:document.body.dataset.adminGeneration||null,route:location.pathname,hasNav:!!document.querySelector('#canonical-admin-navigation'),surfaces:[...new Set(Array.from(document.querySelectorAll('[data-canonical-surface]')).map(x=>x.dataset.canonicalSurface))],dashboards:[...new Set(Array.from(document.querySelectorAll('[data-dashboard-id]')).map(x=>x.dataset.dashboardId))],hubDirector:!!document.querySelector('[data-hub-director-todo]'),clientRequests:!!document.querySelector('[data-client-requests]'),period:!!document.querySelector('[data-pilotage-clocks]'),buyerDrill:!!document.querySelector('[data-buyer-cohort]'),operationsChain:!!document.querySelector('[data-process-source="control_chain"]')}));
+                      item.rendered=await page.evaluate(()=>({headings:[...document.querySelectorAll('main h1,main h2,main h3')].filter(e=>e.getClientRects().length).slice(0,20).map(e=>e.textContent.trim().slice(0,120)),v7Installed:!!globalThis.KomerceCanonicalPricingWorkspace?.__economicV7V6Installed,exclusive:!!document.querySelector('[data-pricing-mock-contract="exclusive"]'),v7:!!document.querySelector('[data-v7-centers]'),tabs:[...document.querySelectorAll('.kmc-v7v6-tabs nav button')].map(e=>e.textContent.trim()),legacy:!!document.querySelector('.kmc-pricing-approved-layout,.kmc-pricing-decision-overview'),status:[...document.querySelectorAll('.kmc-v7v6-session > [role=status]')].map(e=>e.textContent.trim()),canonicalSections:[...document.querySelectorAll('[data-dashboard-role]')].filter(e=>e.getClientRects().length).map(e=>e.dataset.dashboardRole).slice(0,25)}));
+                      if(item.rendered.tabs.length===3){
+                        item.tabProof=[];
+                        for(const label of ['Centres de coûts','Activité','Rentabilité']){
+                          await page.locator('.kmc-v7v6-tabs nav button').filter({hasText:label}).click();
+                          item.tabProof.push(await page.evaluate(()=>({active:document.querySelector('.kmc-v7v6-tabs nav [aria-pressed=true]')?.textContent.trim(),headings:[...document.querySelectorAll('.kmc-v7v6-content h2,.kmc-v7v6-content h3,.kmc-v7v6-content h4')].slice(0,8).map(e=>e.textContent.trim().slice(0,100)),centers:document.querySelectorAll('.kmc-v7-center-card').length,visible:!!document.querySelector('.kmc-v7v6-content')?.getClientRects().length})));
+                        }
+                      }
+                      item.httpErrors=reqs.filter(x=>x.status>=400).slice(0,20);
+                      item.economicRequests=reqs.filter(x=>x.path.includes('/cost-centers'));
+                    }catch(e){item.failure=String(e.name)}
+                    finally{page.off('response',track)}
+                  }
+                }catch(e){result.blocked=String(e.name)}finally{await ctx.close()}
+              }
+            }finally{await browser.close()}
+            const end=await (await get('/health/version')).json(),after=await (await get('/health')).json();assert.equal(end.commit,report.target.sha);assert.equal(after.target.db_fingerprint,report.target.fingerprint);
+            report.verdict='RENDER_AUDIT_COMPLETE_NOT_CERTIFICATION';report.assetMismatch=report.assets.filter(x=>!x.match).length;
+          })().catch(e=>{report.failure=e.code||e.name;process.exitCode=1}).finally(()=>{fs.writeFileSync('test-results/dashboard-delivery/report.json',JSON.stringify(report,null,2));console.log(JSON.stringify({...report,assets:report.assets.filter(x=>!x.match),assetTotal:report.assets.length}))});
+          JS
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: eco-v7v6-real-staging-render-audit
+          path: test-results/dashboard-delivery/report.json
+          retention-days: 14
