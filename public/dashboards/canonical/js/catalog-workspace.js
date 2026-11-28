@@ -1166,13 +1166,39 @@
     return { kind: 'detail', label: 'Voir fiche', status: 'Fiche à consulter' };
   }
 
+  // Context is presentation only. The existing Catalogue endpoint still owns
+  // filtering and all permissions; no new writer or local activation path.
+  function readCatalogFilters(search) {
+    const q=new URLSearchParams(search||'');
+    const out={};
+    for(const key of ['search','supplier','category','subcategory','status'])out[key]=(q.get(key)||'').slice(0,200);
+    if(!['','arbitration','validated','processing','excluded'].includes(out.status))out.status='';
+    const offset=Number(q.get('catalog_offset')||0);
+    out.offset=Number.isSafeInteger(offset)&&offset>=0&&offset<=1000000?offset:0;
+    return out;
+  }
+
+  function catalogContextTarget(context,productRef=null,loc=globalThis.location) {
+    const q=new URLSearchParams(loc?.search||'');
+    const filters=context.catalogFilters;
+    for(const key of ['search','supplier','category','subcategory','status']) {
+      if(filters[key])q.set(key,filters[key]);else q.delete(key);
+    }
+    if(filters.offset)q.set('catalog_offset',String(filters.offset));else q.delete('catalog_offset');
+    if(context.catalogTab==='taxonomy')q.set('tab','taxonomy');else q.delete('tab');
+    const focus=productRef||context.focusedProductRef;
+    if(focus)q.set('product_ref',focus);else q.delete('product_ref');
+    const search=q.toString();
+    return '/admin/workspaces/catalog'+(search?'?'+search:'');
+  }
+
   function renderCatalogTabs(rootNode, doc, context) {
     const nav = doc.createElement('nav');
     nav.className = 'kmc-catalog-tabs';
     nav.setAttribute('aria-label', 'Rubriques du Catalogue');
     [['registry', 'Registre produits'], ['taxonomy', 'Taxonomie boutique']].forEach(([tab, label]) => {
       const a = text(doc, 'a', 'kmc-catalog-tab', label);
-      a.href = tab === 'registry' ? '/admin/workspaces/catalog' : '/admin/workspaces/catalog?tab=' + tab;
+      a.href = catalogContextTarget({...context,catalogTab:tab});
       if (tab === context.catalogTab) a.setAttribute('aria-current', 'page');
       nav.appendChild(a);
     });
@@ -3190,7 +3216,7 @@
         const link = text(doc, row.product_ref ? 'a' : 'span',
           'kmc-catalog-product-title', row.name || ref);
         if (row.product_ref) link.href = contextualHref('/admin/products/' + encodeURIComponent(row.product_ref),
-          '/admin/workspaces/catalog?product_ref=' + encodeURIComponent(row.product_ref), 'Retour au Catalogue');
+          catalogContextTarget(context,row.product_ref), 'Retour au Catalogue');
         link.title = row.name || ref;
         productCopy.className = 'kmc-catalog-product-copy';
         productCopy.appendChild(link);
@@ -3547,10 +3573,7 @@
       approvalOffset: 0,
       refineryOffset: 0,
       refineryRecheckOffset: 0,
-      catalogFilters: {
-        search: new URLSearchParams(locationSearch || '').get('search') || '',
-        supplier: '', category: '', subcategory: '', status: '', offset: 0,
-      },
+      catalogFilters: readCatalogFilters(locationSearch),
       focusedProductRef: String(focusedProductRef || '').trim() || null,
       autoFrenchAttempted: new Set(),
       autoFrenchFailed: new Set(),
@@ -3561,7 +3584,7 @@
     let requestSeq = 0;
     const workspaceBusy = () => {
       const focused = doc.activeElement;
-      return Boolean(rootNode.querySelector?.('[data-catalog-compare-dialog], [aria-modal="true"]') ||
+      return Boolean(rootNode.querySelector?.('[data-catalog-compare-dialog], [aria-modal="true"], [data-catalog-product-inspector], [data-catalog-candidate-inspector]') ||
         (focused && rootNode.contains?.(focused) &&
           focused.matches?.('input,textarea,select,[contenteditable="true"]')));
     };
@@ -3586,6 +3609,9 @@
           });
           params.set('catalog_limit', '50');
           params.set('catalog_offset', String(filters.offset || 0));
+        }
+        if(!reloadOptions.background&&context.workspaceView==='catalog'&&globalThis.location?.pathname==='/admin/workspaces/catalog'){
+          try { globalThis.history?.replaceState?.(globalThis.history.state,'',catalogContextTarget(context)); } catch (_) {}
         }
         const payload = await jsonRequest(fetchFn, `${ENDPOINT}?${params.toString()}`);
         if (currentRequest !== requestSeq || rootNode.__dashboardViewIdentity !== identity ||
@@ -3644,6 +3670,8 @@
     suggestBoutiquePair,
     hasPrimedFrenchTranslator,
     resumeAutoFrenchPreparation,
+    readCatalogFilters,
+    catalogContextTarget,
     mount,
   });
 });
