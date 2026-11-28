@@ -58,7 +58,7 @@ async function updateDisputeWorkflow(executor, { marketCode, actorUserId, correl
 
   // refund_kmf/refund_eur ne changent jamais par cette voie — avant/après
   // audités tels quels pour preuve qu'ils sont restés identiques.
-  await audit(db, {
+  if(result.changed!==false) await audit(db, {
     actorUserId, assignmentId: authz.assignment_id, membershipId: authz.membership_id,
     capability: 'client.case.handle', action: 'CLIENT_CASE_WORKFLOW_UPDATED',
     before: result.before, after: result.after, correlationId,

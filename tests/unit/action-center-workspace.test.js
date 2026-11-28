@@ -74,6 +74,8 @@ test('global projection is explicitly global-only and never exposes internal UUI
   expect(mockAdmin.getStats).toHaveBeenCalledWith({ market_id: null });
   expect(result.scope).toMatchObject({ mode: 'global_decision_signals', market_dimension: 'canonical', market: null });
   expect(result.work_queues).toEqual([{ owner_role: 'sourcing', count: 1 }]);
+  expect(result.work_queues_basis).toBe('visible_page');
+  expect(result.signals[0].exception_evidence).toMatchObject({closure:'manual_control',proof_status:'not_established'});
   expect(result.signals[0]).toMatchObject({
     signal_ref: 'KSG-000001',
     family: 'sourcing',

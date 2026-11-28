@@ -1,11 +1,8 @@
-name: '4370 — Candidate staging QN fixture recovery'
+name: '4370 — Post-merge staging readonly entry and QN closure'
 on:
   push:
     branches: [recette/4370-candidate-chromium-2ec819c]
   workflow_dispatch:
-  pull_request:
-    branches: [feat/4370-market-onboarding-v2]
-    paths: ['.github/workflows/4370-candidate-chromium-readonly.yml']
 permissions:
   contents: read
 concurrency:
@@ -13,12 +10,11 @@ concurrency:
   cancel-in-progress: false
 jobs:
   onboarding-provisioning:
-    if: github.event_name != 'pull_request' || (github.event.pull_request.head.repo.full_name == github.repository && github.event.pull_request.head.ref == 'recette/4370-candidate-chromium-2ec819c')
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:
       E2E_STAGING_BASE_URL: https://komerce-backend-production.up.railway.app
-      E2E_EXPECTED_DEPLOY_SHA: c0e8fc53fd7bf0c3cd7211052697c04bdce8f0de
+      E2E_EXPECTED_DEPLOY_SHA: caef653e13a2234151b1f3da1e0bff4c09cf6832
       KOMERCE_ENV: staging
       NODE_ENV: test
       KOMERCE_DISABLE_CRONS: 'true'
@@ -31,7 +27,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: c0e8fc53fd7bf0c3cd7211052697c04bdce8f0de
+          ref: caef653e13a2234151b1f3da1e0bff4c09cf6832
           fetch-depth: 1
           persist-credentials: false
       - uses: actions/setup-node@v4
@@ -44,20 +40,19 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - name: Verify database and live staging identity
         run: node scripts/recette/target-guard.js
-      - name: Recover exact QN fixture (canonical cleanup only)
+      - name: Verify closed QN and canonical phone entry without OTP send
         shell: bash
         run: |
           node <<'NODE'
           const fs = require('fs');
           const db = require('./db');
-          const svc = require('./services/market-provisioning-service');
           const { chromium } = require('playwright');
           const { expect } = require('@playwright/test');
           const origin = process.env.E2E_STAGING_BASE_URL;
-          const sha = 'c0e8fc53fd7bf0c3cd7211052697c04bdce8f0de';
+          const sha = 'caef653e13a2234151b1f3da1e0bff4c09cf6832';
           const output = 'test-results/4370';
           fs.mkdirSync(output, { recursive: true });
-          const proof = { target: origin, candidate: sha, viewport: '1440x900', browser: 'chromium', mode: 'EXACT_FIXTURE_RECOVERY', outcome: 'NOT_PROVEN', blockedWrites: [] };
+          const proof = { target: origin, candidate: sha, viewport: '1440x900', browser: 'chromium', mode: 'POST_MERGE_READONLY', outcome: 'NOT_PROVEN', blockedWrites: [] };
           (async () => {
             let browser, page, actor, fixture, armed = false, writeAttempted = false;
             let code, phone, name;
@@ -92,11 +87,6 @@ jobs:
                 const u = new URL(req.url());
                 if (u.origin !== origin) return route.abort();
                 if (['GET','HEAD','OPTIONS'].includes(req.method()) || (req.method() === 'POST' && u.pathname === '/api/auth/login')) return route.continue();
-                if (armed && req.method()==='POST' && u.pathname==='/api/admin/markets') {
-                  const p=req.postDataJSON();
-                  if(p.code===code&&p.name===name&&p.lead?.phone===phone&&p.lead?.last_name==='Recette'&&p.lead?.first_name===first&&p.cash_policy?.cash_enabled===true&&p.payment_provider===null&&Array.isArray(p.central_collection_modes)&&p.central_collection_modes.length===0&&p.initial_relais===null&&cap.every(k=>p.financial_limits?.[k]===0)) { armed=false; writeAttempted=true; return route.continue({headers:{...req.headers(),'x-correlation-id':'recette-4370-'+run}}); }
-                }
-                if (writeAttempted && req.method()==='POST' && u.pathname==='/api/admin/markets/'+code+'/lifecycle' && req.postDataJSON()?.status==='ACTIVE') return route.continue({headers:{...req.headers(),'x-correlation-id':'recette-4370-'+run}});
                 proof.blockedWrites.push({ method: req.method(), path: u.pathname });
                 return route.abort();
               });
@@ -105,6 +95,13 @@ jobs:
               proof.observedSha = String(body.commit || body.sha || '');
               if (!version.ok() || !/^[a-f0-9]{8,40}$/.test(proof.observedSha) || !sha.startsWith(proof.observedSha)) throw Error('EXACT_CANDIDATE_SHA_NOT_OBSERVED');
               await page.goto('/login.html?next='+encodeURIComponent('/dashboards/canonical/access.html'), {waitUntil:'domcontentloaded'});
+              await page.locator('#btn-phone-mode').click();
+              await expect(page.locator('#market-phone')).toBeVisible();
+              await expect(page.locator('#market-otp-request')).toBeVisible();
+              await expect(page.locator('#password-login')).toBeHidden();
+              await page.locator('#btn-password-mode').click();
+              await expect(page.locator('#email')).toBeVisible();
+              proof.phoneEntry='VISIBLE_NO_OTP_REQUEST';
               await page.locator('#email').fill(process.env.E2E_ADMIN_EMAIL);
               await page.locator('#password').fill(process.env.E2E_ADMIN_PASSWORD);
               const login = page.waitForResponse(r => new URL(r.url()).pathname === '/api/auth/login' && r.request().method() === 'POST');
@@ -118,26 +115,12 @@ jobs:
               proof.role = data.actor?.role;
               actor = data.actor?.id;
               if (!ctx.ok() || proof.role !== 'admin') throw Error('ADMIN_CONTEXT_NOT_PROVEN');
-              proof.stage='RECOVERY';
+              proof.stage='READONLY_CLOSURE';
               await versionNow();
-              const exit=await page.request.get('/api/admin/markets/'+code+'/exit-readiness');
-              const ex=await exit.json();
-              if(!exit.ok())throw Error('EXIT_READBACK_FAILED');
-              const headers={origin:origin,'x-correlation-id':'recette-4370-recovery-'+run};
-              if(ex.assignment){
-                if(ex.assignment.id!=='326be9ce-d2c4-476c-b5a3-5eb190092d03'||!ex.ready_to_end)throw Error('EXIT_NOT_READY');
-                const ended=await page.request.post('/api/admin/markets/'+code+'/assignment/status',{headers,data:{status:'ENDED',reason:'Clôture fixture recette 46135179574'}});
-                proof.assignmentEndHttp=ended.status();
-                if(!ended.ok()){const body=await ended.json().catch(()=>({}));proof.assignmentEndCode=body.code||null;throw Error('ASSIGNMENT_END_FAILED');}
-              }
-              await versionNow();
-              const close=await page.request.post('/api/admin/markets/'+code+'/lifecycle',{headers,data:{status:'CLOSED'}});
-              proof.closeHttp=close.status();
-              if(!close.ok()){const body=await close.json().catch(()=>({}));proof.closeCode=body.code||null;throw Error('MARKET_CLOSE_FAILED');}
               const final=await db.query("SELECT m.lifecycle_status,m.is_active,a.status FROM markets m JOIN market_operating_assignments a ON a.market_id=m.id WHERE m.id=$1 AND a.id=$2",[fixture.id,'326be9ce-d2c4-476c-b5a3-5eb190092d03']);
               if(final.rowCount!==1||final.rows[0].lifecycle_status!=='CLOSED'||final.rows[0].is_active!==false||final.rows[0].status!=='ENDED')throw Error('CLEANUP_READBACK_FAILED');
               proof.cleanup='CLOSED_AND_ASSIGNMENT_ENDED_AUDIT_RETAINED';
-              proof.outcome='PASS_QN_RECOVERY_ONLY';
+              proof.outcome='PASS_READONLY_ENTRY_AND_QN_CLOSED';
               proof.businessCertification='PARTIAL_LEAD_LOGIN_AND_ACTIVATION_NOT_PROVEN';
               proof.stage='DONE';
             } catch (err) {

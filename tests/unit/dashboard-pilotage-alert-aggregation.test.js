@@ -124,6 +124,12 @@ test('Pilotage : stock indépendant des filtres de flux, scope serveur conservé
   expect(Object.isFrozen(clocks.stock)).toBe(true);
 });
 
+test('Pilotage utilise le census exhaustif même si la liste est partielle',()=>{
+  const result=summarizeControlChain({stages:[{key:'ORDER'}],by_stage:{ORDER:[{health:'GREEN'}]},population:{total:5,shown:1,complete:false},population_census:{stage_counts:{ORDER:{GREEN:1,RED:4,ORANGE:0,UNKNOWN:0}}}});
+  expect(result.counts_exhaustive).toBe(true);
+  expect(result.stages[0]).toMatchObject({order_count:5,health:'RED',health_counts:{RED:4,GREEN:1}});
+});
+
 test('Pilotage : phase absente ou projection partielle jamais déclarée saine',()=>{
   const result=summarizeControlChain({stages:[{key:'ORDER'},{key:'RELAY'},{key:'CUSTOMS'}],
     by_stage:{ORDER:[{health:'GREEN'}],RELAY:[{health:'RED'}]},

@@ -274,10 +274,35 @@
     Object.freeze({ key: 'HANDOFF', label: 'Remise client', stages: Object.freeze([]) }),
   ]);
 
+  // The server census is exhaustive; never derive its total from a capped list.
+  function populationCensus(payload) {
+    const chain=payload?.control_chain;
+    const raw=chain?.population_census;
+    const population=chain?.population;
+    if(!raw || !/^[a-f0-9]{32}$/.test(raw.token||'') || !Number.isSafeInteger(population?.total)
+        || population.clock!=='current_active_orders' || population.simulation_scope!==(payload?.simulation?.scope||'real_only')) return null;
+    const columns=controlChainColumns(payload);
+    const keys=PROCESS_PHASES.flatMap(phase=>phase.stages);
+    if(columns.length!==keys.length || keys.some(key=>!columns.some(c=>c.key===key&&c.available))) return null;
+    let total=0;
+    for(const column of columns) {
+      const cell=raw.stage_counts?.[column.key];
+      if(!cell) return null;
+      for(const health of Object.keys(HEALTH_LABELS)) {
+        const n=cell[health];
+        if(!Number.isSafeInteger(n)||n<column.orders.filter(o=>o.health===health).length) return null;
+        total+=n;
+      }
+    }
+    if(total!==population.total || columns.reduce((n,c)=>n+c.orders.length,0)!==population.shown) return null;
+    return raw;
+  }
+
   function projectProcessPhases(payload, user, base) {
     const columns = controlChainColumns(payload);
     if (!columns.length) return [];
     const byKey = new Map(columns.map(column => [column.key, column]));
+    const census=populationCensus(payload);
     return PROCESS_PHASES.map(phase => {
       if (!phase.stages.length) {
         return { key: phase.key, label: phase.label, helper: 'Non projetée ici · voir Order 360',
@@ -285,9 +310,10 @@
       }
       const available = phase.stages.every(stage => byKey.get(stage)?.available);
       const orders = available ? phase.stages.flatMap(stage => byKey.get(stage).orders) : [];
-      const count = available ? orders.length : null;
       const healthCounts = available ? { GREEN: 0, ORANGE: 0, RED: 0, UNKNOWN: 0 } : null;
-      if (healthCounts) orders.forEach(order => { healthCounts[order.health] += 1; });
+      if (healthCounts && census) phase.stages.forEach(stage=>Object.keys(healthCounts).forEach(h=>{healthCounts[h]+=census.stage_counts[stage][h];}));
+      else if (healthCounts) orders.forEach(order => { healthCounts[order.health] += 1; });
+      const count = healthCounts ? Object.values(healthCounts).reduce((a,b)=>a+b,0) : null;
       return {
         key: phase.key, label: phase.label,
         helper: count == null ? 'Position indisponible'
@@ -302,10 +328,10 @@
   // avec les neuf sous-étapes avant de qualifier la liste d'exhaustive.
   function projectPopulation(payload) {
     const phases = projectProcessPhases(payload).filter(phase => phase.observed);
-    const shown = phases.length === 5 ? phases.reduce((sum, phase) => sum + phase.count, 0) : null;
+    const shown = phases.length === 5 ? controlChainColumns(payload).reduce((sum, column) => sum + column.orders.length, 0) : null;
     const raw = payload?.control_chain?.population;
     const valid = shown !== null && raw && raw.clock === 'current_active_orders'
-      && raw.simulation_scope === 'real_only'
+      && raw.simulation_scope === (payload?.simulation?.scope||'real_only')
       && Number.isSafeInteger(raw.shown) && raw.shown === shown
       && Number.isSafeInteger(raw.limit) && raw.limit > 0 && raw.shown <= raw.limit
       && Number.isSafeInteger(raw.total) && raw.total >= shown
@@ -342,7 +368,7 @@
     wrapper.setAttribute('data-process-source', 'control_chain');
     const population = projectPopulation(payload);
     const caption = text(doc, 'p', 'kmc-operations-process-caption',
-      populationLabel(population) + ' · les compteurs par phase et état portent sur les commandes affichées.');
+      populationLabel(population) + (populationCensus(payload) ? ' · compteurs exhaustifs avant plafonnement ; détail paginé.' : ' · les compteurs par phase et état portent sur les commandes affichées.'));
     caption.setAttribute('data-population-state', population.state);
     wrapper.appendChild(caption);
     const host = doc.createElement('div');
@@ -397,7 +423,7 @@
 
   // Phase graphique = agrégation visuelle des neuf étapes conservées au serveur.
   // Les commandes et leurs couleurs ne sont jamais recalculées par le navigateur.
-  function renderControlChain(doc, host, payload, user, base) {
+  function renderControlChain(doc, host, payload, user, base, paged=false) {
     const activeKey = stageFilterKey();
     const activeHealth = healthFilterKey();
     const source = controlChainColumns(payload);
@@ -463,14 +489,14 @@
       identity.className = 'kmc-control-stage-identity';
        identity.appendChild(text(doc, 'span', 'kmc-control-stage-title', column.label));
       heading.appendChild(identity);
-      heading.appendChild(text(doc, 'span', 'kmc-control-stage-count', `${column.orders.length} commande${column.orders.length > 1 ? 's' : ''}`));
+      heading.appendChild(text(doc, 'span', 'kmc-control-stage-count', `${column.orders.length} commande${column.orders.length > 1 ? 's' : ''}${paged?' sur cette page':''}`));
 
       stage.appendChild(heading);
 
       const list = doc.createElement('div');
       list.className = 'kmc-control-order-list';
       if (!column.orders.length && !isEmpty) {
-        list.appendChild(text(doc, 'p', 'kmc-control-order-empty', 'Aucune commande à cette phase'));
+        list.appendChild(text(doc, 'p', 'kmc-control-order-empty', paged?'Aucune commande à cette phase sur cette page':'Aucune commande à cette phase'));
       }
 
       column.orders.forEach(order => {
@@ -621,6 +647,11 @@
 
   function controlHealthSummary(payload) {
     const summary = { GREEN: 0, ORANGE: 0, RED: 0, UNKNOWN: 0 };
+    const census=populationCensus(payload);
+    if(census) {
+      Object.values(census.stage_counts).forEach(cell=>Object.keys(summary).forEach(h=>{summary[h]+=cell[h];}));
+      return Object.freeze(summary);
+    }
     controlChainColumns(payload).forEach(column => {
       column.orders.forEach(order => {
         const health = Object.prototype.hasOwnProperty.call(summary, order.health) ? order.health : 'UNKNOWN';
@@ -636,7 +667,7 @@
     const host = doc.createElement('div');
     host.className = 'kmc-control-health-summary kmc-dashboard-attention-band';
     host.setAttribute('data-dashboard-role', 'attention');
-    host.setAttribute('aria-label', observed ? 'Santé des commandes projetées' : 'Santé non déterminée : projection incomplète');
+    host.setAttribute('aria-label', populationCensus(payload) ? 'Santé de toutes les commandes actives' : observed ? 'Santé des commandes projetées' : 'Santé non déterminée : projection incomplète');
 
     [
       ['GREEN', 'positive', 'Normal'],
@@ -855,6 +886,7 @@
       const loc = globalThis.location;
       const params = new URLSearchParams(loc.search);
       if (key) params.set('stage', key); else params.delete('stage');
+      params.delete('chain_page');
       if (key && key !== 'ALL' && health && Object.prototype.hasOwnProperty.call(HEALTH_LABELS, health)) params.set('health', health);
       else params.delete('health');
       const query = params.toString();
@@ -913,6 +945,85 @@
     return { section, body };
   }
 
+  function chainDrillUrl(endpoint, phase, health, page, token, simulationScope=null) {
+    const params=new URLSearchParams({chain_drill:phase,page:String(page),token});
+    if(health) params.set('health',health);
+    if(simulationScope) params.set('simulation_scope',simulationScope);
+    return endpoint+'?'+params.toString();
+  }
+
+  function matchesChainDrill(result,{phase,health,page,token,total,simulationScope=null}) {
+    const d=result?.drill;
+    if(!d || d.phase!==phase || d.health!==health || d.page!==page || d.token!==token
+        || d.total!==total || d.page_size!==25 || (d.simulation_scope||null)!==simulationScope || !Array.isArray(result.orders)) return false;
+    const members=phase==='ALL'?PROCESS_PHASES.flatMap(p=>p.stages):PROCESS_PHASES.find(p=>p.key===phase)?.stages;
+    const expected=Math.min(25,Math.max(0,total-(page-1)*25));
+    return !!members && result.orders.length===expected
+      && new Set(result.orders.map(o=>o.order_reference)).size===expected
+      && result.orders.every(o=>members.includes(o.stage)&&(!health||o.health===health))
+      && controlChainColumns({control_chain:result}).reduce((n,c)=>n+c.orders.length,0)===expected;
+  }
+
+  function renderPagedDrill(doc,host,payload,options,base,rootNode) {
+    const census=populationCensus(payload);
+    const phase=stageFilterKey()||'ALL';
+    const health=healthFilterKey();
+    const phases=projectProcessPhases(payload).filter(p=>p.observed);
+    const selected=phases.find(p=>p.key===phase);
+    const total=phase==='ALL'?payload.control_chain.population.total:health?selected?.healthCounts[health]:selected?.count;
+    if(!Number.isSafeInteger(total)) return;
+    if(total===0) {
+      host.appendChild(text(doc,'p','kmc-control-chain-empty-notice','Aucune commande dans la population sélectionnée.'));
+      return;
+    }
+    const endpoint=base.endpointForContext(options.adminContext,options.contextContract,options.requestedMarket);
+    const simulationScope=payload?.simulation?.scope||null;
+    const max=Math.ceil(total/25);
+    const saved=Number(new URLSearchParams(globalThis.location?.search||'').get('chain_page'));
+    let sequence=0;
+    async function load(page) {
+      const request=++sequence;
+      host.replaceChildren();
+      host.setAttribute('data-chain-drill-loading','');
+      host.appendChild(text(doc,'p','kmc-control-chain-empty-notice','Chargement du détail…'));
+      try {
+        const result=await base.jsonRequest(options.fetch,chainDrillUrl(endpoint,phase,health,page,census.token,simulationScope));
+        if(request!==sequence||!rootNode.contains(host)) return;
+        if(!matchesChainDrill(result,{phase,health,page,token:census.token,total,simulationScope})) throw new Error('population_changed');
+        host.replaceChildren();
+        const pager=doc.createElement('div');
+        pager.className='kmc-decision-toolbar';
+        pager.setAttribute('data-chain-pagination','');
+        pager.appendChild(text(doc,'span','kmc-decision-toolbar-label',((page-1)*25+1)+'–'+Math.min(page*25,total)+' sur '+total+' commandes'));
+        for(const [label,target] of [['Précédent',page-1],['Suivant',page+1]]) {
+          const button=text(doc,'button','kmc-operations-refresh',label);
+          button.type='button';
+          button.disabled=target<1||target>max;
+          button.addEventListener('click',()=>{
+            const loc=globalThis.location;
+            const params=new URLSearchParams(loc.search);
+            params.set('chain_page',String(target));
+            globalThis.history?.replaceState(globalThis.history.state,'',loc.pathname+'?'+params+loc.hash);
+            load(target);
+          });
+          pager.appendChild(button);
+        }
+        host.appendChild(pager);
+        const rows=doc.createElement('div');
+        host.appendChild(rows);
+        renderControlChain(doc,rows,{control_chain:result},options.user,base,true);
+      } catch(error) {
+        if(request!==sequence||!rootNode.contains(host)) return;
+        host.replaceChildren();
+        host.appendChild(text(doc,'p','kmc-control-chain-empty-notice',
+          error.status===403||error.status===401?'Accès expiré ou non autorisé.':'Population modifiée ou détail indisponible. Actualisez les mouvements avant de rouvrir.'));
+      } finally {
+        if(request===sequence) host.removeAttribute('data-chain-drill-loading');
+      }
+    }
+    load(Number.isSafeInteger(saved)&&saved>=1&&saved<=max?saved:1);
+  }
+
   function render(rootNode, payload, options, base, decisionUi) {
     const doc = options.document;
     const ui = options.ui;
@@ -934,6 +1045,7 @@
     header.appendChild(text(doc, 'p', 'canonical-eyebrow', 'OPÉRATIONS'));
     header.appendChild(text(doc, 'h1', 'kmc-dashboard-title', 'Où en sont les commandes ?'));
     header.appendChild(text(doc, 'p', 'kmc-dashboard-description', 'Une commande, une position opérationnelle, une cause actionnable.'));
+    if(payload?.simulation?.scope) header.appendChild(text(doc,'p','kmc-dashboard-description','Recette '+payload.simulation.scope+' : seules les commandes de ce périmètre sont projetées ; files et signaux transverses non certifiés.'));
     dashboard.appendChild(header);
 
     const controlColumns = controlChainColumns(payload);
@@ -956,7 +1068,9 @@
         refresh.textContent = 'Actualisation…';
         try {
           const endpoint = base.endpointForContext(options.adminContext, options.contextContract, options.requestedMarket);
-          const updated = await base.jsonRequest(options.fetch, endpoint);
+          const identity=rootNode.__dashboardViewIdentity;
+           const updated = await base.jsonRequest(options.fetch, base.simulationEndpoint ? base.simulationEndpoint(endpoint,options) : endpoint);
+           if(rootNode.__dashboardViewIdentity!==identity || !rootNode.contains(refresh)) return;
           // Animation purement visuelle: les positions/couleurs restent celles
           // de l'API. Ne jamais inférer un événement métier depuis le DOM.
           const before = new Map();
@@ -1016,6 +1130,8 @@
         chain.section.insertBefore(chip, chain.body);
         if (phase && !phase.observed) {
           chain.body.appendChild(text(doc, 'p', 'kmc-control-chain-empty-notice', 'Position indisponible · aucune population certifiée.'));
+        } else if(populationCensus(payload)) {
+          renderPagedDrill(doc,chain.body,payload,options,base,rootNode);
         } else {
           renderControlChain(doc, chain.body, payload, options.user, base);
           if (chain.body.getAttribute('data-chain-state') === 'empty') {
@@ -1047,10 +1163,11 @@
       mount(options) {
         if (liveTimer !== null && timerWindow) timerWindow.clearInterval(liveTimer);
         liveTimer = null;
-        return baseMount(options).then(result => {
-          const rendered = render(options.root, result.payload, options, base, decisionUi);
+        return baseMount({...options,onPayload:payload=>render(options.root,payload,options,base,decisionUi)}).then(result => {
+          if(result?.stale || !result?.payload) return result;
+          const rendered = result.result;
           const win = options.document && options.document.defaultView;
-          if (win && typeof win.setInterval === 'function') {
+          if (!globalThis.KomerceDashboardFreshness && win && typeof win.setInterval === 'function') {
             timerWindow = win;
             // Une simple relecture canonique, aucune mutation ni statut déduit.
             // Suspendre pendant un dossier ouvert et quand la page est masquée.
@@ -1106,6 +1223,9 @@
     PROCESS_PHASES,
     projectProcessPhases,
     projectPopulation,
+    populationCensus,
+    matchesChainDrill,
+    chainDrillUrl,
     renderProcessPhases,
     controlHealthSummary,
     renderControlHealthSummary,

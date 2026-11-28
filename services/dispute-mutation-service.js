@@ -68,7 +68,7 @@ async function createProductReturnRequest(executor, {
 async function listDisputesForMarket(marketId, executor) {
   const db = requireExecutor(executor);
   const { rows } = await db.query(
-    `SELECT d.id, d.order_id, d.type, d.level, d.status, d.description, d.resolution,
+    `SELECT d.id, d.order_id, o.reference AS order_reference, d.type, d.level, d.status, d.description, d.resolution,
             d.created_at, d.updated_at, d.resolved_at
        FROM disputes d
        JOIN orders o ON o.id = d.order_id
@@ -93,7 +93,8 @@ async function getOwnedDispute(disputeId, marketId, executor) {
             o.market_id
        FROM disputes d
        JOIN orders o ON o.id = d.order_id
-      WHERE d.id = $1`,
+      WHERE d.id = $1
+      FOR UPDATE OF d`,
     [disputeId]
   );
   const dispute = rows[0];
@@ -137,8 +138,15 @@ async function updateDisputeWorkflow(disputeId, marketId, patch, actorUserId, ex
     }
   }
 
-  const nextResolution = patch.resolution !== undefined ? (patch.resolution || null) : before.resolution;
+  if (patch.resolution !== undefined && patch.resolution !== null && (typeof patch.resolution !== 'string' || patch.resolution.length > 2000)) {
+    throw new DisputeValidationError('DISPUTE_RESOLUTION_INVALID','Note de résolution invalide (2000 caractères maximum).',400);
+  }
+  const nextResolution = patch.resolution !== undefined ? (String(patch.resolution || '').trim() || null) : before.resolution;
   const closesNow = ['resolved', 'closed'].includes(nextStatus) && !['resolved', 'closed'].includes(before.status);
+  if (closesNow && (typeof nextResolution !== 'string' || nextResolution.trim().length < 3)) {
+    throw new DisputeValidationError('DISPUTE_RESOLUTION_REQUIRED','Une note factuelle est requise pour le contrôle du litige.',400);
+  }
+  if(nextStatus===before.status && (nextResolution??null)===(before.resolution??null)) return {before,after:before,changed:false};
 
   const { rows } = await db.query(
     `UPDATE disputes
@@ -151,7 +159,7 @@ async function updateDisputeWorkflow(disputeId, marketId, patch, actorUserId, ex
       RETURNING ${DISPUTE_COLUMNS}`,
     [disputeId, nextStatus, nextResolution, closesNow, actorUserId]
   );
-  return { before, after: rows[0] };
+  return { before, after: rows[0], changed:true };
 }
 
 module.exports = {

@@ -145,6 +145,116 @@
         }
       }
 
+      // Same portal, same session cookie; the server alone decides lead eligibility.
+      var passwordPanel = document.getElementById('password-login');
+      var phonePanel = document.getElementById('phone-login');
+      var phoneMode = document.getElementById('btn-phone-mode');
+      var passwordMode = document.getElementById('btn-password-mode');
+      var phone = document.getElementById('market-phone');
+      var otp = document.getElementById('market-otp');
+      var otpStep = document.getElementById('market-otp-step');
+      var requestOtp = document.getElementById('market-otp-request');
+      var verifyOtp = document.getElementById('market-otp-verify');
+      var otpStatus = document.getElementById('market-otp-status');
+      var challengePhone = null;
+      var otpBusy = false;
+      var cooldownUntil = 0;
+      var otpTimer = null;
+
+      function resetChallenge() {
+        challengePhone = null;
+        otp.value = '';
+        otpStep.hidden = true;
+        otpStatus.textContent = '';
+        cooldownUntil = 0;
+        if (otpTimer) { clearTimeout(otpTimer); otpTimer = null; }
+        requestOtp.disabled = false;
+      }
+      function setOtpBusy(on) {
+        otpBusy = on;
+        phone.disabled = on;
+        otp.disabled = on;
+        verifyOtp.disabled = on;
+        requestOtp.disabled = on || Date.now() < cooldownUntil;
+        passwordMode.disabled = on;
+      }
+      function updateCooldown() {
+        if (otpTimer) clearTimeout(otpTimer);
+        var seconds = Math.max(0, Math.ceil((cooldownUntil - Date.now()) / 1000));
+        requestOtp.disabled = otpBusy || seconds > 0;
+        requestOtp.textContent = seconds > 0 ? 'Renvoyer dans ' + seconds + ' s' : 'Recevoir le code';
+        otpTimer = seconds > 0 ? setTimeout(updateCooldown, 1000) : null;
+      }
+      function switchMode(usePhone) {
+        if (otpBusy || btn.disabled) return;
+        clearError();
+        passwordPanel.hidden = usePhone;
+        phoneMode.hidden = usePhone;
+        phonePanel.hidden = !usePhone;
+        resetChallenge();
+        updateCooldown();
+        (usePhone ? phone : emailEl).focus();
+      }
+      async function postOtp(action, payload) {
+        var res = await fetch('/api/auth/otp/' + action, {
+          method:'POST', credentials:'include',
+          headers:{'Content-Type':'application/json','Accept':'application/json'},
+          body:JSON.stringify(Object.assign({purpose:'internal_market_login'},payload)),
+        });
+        var data = await res.json().catch(function(){return {};});
+        return {res:res,data:data};
+      }
+      async function doRequestOtp() {
+        if (otpBusy || Date.now() < cooldownUntil) return;
+        clearError();
+        var value = phone.value.trim().replace(/[\s().-]/g,'');
+        if (!/^\+[1-9]\d{7,14}$/.test(value)) {
+          showError('Saisissez le téléphone avec son indicatif international (+).');
+          phone.focus(); return;
+        }
+        setOtpBusy(true);
+        try {
+          var result = await postOtp('request',{phone:value});
+          if (!result.res.ok || result.data.success !== true) {
+            if (result.res.status === 429) cooldownUntil = Date.now()+Math.max(1,Number(result.data.retryAfter)||300)*1000;
+            showError('Impossible de demander un code maintenant. Réessayez plus tard.');
+            return;
+          }
+          challengePhone = value;
+          otpStep.hidden = false;
+          otp.value = '';
+          otpStatus.textContent = 'Si ce numéro correspond à un compte responsable éligible, un code lui est envoyé.';
+          cooldownUntil = Date.now()+Math.max(0,Number(result.data.retryAfter)||0)*1000;
+          otp.focus();
+        } catch (_) { showError('Erreur réseau — vérifiez votre connexion.'); }
+        finally { setOtpBusy(false); updateCooldown(); }
+      }
+      async function doVerifyOtp() {
+        if (otpBusy || !challengePhone) return;
+        clearError();
+        var code = otp.value.trim();
+        if (!/^\d{6}$/.test(code)) { showError('Saisissez les 6 chiffres du code.'); otp.focus(); return; }
+        setOtpBusy(true);
+        try {
+          var result = await postOtp('verify',{phone:challengePhone,code:code});
+          if (!result.res.ok || result.data.success !== true) {
+            showError('Code expiré ou invalide. Vérifiez le code ou demandez-en un nouveau.');
+            otp.value = ''; otp.focus(); return;
+          }
+          window.location.replace(nextUrl(result.data.user));
+        } catch (_) { showError('Erreur réseau — vérifiez votre connexion.'); }
+        finally { setOtpBusy(false); }
+      }
+      if (phoneMode && passwordMode && phone && otp && requestOtp && verifyOtp) {
+        phoneMode.addEventListener('click',function(){switchMode(true);});
+        passwordMode.addEventListener('click',function(){switchMode(false);});
+        phone.addEventListener('input',function(){resetChallenge(); updateCooldown(); clearError();});
+        phone.addEventListener('keydown',function(e){if(e.key==='Enter')doRequestOtp();});
+        otp.addEventListener('keydown',function(e){if(e.key==='Enter')doVerifyOtp();});
+        requestOtp.addEventListener('click',doRequestOtp);
+        verifyOtp.addEventListener('click',doVerifyOtp);
+      }
+
       btn.addEventListener('click', doLogin);
 
       [emailEl, passEl].forEach(function (el) {

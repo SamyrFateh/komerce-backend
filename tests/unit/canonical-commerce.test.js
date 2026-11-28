@@ -183,6 +183,8 @@ describe('LOT 2D-CANON — Commerce vivant', () => {
     expect(commerce.projectMetrics(payload)['ca-encaisse'].value).toContain('KMF');
     expect(commerceDecision.rankedProducts(payload, commerce)[0].value).toContain('KMF');
     expect(commerce.formatMoney(null, 'XAF')).toBe('—');
+    expect(commerce.formatMoney(12.34,'EUR')).toBe('12,34 EUR');
+    expect(commerce.formatMoney(12.34,'XAF',0)).toBe('12 XAF');
   });
 
   test('une marge réelle absente reste explicitement inconnue', () => {
@@ -390,9 +392,9 @@ describe('L3 — périmètre de recette transmis depuis l’URL de la page (comm
       adminContext: marketContext(), contextContract: adminContextContract, user: { role: 'admin' }, location: { search } });
     return fetch.mock.calls[0][0];
   };
-  test('périmètre valide transmis ; invalide ou absent ignoré (activité réelle)', async () => {
+  test('périmètre explicite transmis pour validation serveur ; absent = réel', async () => {
     expect(await run('?simulation_scope=RCT1')).toBe('/api/admin/dashboard/commerce/market/CM?period=30&simulation_scope=RCT1');
-    expect(await run("?simulation_scope=rct1'--")).toBe('/api/admin/dashboard/commerce/market/CM?period=30');
+    expect(await run("?simulation_scope=rct1'--")).toBe('/api/admin/dashboard/commerce/market/CM?period=30&simulation_scope='+encodeURIComponent("rct1'--"));
     expect(await run('')).toBe('/api/admin/dashboard/commerce/market/CM?period=30');
   });
   test('la période de l’URL est reprise (valide) ou ignorée (invalide) via la navigation partagée', async () => {

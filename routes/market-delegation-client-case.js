@@ -88,6 +88,7 @@ router.get('/markets/:marketCode/client-cases/disputes', authenticate, async (re
       const disputes = await listDisputes(client, { marketId: authz.market_id });
       return { authz, disputes };
     });
+    res.set('Cache-Control','private, no-store');
     res.json({
       market: { code: result.authz.market_code, name: result.authz.market_name, currency: result.authz.currency },
       assignment_id: result.authz.assignment_id,
@@ -113,7 +114,9 @@ router.put('/markets/:marketCode/client-cases/disputes/:disputeId', authenticate
       status: body.status,
       resolution: body.resolution,
     }));
-    res.json({ success: true, dispute });
+    // La preuve financière reste interne à l'audit, jamais dans la réponse du poste litiges.
+    const {id, order_id, type, level, status, description, resolution, created_at, updated_at, resolved_at}=dispute;
+    res.json({ success: true, dispute:{id,order_id,type,level,status,description,resolution,created_at,updated_at,resolved_at} });
   } catch (error) {
     if (sendDelegationError(res, error)) return;
     next(error);

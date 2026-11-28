@@ -80,6 +80,15 @@ describe('markets-management — montage', () => {
     expect(walk(host2).some(n => n.textContent === 'Activation refusée')).toBe(true);
   });
 
+  test('readiness serveur négative empêche ouverture après consultation des écarts',async()=>{
+    const fetchImpl=jest.fn(url=>url.endsWith('/control-plane')?response({gaps:[{code:'NO_RELAIS'}],readiness:{ready_for_activation:false}}):response({markets}));
+    const host=fakeDoc().createElement('section');
+    await mgmt.mount(host,{document:fakeDoc(),fetch:fetchImpl,confirm:()=>true});
+    await walk(host).find(n=>n.textContent==='Voir les écarts').listeners.click();
+    expect(walk(host).find(n=>n.dataset?.lifecycleTarget==='ACTIVE').disabled).toBe(true);
+    expect(fetchImpl.mock.calls.some(c=>c[0].endsWith('/lifecycle'))).toBe(false);
+  });
+
   test('écarts : lecture du control-plane serveur', async () => {
     const fetchImpl = jest.fn(url => (url.endsWith('/control-plane')
       ? response({ gaps: [{ code: 'NO_RELAIS', message: 'Aucun relais actif.' }] })

@@ -65,8 +65,9 @@
   const listOf = p => (LISTS[p.list] ? p.list : 'available');
   const fromOf = p => p.from==='incidents'?'incidents':(LISTS[p.from]?p.from:'');
   const offsetOf = p => Math.max(0, num(p.offset));
-  const listUrl = (list, offset = 0, search = '') => `${BASE}${queryString({ view:'orders', list, offset:offset > 0 ? offset : '', search:search||'', ...simParams() })}`;
-  const orderUrl = (id, from) => `${BASE}${queryString({ view:'order', order:id, from, ...simParams() })}`;
+  const listUrl = (list, offset = 0, search = '') => `${BASE}${queryString({ view:'orders', list, market:currentRelayMarket(), offset:offset > 0 ? offset : '', search:search||'', ...simParams() })}`;
+  const currentRelayMarket=()=>{try{const code=new URLSearchParams(global.location?.search||'').get('market');return /^[A-Z]{2}$/.test(code||'')?code:'';}catch(_){return '';}};
+  const orderUrl = (id, from) => `${BASE}${queryString({ view:'order', order:id, from, market:currentRelayMarket(), ...simParams() })}`;
   const overviewUrl = (extra={}) => `${BASE}${queryString({ view:'overview', ...extra, ...simParams() })}`;
   const previewUrl = id => overviewUrl({sel:id});
   const paymentLabel = o => (o.cash_pending ? 'Cash à encaisser' : o.payment_status === 'paid' ? 'Payée' : 'Paiement en attente');
@@ -532,7 +533,7 @@
     },
     orders:{
       tab:p => listOf(p)==='collected'?'history':'flux',
-      load:(p, api) => api(`/api/relay/orders${queryString({ status:listOf(p) === 'all' ? '' : listOf(p), search:String(p.search||'').slice(0,120), limit:PAGE_SIZE, offset:offsetOf(p), projection:'live' })}`),
+      load:(p, api) => api(`/api/relay/orders${queryString({ status:listOf(p) === 'all' ? '' : listOf(p), market:v4Market(p), search:String(p.search||'').slice(0,120), limit:PAGE_SIZE, offset:offsetOf(p), projection:'live' })}`),
       render:renderOrders,
       nav:navOrders,
     },
@@ -567,6 +568,8 @@
       const description=form.querySelector('textarea[name="description"]')?.value?.trim();
       const orderId=form.getAttribute('data-order-id');
       if(!type || !description || !orderId){if(feedback)feedback.textContent='Compléter le type et la description.';return;}
+      if(form.dataset.relayIncidentPending==='true')return;
+      form.dataset.relayIncidentPending='true';
       if(button)button.disabled=true;
       if(feedback)feedback.textContent='Enregistrement…';
       try {
@@ -582,6 +585,7 @@
       } catch(error){
         if(feedback)feedback.textContent=error.message||'Enregistrement impossible.';
       } finally {
+        delete form.dataset.relayIncidentPending;
         if(button)button.disabled=false;
       }
     });

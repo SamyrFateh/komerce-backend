@@ -372,6 +372,18 @@ describe('dashboard-commerce', () => {
     expect(signals.every(signal => signal.lifecycle?.mode === 'projection_only')).toBe(true);
   });
 
+  test('recette : aucun signal de stock ou viabilité issu des référentiels réels',async()=>{
+    const market={id:'market-cm-id',code:'CM',currency:'XAF'};
+    const result=await commerce.buildCommerce({period:'7',simulation_scope:'RCT1'},{market,now:new Date('2026-08-24T12:00:00Z')});
+    expect(result.simulation.scope).toBe('RCT1');
+    expect(mockPricingMarketCorridor.buildMarketCorridor).not.toHaveBeenCalled();
+    expect(mockLocalStockDecision.getDecisionAvailabilityEvidence).not.toHaveBeenCalled();
+    expect(result.product_viability).toEqual([]);
+    expect(result.product_availability).toEqual([]);
+    expect(result.data_quality).toMatchObject({product_viability_basis:'simulation_unavailable',product_availability_basis:'simulation_unavailable'});
+    expect(result.decision_signals.some(s=>['sku_non_viable','best_seller_local_unavailable'].includes(s.kind))).toBe(false);
+  });
+
   test('projection globale n’invente aucun market_id, aucune viabilité locale ni disponibilité locale', async () => {
     const now = new Date('2026-08-24T12:00:00.000Z');
     const result = await commerce.buildCommerce({ period: '7' }, { now });
@@ -411,9 +423,10 @@ describe('dashboard-commerce', () => {
 
 describe('drill des acheteurs payants V5.4',()=>{
   const now=new Date('2026-10-20T12:00:00Z');
-  const query={period:'7',as_of:now.toISOString(),buyer_drill:'repeat_paid_buyers',page:'1',simulation_scope:'RCT1'};
+  const token='a'.repeat(32);
+  const query={period:'7',as_of:now.toISOString(),buyer_drill:'repeat_paid_buyers',page:'1',simulation_scope:'RCT1',population_token:token};
   test('même prédicat, compte stable, pagination et absence de PII',async()=>{
-    db.query.mockReset().mockResolvedValue({rows:[{total:'1',order_count:2,latest_order_reference:'K-CM-1'}]});
+    db.query.mockReset().mockResolvedValue({rows:[{total:'1',population_token:token,order_count:2,latest_order_reference:'K-CM-1'}]});
     const result=await commerce.buildBuyerDrill(query,{market:{id:'cm-id',code:'CM'},now});
     const [sql,params]=db.query.mock.calls[0];
     expect(sql).toContain("o.payment_status = 'paid'");
@@ -427,12 +440,16 @@ describe('drill des acheteurs payants V5.4',()=>{
     expect(JSON.stringify(result)).not.toContain('cm-id');
   });
   test('page au-delà du dernier résultat conserve le total',async()=>{
-    db.query.mockReset().mockResolvedValue({rows:[{total:1,order_count:null,latest_order_reference:null}]});
+    db.query.mockReset().mockResolvedValue({rows:[{total:1,population_token:token,order_count:null,latest_order_reference:null}]});
     const r=await commerce.buildBuyerDrill({...query,page:'2'},{now});
     expect(r.pagination).toMatchObject({total:1,page:2,total_pages:1});
     expect(r.accounts).toEqual([]);
   });
-  test.each([{buyer_drill:'other'},{page:'0'},{page:'1e2'},{as_of:'invalid'},{as_of:'2026-10-21T00:00:00.000Z'},{period:'15'},{simulation_scope:'wrong'}])('refuse %j avant SQL',async overrides=>{
+  test('refuse une composition changée même à cardinalité constante',async()=>{
+    db.query.mockReset().mockResolvedValue({rows:[{total:1,population_token:'b'.repeat(32),order_count:2,latest_order_reference:'K-CM-2'}]});
+    await expect(commerce.buildBuyerDrill(query,{now})).rejects.toMatchObject({status:409,code:'buyer_drill_population_changed'});
+  });
+  test.each([{population_token:'bad'},{page:['1']},{period:['7']},{buyer_drill:'other'},{page:'0'},{page:'1e2'},{as_of:'invalid'},{as_of:'2026-10-21T00:00:00.000Z'},{period:'15'},{simulation_scope:'wrong'}])('refuse %j avant SQL',async overrides=>{
     db.query.mockReset();
     await expect(commerce.buildBuyerDrill({...query,...overrides},{now})).rejects.toMatchObject({status:400,code:'invalid_buyer_drill'});
     expect(db.query).not.toHaveBeenCalled();

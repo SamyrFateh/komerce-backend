@@ -103,7 +103,7 @@ test('authenticated admin without explicit global grant reads global Action Cent
   mockWorkspace.buildWorkspace.mockResolvedValue({ signals: [] });
   const res = await request(app()).get('/api/admin/action-center');
   expect(res.status).toBe(200);
-  expect(mockWorkspace.buildWorkspace).toHaveBeenCalled();
+  expect(mockWorkspace.buildWorkspace).toHaveBeenCalledWith({}, {canManage:false});
 });
 
 test('global GET returns only the global Canonical projection and disables caching', async () => {
@@ -111,7 +111,7 @@ test('global GET returns only the global Canonical projection and disables cachi
   const res = await request(app()).get('/api/admin/action-center?family=ops');
   expect(res.status).toBe(200);
   expect(res.headers['cache-control']).toBe('no-store');
-  expect(mockWorkspace.buildWorkspace).toHaveBeenCalledWith(expect.objectContaining({ family: 'ops' }));
+  expect(mockWorkspace.buildWorkspace).toHaveBeenCalledWith(expect.objectContaining({ family: 'ops' }),{canManage:true});
 });
 
 test('browser cannot inject market or internal signal/entity authority', async () => {

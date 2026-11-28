@@ -199,8 +199,21 @@ function publicScope(market) {
   });
 }
 
+async function buildControlChainDrill(query, options = {}) {
+  const drill=controlChain.parseChainDrill(query);
+  return controlChain.getControlChain({market:options.market||null,drill});
+}
+
 async function buildOperations(options = {}) {
   const market = options.market || null;
+  if (options.simulationScope) {
+    // Same chain projection and lineage, restricted to the selected simulation.
+    // Transverse queues and non-order signals have no certified simulation scope.
+    const chain=await controlChain.getControlChain({market,simulationScope:options.simulationScope});
+    return Object.freeze({scope:publicScope(market),simulation:{scope:options.simulationScope,status:'CHAIN_ONLY'},
+      control_chain:chain,kpis:[],active_orders:[],critical_delays:[],signals:[],work_queues:null,
+      data_quality:{scope_mode:market?'market':'global',status:'SIMULATION_CHAIN_ONLY'}});
+  }
   const filters = marketFilters(market);
 
   const [
@@ -273,4 +286,5 @@ module.exports = {
   getCriticalDelays,
   getOperationalSignals,
   buildOperations,
+  buildControlChainDrill,
 };
