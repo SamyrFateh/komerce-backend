@@ -473,7 +473,7 @@
     };
     ctx.onCompleteTimezone=async(market,timezone)=>{
       try{
-        await request(fetchImpl,'/api/admin/markets/'+encodeURIComponent(market.code)+'/preparation/timezone',{method:'POST',body:{business_timezone:String(timezone||'').trim()}});
+        await request(fetchImpl,'/api/admin/markets/'+encodeURIComponent(market.code)+'/reprovision',{method:'POST',body:{operation:'complete_timezone',business_timezone:String(timezone||'').trim()}});
         await load();
         await ctx.onGaps(market);
         state.feedback='Fuseau du marché '+market.code+' enregistré, configuration existante conservée.';

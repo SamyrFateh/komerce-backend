@@ -205,7 +205,7 @@ test('central collection needs separate evidence per selected method', () => {
 test('resume an initialized market by completing its missing timezone without reprovisioning',async()=>{
   const market={code:'GA',name:'Gabon',currency:'XAF',minor_unit:0,lifecycle_status:'PROVISIONING',business_timezone:null};
   const fetchImpl=jest.fn((url,options)=>{
-    if(url.endsWith('/preparation/timezone'))return response({changed:true,market:{...market,business_timezone:'Africa/Libreville'}});
+    if(url.endsWith('/reprovision'))return response({changed:true,market:{...market,business_timezone:'Africa/Libreville'}});
     if(url.endsWith('/control-plane'))return response({market,assignment:{status:'ACTIVE'},gaps:[{code:'NO_BUSINESS_TIMEZONE',message:'Fuseau requis'}]});
     return response({markets:[market]});
   });
@@ -219,8 +219,8 @@ test('resume an initialized market by completing its missing timezone without re
   await form.listeners.submit({preventDefault(){}});
   const mutations=fetchImpl.mock.calls.filter(([url,options])=>options.method==='POST');
   expect(mutations).toHaveLength(1);
-  expect(mutations[0][0]).toBe('/api/admin/markets/GA/preparation/timezone');
-  expect(JSON.parse(mutations[0][1].body)).toEqual({business_timezone:'Africa/Libreville'});
+  expect(mutations[0][0]).toBe('/api/admin/markets/GA/reprovision');
+  expect(JSON.parse(mutations[0][1].body)).toEqual({operation:'complete_timezone',business_timezone:'Africa/Libreville'});
 });
 test('historical market resumes its original identity in the wizard without creating a second market',async()=>{
   const market={code:'GA',name:'Gabon',currency:'XAF',minor_unit:0,lifecycle_status:'PROVISIONING',business_timezone:null};

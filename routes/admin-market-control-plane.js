@@ -91,6 +91,19 @@ router.post('/', ...centralAdmin, async (req, res, next) => {
 router.post('/:marketCode/reprovision', ...centralAdmin, async (req, res, next) => {
   try {
     const body = req.body || {};
+    // An explicit, closed operation reuses the guarded preparation command.
+    // Default behavior is unchanged for historical reprovision callers.
+    if (Object.prototype.hasOwnProperty.call(body,'operation')) {
+      if (body.operation !== 'complete_timezone' ||
+          Object.keys(body).some(key=>!['operation','business_timezone'].includes(key))) {
+        return res.status(400).json({code:'MARKET_PREPARATION_OPERATION_INVALID',error:'Opération de préparation invalide.'});
+      }
+      const result=await withTransaction(client=>completeMarketTimezone(client,{
+        marketCode:req.params.marketCode,businessTimezone:body.business_timezone,actorUserId:req.user.id,
+        correlationId:req.headers['x-correlation-id'] ? String(req.headers['x-correlation-id']).slice(0,200) : null,
+      }));
+      return res.json(result);
+    }
     const result = await withTransaction(client => reprovisionMarket(client, {
       actorUserId: req.user.id,
       marketCode: req.params.marketCode,
@@ -108,16 +121,6 @@ router.post('/:marketCode/reprovision', ...centralAdmin, async (req, res, next) 
   } catch (error) {
     if (!sendKnownError(res, error)) next(error);
   }
-});
-
-router.post('/:marketCode/preparation/timezone', ...centralAdmin, async (req,res,next)=>{
-  try {
-    const result=await withTransaction(client=>completeMarketTimezone(client,{
-      marketCode:req.params.marketCode,businessTimezone:req.body?.business_timezone,actorUserId:req.user.id,
-      correlationId:req.headers['x-correlation-id'] ? String(req.headers['x-correlation-id']).slice(0,200) : null,
-    }));
-    res.json(result);
-  }catch(error){if(!sendKnownError(res,error))next(error);}
 });
 
 // Central admin edits only public editorial fields; the canonical market
