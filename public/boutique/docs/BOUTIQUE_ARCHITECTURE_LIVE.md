@@ -48,7 +48,7 @@
 | `modal-suggestion-card-polish.css` | 26 | components.css |
 | `modal-suggestion-filter.css` | 22 | components.css |
 | `notifications.css` | 64 | components.css |
-| `on-demand.css` | 19 | components.css |
+| `on-demand.css` | 65 | components.css |
 | `paypal.css` | 102 | components.css |
 | `product-image-loading.css` | 64 | components.css |
 | `products.css` | 998 | components.css |
@@ -70,8 +70,8 @@ Cascade réelle des bundles livrés :
 ```
  1. /boutique/css/dist/base.css?v=268
  2. /boutique/css/dist/critical-home.css?v=5
- 3. /boutique/css/dist/components.css?v=681
- 4. /boutique/css/dist/components.css?v=681
+ 3. /boutique/css/dist/components.css?v=682
+ 4. /boutique/css/dist/components.css?v=682
  5. /boutique/css/dist/desktop.css?v=157
 ```
 

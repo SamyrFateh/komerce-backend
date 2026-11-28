@@ -74,13 +74,13 @@ Tri par volume d'écriture (DOM + CSS injecté). Les modules en tête sont les o
 | `b-utils.js` | 3 | 0 | 0/0 | Carte produit |
 | `discovery-rail.js` | 3 | 0 | 3/0 | Modal produit, Carte produit, Grille produits, Chips catégories |
 | `b-greeting.js` | 2 | 0 | 0/0 | — |
+| `b-on-demand.js` | 2 | 0 | 1/0 | — |
 | `b-pdp-curation-suggestions.js` | 2 | 0 | 2/0 | Modal produit |
 | `checkout-desktop-style.js` | 2 | 0 | 0/0 | — |
 | `discovery-desktop-style.js` | 2 | 0 | 0/0 | — |
 | `market-hydration.js` | 2 | 0 | 0/0 | Hero |
 | `b-desktop-global-cart-access.js` | 0 | 1 | 0/0 | Modal produit, Side-cart desktop, Panier |
 | `b-desktop-sidebar.js` | 1 | 0 | 0/1 | Chips catégories |
-| `b-on-demand.js` | 1 | 0 | 1/0 | — |
 | `b-store.js` | 0 | 1 | 1/2 | Modal produit, Panier, Grille produits, Hero |
 | `local-stock-badge-mount.js` | 1 | 0 | 2/0 | Modal produit |
 
