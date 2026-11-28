@@ -56,6 +56,7 @@ self.addEventListener('activate', (event) => {
 function isCacheable(request, response) {
   if (!response || !response.ok) return false;
   if (response.type !== 'basic') return false;
+  if (/(?:^|,)\s*no-store\s*(?:,|$)/i.test(response.headers.get('Cache-Control') || '')) return false;
 
   const contentType = (
     response.headers.get('Content-Type') || ''
@@ -90,6 +91,8 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/api/')) return;
+  // Dynamic PostgreSQL market registry: no offline cache, including old entries.
+  if (url.pathname === '/boutique/js/market-registry.js') return;
 
   event.respondWith(
     fetch(event.request)

@@ -48,7 +48,9 @@ describe('Boutique publique — URL pays canonique', () => {
 
   test('un nouveau pays GA vient uniquement de la projection active', () => {
     expect(boot('/GA').window.KomerceMarket.get().currency).toBe('XAF');
-    expect(boot('/GA', '', ACTIVE_MARKETS.filter(m=>m.code!=='GA')).window.KomerceMarket.getPathCode()).toBeNull();
+    const missing = boot('/GA', '', ACTIVE_MARKETS.filter(m=>m.code!=='GA')).window.KomerceMarket;
+    expect(missing.getPathCode()).toBeNull();
+    expect(()=>missing.get()).toThrow('STORE_MARKET_UNAVAILABLE');
   });
 
   test('sans référentiel actif, aucun pays inventé même KM', () => {
@@ -71,7 +73,23 @@ describe('Boutique publique — URL pays canonique', () => {
   test('un chemin arbitraire et un code invalide ne créent pas de marché fictif', () => {
     const { window } = boot('/admin/finance', '?market=FR');
     expect(window.KomerceMarket.getPathCode()).toBeNull();
-    expect(window.KomerceMarket.get().code).toBe('KM');
+    expect(()=>window.KomerceMarket.get()).toThrow('STORE_MARKET_UNAVAILABLE');
+  });
+
+  test.each([
+    ['/CM', ''], ['/CG', '?market=KM'], ['/boutique', '?market=CG'],
+    ['/boutique', '?market='], ['/FR', '?market=KM'],
+  ])('un marché explicite indisponible (%s%s) ne retombe pas sur KM', (pathname, search) => {
+    const api = boot(pathname, search, ACTIVE_MARKETS.filter(m=>m.code==='KM')).window.KomerceMarket;
+    expect(()=>api.getPreviewOverride()).toThrow('STORE_MARKET_UNAVAILABLE');
+    expect(()=>api.get()).toThrow('STORE_MARKET_UNAVAILABLE');
+  });
+
+  test('le défaut KM doit lui aussi exister, sans empêcher une URL CM valide', () => {
+    const onlyCM = ACTIVE_MARKETS.filter(m=>m.code==='CM');
+    expect(()=>boot('/', '', onlyCM).window.KomerceMarket.getPreviewOverride()).toThrow('STORE_MARKET_UNAVAILABLE');
+    expect(boot('/CM', '', onlyCM).window.KomerceMarket.get().code).toBe('CM');
+    expect(boot('/CM', '', onlyCM).window.KomerceMarket.get().gentile).toBe('Komerce — Cameroun');
   });
 
   test('/CM transporte le filtre vers la lecture relais, même avec ?market=KM', async () => {
