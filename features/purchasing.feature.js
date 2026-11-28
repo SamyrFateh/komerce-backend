@@ -347,6 +347,7 @@ module.exports = {
       'infrastructure (dépendance technique transversale observée : DB, logger, helpers ou bootstrap possédés par infrastructure)',
       'orders (lecture : order_items, orders — le besoin d\'achat et l\'intention d\'annulation naissent d\'une commande client)',
       'auth (garde admin)',
+      'dashboard (contrôle explicite de la portée centrale Finance par hasDashboardGlobalAuthority ; aucune délégation de writer ni extension de scope)',
       'economic-engine (A8 : rafraîchissement transactionnel de la marge réelle canonique via canonical-margin-writer ; no-op si la règle CANONICAL_MARGIN_WRITER_ENABLED vaut 0)',
       'notifications (notification fournisseur WhatsApp, via services/notification-service.js)',
       'incident-management (H1 : incident « rupture fournisseur » à la clôture d\'une ligne sans reliquat, via createSupplierShortageIncident du boundary incident-write-service)',
