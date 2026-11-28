@@ -109,6 +109,11 @@ async function transition(q,{actor,market,ref,target,reason=''}){
     closed_at=CASE WHEN $2='closed' THEN now() ELSE NULL END,
     closed_by=CASE WHEN $2='closed' THEN $3::uuid ELSE NULL END
     WHERE id=$1 RETURNING *`,[row.id,target,auth.userId]);
+  if(row.status==='closed'&&target==='in_progress'){
+    // Reopening never resurrects photos whose retention deadline passed.
+    await q.query(`DELETE FROM conversation_attachments a USING conversation_messages m
+      WHERE a.message_id=m.id AND m.subject_id=$1 AND a.purge_after<=now()`,[row.id]);
+  }
   await q.query(`UPDATE conversation_attachments a SET purge_after=CASE WHEN $2::timestamptz IS NULL THEN NULL ELSE $2::timestamptz+interval '180 days' END
     FROM conversation_messages m WHERE a.message_id=m.id AND m.subject_id=$1`,[row.id,updated.closed_at]);
   await conversations.append(q,{request:updated,actorId:auth.userId,scope:'market',visibility:'internal',body:reason,eventType});
