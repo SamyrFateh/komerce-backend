@@ -434,6 +434,28 @@ describeE2E('E2E-DASHBOARD — Golden Logistics Control Chain', ({ db }) => {
     expect(chain.structural_alerts.some(row => row.reason_code === 'supplier_payment_blocked')).toBe(false);
   });
 
+  it('census et drill paginé SQL sur le même scope, refus de population modifiée',async()=>{
+    const refs=Array.from({length:26},(_,i)=>'CTG-'+RUN_TAG+'-PAGE-'+i);
+    for(const ref of refs) await seedOrder(ref,'confirmed');
+    const overview=await projection.getControlChain({market:{id:marketId},limit:1});
+    const census=overview.population_census;
+    expect(census.stage_counts.ORDER.GREEN).toBeGreaterThanOrEqual(26);
+    expect(overview.population.complete).toBe(false);
+    const total=census.stage_counts.ORDER.GREEN;
+    const found=[];
+    for(let page=1;page<=Math.ceil(total/25);page++){
+      const drill=projection.parseChainDrill({chain_drill:'ORDER',health:'GREEN',page:String(page),token:census.token});
+      const result=await projection.getControlChain({market:{id:marketId},drill});
+      expect(result.drill.total).toBe(total);
+      found.push(...result.orders.map(o=>o.order_reference));
+    }
+    expect(new Set(found).size).toBe(total);
+    expect(found).toEqual(expect.arrayContaining(refs));
+    await seedOrder('CTG-'+RUN_TAG+'-NEW','confirmed');
+    const old=projection.parseChainDrill({chain_drill:'ORDER',health:'GREEN',page:'1',token:census.token});
+    await expect(projection.getControlChain({market:{id:marketId},drill:old})).rejects.toMatchObject({status:409});
+  });
+
   it('split : une seule commande reste sur la branche nécessaire la moins avancée', async () => {
     const orderId = await seedOrder(SPLIT_REF, 'in_transit');
     const slowParcel = uuid();
