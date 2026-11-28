@@ -20,6 +20,7 @@ const {resolveAuthorization,resolveActiveAssignmentByMarketCode}=require('./mark
 const {resolveCanonicalMarketRead}=require('./market-delegation-read-authority');
 const conversations=require('./conversation-service');
 const {normalizePhone}=require('../utils/phone');
+const {isProductExposedForMarketCode}=require('./catalog-market-exposure-service');
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MOTIFS=new Set(['auto_parts','express','other']);
 function fail(code,status=400){throw Object.assign(new Error(code),{code,status});}
@@ -86,7 +87,7 @@ async function create(q,{actor,market,motif,productId=null,skuId=null,body='',fi
   if(!m)fail('MARKET_NOT_ACTIVE',404);
   if(productId){
     const {rows:[p]}=await q.query('SELECT id FROM products WHERE id=$1 AND is_active IS TRUE AND is_available IS TRUE',[requireId(productId)]);
-    if(!p)fail('CLIENT_REQUEST_PRODUCT_NOT_FOUND',404);
+    if(!p||!(await isProductExposedForMarketCode(productId,marketCode(market),q)))fail('CLIENT_REQUEST_PRODUCT_NOT_FOUND',404);
     if(skuId){
       const {rows:[s]}=await q.query('SELECT id FROM product_skus WHERE id=$1 AND product_id=$2 AND is_active IS TRUE',[requireId(skuId),productId]);
       if(!s)fail('CLIENT_REQUEST_PRODUCT_NOT_FOUND',404);
