@@ -40,7 +40,7 @@
 
   function metricDisplay(base, item) {
     if (!item || item.value == null) return '—';
-    if (item.unit === 'KMF') return base.formatKmf(item.value);
+    if (typeof item.unit==='string' && /^[A-Z]{3}$/.test(item.unit)) return base.formatMoney(item.value,item.unit,item.minor_unit);
     if (item.unit === '%') return `${base.formatNumber(item.value)} %`;
     return base.formatNumber(item.value, 0);
   }
@@ -86,7 +86,8 @@
       const severity = signal && signal.severity;
       const tone = severity === 'critical' ? 'critical' : (severity === 'warning' ? 'warning' : 'info');
       let value = signal && signal.value;
-      if (signal && signal.value_kmf != null) value = base.formatKmf(signal.value_kmf);
+      if (signal?.value_display) value=base.formatMoney(signal.value_display.value,signal.value_display.unit,signal.value_display.minor_unit);
+      else if (signal && signal.value_kmf != null) value = base.formatKmf(signal.value_kmf);
       else if (signal && signal.value_count != null) value = base.formatNumber(signal.value_count, 0);
       return {
         key: signal && signal.key ? signal.key : signal && signal.kind,
@@ -193,7 +194,7 @@
     return (Array.isArray(payload && payload.categories) ? payload.categories : []).map(row => ({
       title: row.category || 'Catégorie',
       helper: `${base.formatNumber(row.orders, 0)} commande(s) · ${base.formatNumber(row.quantity, 0)} unité(s)`,
-      value: row.revenue_display ? base.formatMoney(row.revenue_display.value, row.revenue_display.unit) : base.formatKmf(row.revenue_kmf),
+      value: row.revenue_display ? base.formatMoney(row.revenue_display.value, row.revenue_display.unit,row.revenue_display.minor_unit) : base.formatKmf(row.revenue_kmf),
       tone: 'info',
     }));
   }
@@ -210,7 +211,7 @@
       title: row.name || row.product_ref || 'Produit',
       ...(row.product_ref ? { href: productHref(row.product_ref), actionLabel: 'Fiche produit →' } : {}),
       helper: `${row.category || 'Sans catégorie'} · ${base.formatNumber(row.quantity, 0)} unité(s)${row.share_pct == null ? '' : ` · ${base.formatNumber(row.share_pct, 1)} % des lignes produit`}`,
-      value: row.revenue_display ? base.formatMoney(row.revenue_display.value, row.revenue_display.unit) : base.formatKmf(row.revenue_kmf),
+      value: row.revenue_display ? base.formatMoney(row.revenue_display.value, row.revenue_display.unit,row.revenue_display.minor_unit) : base.formatKmf(row.revenue_kmf),
       tone: 'neutral',
     }));
   }
@@ -319,7 +320,7 @@
     return rows.map(r => ({
       day: r.day,
       label: String(r.day || '').slice(5).split('-').reverse().join('/'),
-      value: base.formatKmf(r.sales_kmf),
+      value: r.sales_display ? base.formatMoney(r.sales_display.value,r.sales_display.unit,r.sales_display.minor_unit) : base.formatKmf(r.sales_kmf),
       heightPct: max > 0 ? Math.max(2, Math.round(((Number(r.sales_kmf) || 0) / max) * 100)) : 0,
     }));
   }
@@ -343,7 +344,7 @@
     const rows = Array.isArray(payload && payload.sales_by_market) ? payload.sales_by_market : [];
     return rows.map((r, i) => ({
       code: r.market_code, name: r.market_name || r.market_code,
-      value: base.formatKmf(r.sales_kmf),
+      value: r.sales_display ? base.formatMoney(r.sales_display.value,r.sales_display.unit,r.sales_display.minor_unit) : base.formatKmf(r.sales_kmf),
       share: r.share_pct == null ? null : Number(r.share_pct),
       color: MARKET_COLORS[i % MARKET_COLORS.length],
     }));
@@ -595,6 +596,7 @@
       header.appendChild(text(doc, 'p', 'canonical-eyebrow',
         `Recette ${payload.simulation.scope} — faits simulés, pas une activité réelle`));
       dashboard.setAttribute('data-simulation-scope', String(payload.simulation.scope));
+      if(payload.data_quality?.product_availability_basis==='simulation_unavailable') header.appendChild(text(doc,'p','kmc-dashboard-description','Viabilité et disponibilité locale non déterminées en recette : les sources réelles ne sont pas utilisées.'));
     }
     header.appendChild(decisionUi.PeriodControl.create(doc,{period:options.period || payload.period || '30',ariaLabel:'Période Commerce',onChange:options.onPeriodChange}));
     dashboard.appendChild(header);

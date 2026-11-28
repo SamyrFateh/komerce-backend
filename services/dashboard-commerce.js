@@ -787,7 +787,12 @@ async function buildCommerce(query = {}, options = {}) {
     getPaidSalesByMarket(filters),
     getRecentOrders(filters, 5, timezone),
   ]);
-  const [viability, availability] = await Promise.all([
+  // Les référentiels de prix et le stock local ne portent pas un scope de recette.
+  // Ne jamais faire passer une observation réelle pour une preuve simulée.
+  const unavailableCatalog = code => Object.freeze({items:Object.freeze([]),warnings:Object.freeze([{code,message:'Source réelle non projetée dans le périmètre de recette.'}])});
+  const [viability, availability] = filters.simulation_scope && market
+    ? [unavailableCatalog('commerce_simulation_viability_unavailable'),unavailableCatalog('commerce_simulation_availability_unavailable')]
+    : await Promise.all([
     getTopProductViability(topProducts, market, {
       buildMarketCorridor: options.buildMarketCorridor,
     }),
@@ -852,8 +857,8 @@ async function buildCommerce(query = {}, options = {}) {
       commercial_sales_basis: 'orders_paid_created_in_period_total_plus_wallet_excluding_cancelled_refunded',
       cash_basis: false,
       product_real_margin_basis: 'actual_cost_orders_only',
-      product_viability_basis: market ? 'market_price_corridor_local_evidence' : 'not_applicable_global',
-      product_availability_basis: market ? 'local_stock_exposure_and_active_allocations' : 'not_applicable_global',
+      product_viability_basis: market ? (filters.simulation_scope?'simulation_unavailable':'market_price_corridor_local_evidence') : 'not_applicable_global',
+      product_availability_basis: market ? (filters.simulation_scope?'simulation_unavailable':'local_stock_exposure_and_active_allocations') : 'not_applicable_global',
       decision_authority: 'server',
       decision_signal_contract: 'decision_signals_projection_only_v1',
       warnings,

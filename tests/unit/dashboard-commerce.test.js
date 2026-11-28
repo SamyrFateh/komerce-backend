@@ -372,6 +372,18 @@ describe('dashboard-commerce', () => {
     expect(signals.every(signal => signal.lifecycle?.mode === 'projection_only')).toBe(true);
   });
 
+  test('recette : aucun signal de stock ou viabilité issu des référentiels réels',async()=>{
+    const market={id:'market-cm-id',code:'CM',currency:'XAF'};
+    const result=await commerce.buildCommerce({period:'7',simulation_scope:'RCT1'},{market,now:new Date('2026-08-24T12:00:00Z')});
+    expect(result.simulation.scope).toBe('RCT1');
+    expect(mockPricingMarketCorridor.buildMarketCorridor).not.toHaveBeenCalled();
+    expect(mockLocalStockDecision.getDecisionAvailabilityEvidence).not.toHaveBeenCalled();
+    expect(result.product_viability).toEqual([]);
+    expect(result.product_availability).toEqual([]);
+    expect(result.data_quality).toMatchObject({product_viability_basis:'simulation_unavailable',product_availability_basis:'simulation_unavailable'});
+    expect(result.decision_signals.some(s=>['sku_non_viable','best_seller_local_unavailable'].includes(s.kind))).toBe(false);
+  });
+
   test('projection globale n’invente aucun market_id, aucune viabilité locale ni disponibilité locale', async () => {
     const now = new Date('2026-08-24T12:00:00.000Z');
     const result = await commerce.buildCommerce({ period: '7' }, { now });

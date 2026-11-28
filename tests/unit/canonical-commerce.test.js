@@ -183,6 +183,8 @@ describe('LOT 2D-CANON — Commerce vivant', () => {
     expect(commerce.projectMetrics(payload)['ca-encaisse'].value).toContain('KMF');
     expect(commerceDecision.rankedProducts(payload, commerce)[0].value).toContain('KMF');
     expect(commerce.formatMoney(null, 'XAF')).toBe('—');
+    expect(commerce.formatMoney(12.34,'EUR')).toBe('12,34 EUR');
+    expect(commerce.formatMoney(12.34,'XAF',0)).toBe('12 XAF');
   });
 
   test('une marge réelle absente reste explicitement inconnue', () => {

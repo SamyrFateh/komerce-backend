@@ -326,7 +326,7 @@ router.get(
       if (req.query.simulation_scope !== undefined && !isValidScope(req.query.simulation_scope)) return res.status(400).json({error:'invalid_simulation_scope'});
       const payload = Object.prototype.hasOwnProperty.call(req.query,'buyer_drill')
         ? await commerce.buildBuyerDrill(req.query)
-        : await commerce.buildCommerce(req.query);
+        : await projectCommerceMarketPayload(await commerce.buildCommerce(req.query),null);
       res.json(payload);
     } catch (err) {
       if ([400,409].includes(err.status) && ['invalid_buyer_drill','buyer_drill_population_changed'].includes(err.code)) return res.status(err.status).json({error:err.code,code:err.code});

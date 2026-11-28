@@ -157,11 +157,11 @@
     return new Intl.NumberFormat('fr-FR', { maximumFractionDigits }).format(numeric);
   }
 
-  function formatMoney(value, unit = 'KMF') {
+  function formatMoney(value, unit = 'KMF', minorUnit = unit==='EUR'?2:0) {
     if (value == null || value === '') return '—';
     const numeric = Number(value);
     if (!Number.isFinite(numeric)) return '—';
-    return `${formatNumber(numeric, 0)} ${unit}`;
+    return `${formatNumber(numeric, minorUnit)} ${unit}`;
   }
 
   function formatKmf(value) {
@@ -171,7 +171,7 @@
   function metricValue(metric) {
     if (!metric || metric.value == null) return '—';
     if (typeof metric.unit === 'string' && /^[A-Z]{3}$/.test(metric.unit)) {
-      return formatMoney(metric.value, metric.unit);
+      return formatMoney(metric.value, metric.unit,metric.minor_unit);
     }
     if (metric.unit === '%') return `${formatNumber(metric.value)} %`;
     return formatNumber(metric.value, 0);
