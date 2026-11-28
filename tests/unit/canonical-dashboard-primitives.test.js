@@ -167,6 +167,7 @@ describe('DASHBOARD DECISION VISUAL V1 — primitives', () => {
   test('expose une grammaire visuelle fermée sans modifier les primitives V1', () => {
     const ui = createDecisionPrimitives(fakeDocument());
     expect(Object.keys(ui)).toEqual([
+      'PeriodControl',
       'DecisionStrip',
       'SummaryCards',
       'FlowStrip',
@@ -185,6 +186,20 @@ describe('DASHBOARD DECISION VISUAL V1 — primitives', () => {
       'DisabledControl',
     ]);
     expect(Object.isFrozen(ui)).toBe(true);
+  });
+
+  test('PeriodControl : choix communs, libellé, sélection et callback sans API',()=>{
+    const doc=fakeDocument();
+    const ui=createDecisionPrimitives(doc);
+    const change=jest.fn();
+    const control=ui.PeriodControl.create(doc,{period:'7',ariaLabel:'Période Pilotage',onChange:change});
+    const select=control.children[1];
+    expect(select.attributes['aria-label']).toBe('Période Pilotage');
+    expect(select.children.map(option=>option.value)).toEqual(['7','30','90']);
+    expect(select.children.filter(option=>option.selected).map(option=>option.value)).toEqual(['7']);
+    select.listeners.change({target:{value:'90'}});
+    expect(change).toHaveBeenCalledWith('90');
+    expect(ui.PeriodControl.create(doc).children[1].disabled).toBe(true);
   });
 
   test('reste purement présentation : zéro API, legacy, fetch ou innerHTML', () => {
