@@ -79,6 +79,17 @@ async function persistSupplierPaymentProof(client, {
     if (String(row.supplier_payment_id) !== paymentId) {
       throw new Error('SUPPLIER_PAYMENT_PROOF_REBIND_REFUSED');
     }
+    // A native reference identifies ONE immutable monetary observation. In
+    // particular, a sandbox/receipt-only observation cannot be replayed as a
+    // verified real debit. The initial insert and promotion are transactional.
+    if (Number(row.observed_amount) !== amount || row.currency !== ccy ||
+        row.debit_confirmed !== (debitConfirmed === true) ||
+        row.sandbox !== (sandbox === true) || row.simulated !== (simulated === true) ||
+        text(row.provider_order_id) !== text(providerOrderId) ||
+        text(row.payment_ref) !== text(paymentRef)) {
+      throw new Error('SUPPLIER_PAYMENT_PROOF_REPLAY_CONFLICT');
+    }
+    return row;
   }
 
   if (debitConfirmed === true && sandbox !== true && simulated !== true) {
