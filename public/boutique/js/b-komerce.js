@@ -96,6 +96,7 @@ function ensureShell() {
     </header>
     <div class="k-kmc-page-grid">
       <div class="k-kmc-col-primary">
+        <section class="k-kmc-block" aria-label="Mes demandes"><strong>Mes demandes</strong><button type="button" class="k-track-retry-btn" data-on-demand>Ouvrir mes conversations</button></section>
         <section id="k-kmc-documents-block" class="k-kmc-block" aria-label="Mes documents"></section>
         <section id="k-kmc-wallet-block" class="k-kmc-block k-kmc-block--compact" aria-label="Mon wallet"></section>
       </div>
