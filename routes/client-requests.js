@@ -73,16 +73,15 @@ router.post('/client-requests',...clientAuth,clientRequestLimiter,photoUpload,wr
   });
   return resultResponse(res,result,201);
 }));
-function registerScope(scope,prefix,auth){
-  router.get(prefix,...auth,wrap(async(req,res)=>{
+function listHandler(scope){return wrap(async(req,res)=>{
     const requests=await db.withTransaction(q=>requestService.list(q,{...params(req,scope),before:cursor(req,'requests')}));
     return resultResponse(res,{requests});
-  }));
-  router.get(prefix+'/:ref',...auth,wrap(async(req,res)=>{
+  });}
+function readHandler(scope){return wrap(async(req,res)=>{
     const data=await db.withTransaction(q=>requestService.read(q,{...params(req,scope),before:cursor(req,'messages')}));
     return resultResponse(res,data);
-  }));
-  router.post(prefix+'/:ref/messages',...auth,clientRequestLimiter,photoUpload,wrap(async(req,res)=>{
+  });}
+function postHandler(scope){return wrap(async(req,res)=>{
     verifyFields(req,['body','visibility']);
     const b=req.body||{};
     const visibility=b.visibility||(scope==='hub'?'internal':'client');
@@ -93,18 +92,25 @@ function registerScope(scope,prefix,auth){
       return {request:r.request,message:r.message};
     });
     return resultResponse(res,data,201);
-  }));
-  router.get(prefix+'/:ref/attachments/:id',...auth,wrap(async(req,res)=>{
+  });}
+function attachmentHandler(scope){return wrap(async(req,res)=>{
     const file=await db.withTransaction(q=>requestService.attachment(q,{...params(req,scope),attachmentId:req.params.id}));
     res.set({'Content-Type':file.mime,'Content-Length':String(file.size_bytes),'Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'none'; sandbox",'Content-Disposition':'inline'});
     return res.send(file.content);
-  }));
-}
-const marketPrefix='/markets/:code/client-requests';
-registerScope('client','/client-requests',clientAuth);
-registerScope('market',marketPrefix,marketAuth);
-registerScope('hub','/hub/client-requests',hubAuth);
-router.post(marketPrefix+'/:ref/close',...marketAuth,clientRequestLimiter,wrap(async(req,res)=>{
+  });}
+router.get('/client-requests',...clientAuth,listHandler('client'));
+router.get('/client-requests/:ref',...clientAuth,readHandler('client'));
+router.post('/client-requests/:ref/messages',...clientAuth,clientRequestLimiter,photoUpload,postHandler('client'));
+router.get('/client-requests/:ref/attachments/:id',...clientAuth,attachmentHandler('client'));
+router.get('/markets/:code/client-requests',...marketAuth,listHandler('market'));
+router.get('/markets/:code/client-requests/:ref',...marketAuth,readHandler('market'));
+router.post('/markets/:code/client-requests/:ref/messages',...marketAuth,clientRequestLimiter,photoUpload,postHandler('market'));
+router.get('/markets/:code/client-requests/:ref/attachments/:id',...marketAuth,attachmentHandler('market'));
+router.get('/hub/client-requests',...hubAuth,listHandler('hub'));
+router.get('/hub/client-requests/:ref',...hubAuth,readHandler('hub'));
+router.post('/hub/client-requests/:ref/messages',...hubAuth,clientRequestLimiter,photoUpload,postHandler('hub'));
+router.get('/hub/client-requests/:ref/attachments/:id',...hubAuth,attachmentHandler('hub'));
+router.post('/markets/:code/client-requests/:ref/close',...marketAuth,clientRequestLimiter,wrap(async(req,res)=>{
   verifyFields(req,['reason']);
   const data=await db.withTransaction(async q=>{
     const r=await requestService.transition(q,{...params(req,'market'),target:'closed',reason:req.body?.reason});
@@ -113,18 +119,18 @@ router.post(marketPrefix+'/:ref/close',...marketAuth,clientRequestLimiter,wrap(a
   });
   return resultResponse(res,data);
 }));
-router.post(marketPrefix+'/:ref/reopen',...marketAuth,clientRequestLimiter,wrap(async(req,res)=>{
+router.post('/markets/:code/client-requests/:ref/reopen',...marketAuth,clientRequestLimiter,wrap(async(req,res)=>{
   verifyFields(req,['reason']);
   const data=await db.withTransaction(async q=>{
     const r=await requestService.transition(q,{...params(req,'market'),target:'in_progress',reason:req.body?.reason||''});
     return {request:r.request};
   });return resultResponse(res,data);
 }));
-router.post(marketPrefix+'/:ref/hub-share',...marketAuth,clientRequestLimiter,wrap(async(req,res)=>{
+router.post('/markets/:code/client-requests/:ref/hub-share',...marketAuth,clientRequestLimiter,wrap(async(req,res)=>{
   verifyFields(req,[]);
   return resultResponse(res,await db.withTransaction(q=>requestService.share(q,{...params(req,'market'),shared:true})));
 }));
-router.delete(marketPrefix+'/:ref/hub-share',...marketAuth,clientRequestLimiter,wrap(async(req,res)=>{
+router.delete('/markets/:code/client-requests/:ref/hub-share',...marketAuth,clientRequestLimiter,wrap(async(req,res)=>{
   verifyFields(req,[]);
   return resultResponse(res,await db.withTransaction(q=>requestService.share(q,{...params(req,'market'),shared:false})));
 }));
