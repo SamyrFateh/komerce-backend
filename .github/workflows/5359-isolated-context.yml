@@ -1,0 +1,25 @@
+name: 5359 isolated context and impact
+on:
+  push:
+    branches: [test/5359-market-context-preflight]
+permissions:
+  contents: read
+jobs:
+  context:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 80e7c8c3496468a26e6b268d8ee9b27d0192ccb2
+          fetch-depth: 1
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Canonical context and impact
+        run: |
+          npm run agent:context -- --pack ui --files public/boutique/js/market-context.js public/sw.js
+          npm run arch:impact -- public/boutique/js/market-context.js
+          npm run arch:impact -- public/sw.js
